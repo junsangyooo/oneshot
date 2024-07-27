@@ -6,10 +6,19 @@ from player import Player
 class Game:
     def __init__(self, player_names, screen):
         self.players = [Player(name) for name in player_names]
-        self.deck = [Card(rank) for rank in range(1, 13) for _ in range(4)] + [Card(13)] * 2  # 조커 추가
+        self.player_num = len(player_names)
+
+        # Define the card deck
+        self.deck = [Card(13)] * 2
+        if self.player_num == 4:
+            for cardNum in range(1, 11): self.deck += [Card(cardNum)] * cardNum
+        elif self.player_num == 5:
+            for cardNum in range(1, 12): self.deck += [Card(cardNum)] * cardNum
+        else:
+            for cardNum in range(1, 13): self.deck += [Card(cardNum)] * cardNum
         random.shuffle(self.deck)
+
         self.turn = 0
-        self.roles = ['왕', '귀족', '평민', '평민', '평민', '평민', '농노', '노예']
         self.current_round = 0
         self.screen = screen
         self.load_card_images()
