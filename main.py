@@ -1,7 +1,5 @@
 import random
-from card import Card
-from player import Player
-from game import Game
+from helper import *
     
 # Go back to main
 def go_back_to_main(): return
