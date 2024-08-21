@@ -83,4 +83,12 @@ def handle_deal_cards(room):
 
 @socketio.on('play_card')
 def handle_play_card(data):
-    room = d
+    room = data['room']
+    player = data['player']
+    card = data['card']
+    
+    emit('card_played', {'player': player, 'card': card}, room=room)
+    print(f'Player {player} played card {card} in room {room}.')
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)

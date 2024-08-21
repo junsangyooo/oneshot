@@ -1,4 +1,11 @@
 /* static/style.css */
+#bannerimage {
+    width: 100%;
+    background-image: "home_top_banner.png";
+    height: 200px;
+    background-position: center;
+}
+
 body {
     font-family: Arial, sans-serif;
     text-align: center;

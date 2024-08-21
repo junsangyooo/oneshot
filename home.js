@@ -1,53 +1,34 @@
 // static/home.js
 
-const socket = io();
-let currentRoom = null;
+document.addEventListener("DOMContentLoaded", function() {
+    const gameTypeField = document.getElementById('gameType');
+    const roomTypeField = document.getElementById('roomType');
+    const roomNameField = document.getElementById('roomName');
 
-socket.on('connect', function() {
-    console.log('Connected to the server');
-});
-
-socket.on('room_created', function(data) {
-    currentRoom = data.room;
-    document.getElementById('players').innerHTML = `<li>${data.player}</li>`;
-    document.getElementById('messages').innerHTML += `<li>Room ${data.room} created by ${data.player}</li>`;
-});
-
-socket.on('player_joined', function(data) {
-    document.getElementById('players').innerHTML += `<li>${data.player}</li>`;
-    document.getElementById('messages').innerHTML += `<li>Player ${data.player} joined</li>`;
-});
-
-socket.on('add_computers', function(data) {
-    data.computers.forEach(computer => {
-        document.getElementById('players').innerHTML += `<li>${computer}</li>`;
+    gameTypeField.addEventListener('change', function() {
+        const gameType = gameTypeField.value;
+        if (gameType === 'multiplayer') {
+            roomTypeField.style.display = 'block';
+            roomTypeField.required = true;
+            toggleRoomName();
+        } else {
+            roomTypeField.style.display = 'none';
+            roomTypeField.required = false;
+            roomNameField.style.display = 'none';
+            roomNameField.required = false;
+        }
     });
+
+    roomTypeField.addEventListener('change', toggleRoomName);
+
+    function toggleRoomName() {
+        const roomType = roomTypeField.value;
+        if (roomType === 'join') {
+            roomNameField.style.display = 'block';
+            roomNameField.required = true;
+        } else {
+            roomNameField.style.display = 'none';
+            roomNameField.required = false;
+        }
+    }
 });
-
-socket.on('start_game', function() {
-    document.getElementById('messages').innerHTML += `<li>Game started!</li>`;
-});
-
-socket.on('cards_dealt', function(data) {
-    const hand = data.hands[socket.id];
-    document.getElementById('hand').innerHTML = '';
-    hand.forEach(card => {
-        document.getElementById('hand').innerHTML += `<li>${card}</li>`;
-    });
-});
-
-socket.on('card_played', function(data) {
-    document.getElementById('messages').innerHTML += `<li>${data.player} played ${data.card}</li>`;
-});
-
-function dealCards() {
-    socket.emit('deal_cards', currentRoom);
-}
-
-function playAgain() {
-    location.reload();
-}
-
-function goHome() {
-    window.location.href = "/";
-}

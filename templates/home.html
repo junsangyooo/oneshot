@@ -4,18 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <div id="bannerimage"></div>
     <title>The Great Dalmuti - Home</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>The Great Dalmuti</h1>
-    <form action="{{ url_for('start_game') }}" method="POST">
+    <form action="{{ url_for('start_game') }}" method="POST" id="gameForm">
         <input type="text" name="playerName" placeholder="Enter your name" required>
-        <select name="gameType" id="gameType" onchange="toggleRoomName()" required>
+        <select name="gameType" id="gameType" required>
             <option value="computer">Computers</option>
             <option value="multiplayer">Players</option>
         </select>
-        <select name="roomType" id="roomType" onchange="toggleRoomName()" style="display:none;" required>
+        <select name="roomType" id="roomType" style="display:none;" required>
             <option value="create">Create a room</option>
             <option value="join">Join a room</option>
         </select>
@@ -24,23 +24,6 @@
         <button type="submit">Start Game</button>
     </form>
 
-    <script>
-        function toggleRoomName() {
-            const gameType = document.getElementById('gameType').value;
-            const roomTypeField = document.getElementById('roomType');
-            const roomNameField = document.getElementById('roomName');
-            if (gameType === 'multiplayer') {
-                roomTypeField.style.display = 'block';
-                const roomType = document.getElementById('roomType').value;
-                if (roomType === 'join') {
-                    roomNameField.style.display = 'block';
-                } else {
-                    roomNameField.style.display = 'none';
-                }
-            } else {
-                roomTypeField.style.display = 'none';
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='home.js') }}"></script>
 </body>
 </html>
