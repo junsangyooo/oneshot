@@ -53,6 +53,9 @@ def generate_cards_for_players(num_of_players=8):
 
     return cards
 
-cards = generate_cards_for_players()
+num_of_players = 8
+cards = generate_cards_for_players(num_of_players)
+players = []
+for player_num in range(num_of_players):
+    players.append(Player(f'Player {num_of_players + 1}', cards))
 
-Player(f'Player{player_number + 1}', cards)

@@ -14,5 +14,6 @@ class Player:
         if self.cards[card_rank] >= card_number:
             self.cards[card_rank] -= card_number
         else: print("There isn't enough cards.")
+    
     def update_cards(self, cards):
         self.cards = cards
