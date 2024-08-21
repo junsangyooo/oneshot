@@ -11,23 +11,34 @@
     <h1>The Great Dalmuti</h1>
     <form action="{{ url_for('start_game') }}" method="POST">
         <input type="text" name="playerName" placeholder="Enter your name" required>
-        <select name="gameType" id="gameType" onchange="toggleRoomName()">
-            <option value="computer">Play against Computer</option>
-            <option value="multiplayer">Multiplayer</option>
+        <select name="gameType" id="gameType" onchange="toggleRoomName()" required>
+            <option value="computer">Computers</option>
+            <option value="multiplayer">Players</option>
         </select>
-        <input type="text" name="roomName" id="roomName" placeholder="Room Name" style="display:none;">
-        <input type="number" name="numPlayers" placeholder="Number of players (2-4)" min="2" max="4" required>
+        <select name="roomType" id="roomType" onchange="toggleRoomName()" style="display:none;" required>
+            <option value="create">Create a room</option>
+            <option value="join">Join a room</option>
+        </select>
+        <input type="text" name="roomName" id="roomName" placeholder="Room Number" style="display:none;" required>
+        <input type="number" name="numPlayers" placeholder="Number of players (4-8)" min="4" max="8" required>
         <button type="submit">Start Game</button>
     </form>
 
     <script>
         function toggleRoomName() {
             const gameType = document.getElementById('gameType').value;
+            const roomTypeField = document.getElementById('roomType');
             const roomNameField = document.getElementById('roomName');
             if (gameType === 'multiplayer') {
-                roomNameField.style.display = 'block';
+                roomTypeField.style.display = 'block';
+                const roomType = document.getElementById('roomType').value;
+                if (roomType === 'join') {
+                    roomNameField.style.display = 'block';
+                } else {
+                    roomNameField.style.display = 'none';
+                }
             } else {
-                roomNameField.style.display = 'none';
+                roomTypeField.style.display = 'none';
             }
         }
     </script>
