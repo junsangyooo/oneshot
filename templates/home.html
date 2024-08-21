@@ -8,7 +8,7 @@
     <title>The Great Dalmuti - Home</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="homeBody">
     <form action="{{ url_for('start_game') }}" method="POST" id="gameForm">
         <input type="text" name="playerName" class="playerNameInput" placeholder="Enter your name" required>
         </br>

@@ -8,7 +8,7 @@
     background-size: cover;
 }
 
-body {
+.homeBody {
     font-family: Arial, sans-serif;
     text-align: center;
     background-color: #f4f4f4;
@@ -47,6 +47,134 @@ form {
   padding: 3px 0;
 }
 
+.gameBody{
+    /* background-color: 8BE753; */
+    background-color: #1e3c6d;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: white;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+#playerSection {
+    width: 10%;
+    height: 100%;
+    background-color: #1e3c6d; /* Darker blue for player section */
+    padding: 10px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    position: absolute;
+    left: 0;
+    top:0;
+    bottom:0;
+}
+
+#boardSection {
+    width: 70%;
+    height: 80%;
+    margin: 0 auto;
+    background-color: #335a92; /* Slightly lighter blue for board */
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#handSection {
+    width: 70%;
+    margin: 0 auto;
+    background-color: #2b4d80; /* Darker blue for hand section */
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2%;
+}
+
+#controlSection {
+    width: 10%;
+    background-color: #2b4d80; /* Darker blue for control section */
+    padding: 10px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    position: absolute;
+    right: 0;
+    top:0;
+    bottom:0;
+    align-items: center;
+}
+
+#players {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#players li {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #4475b3; /* Medium blue for player cards */
+    border-radius: 5px;
+    text-align: center;
+}
+
+#board {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px dashed #ffffff; /* Dashed border to represent the board area */
+}
+
+#hand {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+
+#hand li {
+    margin: 5px;
+    padding: 10px;
+    background-color: #4475b3; /* Medium blue for player cards */
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+}
+
+#settingsButton{
+    background: "assets/setting.png";
+    width: 50px;
+    height: 50px;
+}
+
+
+#passButton{
+    background: "assets/pass.png";
+    width: 50px;
+    height: 50px;
+}
+
 button {
     margin: 10px;
     padding: 10px 20px;
@@ -54,19 +182,6 @@ button {
     cursor: pointer;
 }
 
-#gameArea {
-    margin-top: 20px;
-}
-
-ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-li {
-    margin: 5px 0;
-    padding: 5px;
-    background-color: #ddd;
-    border-radius: 5px;
-    display: inline-block;
+button:hover {
+    background-color: #5a8bc1;
 }

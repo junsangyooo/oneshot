@@ -7,27 +7,37 @@
     <title>The Great Dalmuti - Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <h1>The Great Dalmuti</h1>
-    <div id="gameInfo">
-        <p>Room: {{ room }}</p>
-        <p>Player: {{ player }}</p>
-    </div>
-    <div id="gameArea">
-        <h2>Players:</h2>
-        <ul id="players"></ul>
-        
-        <h2>Your Hand:</h2>
-        <ul id="hand"></ul>
-        
-        <button onclick="dealCards()">Deal Cards</button>
-    </div>
-    <ul id="messages"></ul>
+<body class="gameBody">
+    <div id="gameContainer">
+        <!-- Player section -->
+        <div id="playerSection">
+            <ul id="players">
+                <!-- Dynamically populated list of players -->
+            </ul>
+        </div>
 
-    <button onclick="playAgain()">Play Again</button>
-    <button onclick="goHome()">Go Home</button>
+        <!-- Board section -->
+        <div id="boardSection">
+            <div id="board">
+                <!-- The board where cards are played -->
+            </div>
+        </div>
 
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+        <!-- My Hand section -->
+        <div id="handSection">
+            <ul id="hand">
+                <!-- Dynamically populated list of player's cards -->
+            </ul>
+        </div>
+
+        <!-- Control buttons section -->
+        <div id="controlSection">
+            <button class="controlButton" id="settingsButton"></button>
+            <button class="controlButton" id="passButton" onclick=""></button>
+            
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='game.js') }}"></script>
 </body>
 </html>
