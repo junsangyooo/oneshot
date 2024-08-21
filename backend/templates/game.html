@@ -1,0 +1,33 @@
+<!-- templates/game.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Dalmuti - Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>The Great Dalmuti</h1>
+    <div id="gameInfo">
+        <p>Room: {{ room }}</p>
+        <p>Player: {{ player }}</p>
+    </div>
+    <div id="gameArea">
+        <h2>Players:</h2>
+        <ul id="players"></ul>
+        
+        <h2>Your Hand:</h2>
+        <ul id="hand"></ul>
+        
+        <button onclick="dealCards()">Deal Cards</button>
+    </div>
+    <ul id="messages"></ul>
+
+    <button onclick="playAgain()">Play Again</button>
+    <button onclick="goHome()">Go Home</button>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='game.js') }}"></script>
+</body>
+</html>

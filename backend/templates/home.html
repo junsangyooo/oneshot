@@ -1,0 +1,35 @@
+<!-- templates/home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Dalmuti - Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>The Great Dalmuti</h1>
+    <form action="{{ url_for('start_game') }}" method="POST">
+        <input type="text" name="playerName" placeholder="Enter your name" required>
+        <select name="gameType" id="gameType" onchange="toggleRoomName()">
+            <option value="computer">Play against Computer</option>
+            <option value="multiplayer">Multiplayer</option>
+        </select>
+        <input type="text" name="roomName" id="roomName" placeholder="Room Name" style="display:none;">
+        <input type="number" name="numPlayers" placeholder="Number of players (2-4)" min="2" max="4" required>
+        <button type="submit">Start Game</button>
+    </form>
+
+    <script>
+        function toggleRoomName() {
+            const gameType = document.getElementById('gameType').value;
+            const roomNameField = document.getElementById('roomName');
+            if (gameType === 'multiplayer') {
+                roomNameField.style.display = 'block';
+            } else {
+                roomNameField.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
