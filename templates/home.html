@@ -10,18 +10,18 @@
 </head>
 <body>
     <form action="{{ url_for('start_game') }}" method="POST" id="gameForm">
-        <input type="text" name="playerName" placeholder="Enter your name" required>
-        <select name="gameType" id="gameType" required>
+        <input type="text" name="playerName" class="playerNameInput" placeholder="Enter your name" required></br>
+        <select class="select" gameType" id="gameType" required>
             <option value="computer">Computers</option>
             <option value="multiplayer">Players</option>
         </select>
-        <select name="roomType" id="roomType" style="display:none;" required>
+        <select class="select" name="roomType" id="roomType" style="display:none;" required>
             <option value="create">Create a room</option>
             <option value="join">Join a room</option>
         </select>
         <input type="text" name="roomName" id="roomName" placeholder="Room Number" style="display:none;" required>
-        <input type="number" name="numPlayers" placeholder="Number of players (4-8)" min="4" max="8" required>
-        <button type="submit">Start Game</button>
+        </br><input type="number" name="numPlayers" placeholder="Number of players (4-8)" min="4" max="8" required>
+        </br><button type="submit">Start Game</button>
     </form>
 
     <script src="{{ url_for('static', filename='home.js') }}"></script>
