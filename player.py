@@ -1,3 +1,7 @@
+from card import Card
+
+
+
 class Player:
     def __init__(self, name, cards) -> None:
         self.name = name
@@ -10,10 +14,12 @@ class Player:
     def get_cards(self):
         return self.cards
     
-    def use_card(self, card_rank, card_number):
-        if self.cards[card_rank] >= card_number:
-            self.cards[card_rank] -= card_number
-        else: print("There isn't enough cards.")
+    def place_cards(self, card, quantity):
+        if self.cards[card] >= quantity:
+            self.cards[card] -= quantity
+        else: print(f'There isn\'t enough cards, {card.card_name}')
+
+    # def recieve_cards(self, cards)
     
     def update_cards(self, cards):
         self.cards = cards
