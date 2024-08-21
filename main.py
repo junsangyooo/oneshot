@@ -73,13 +73,17 @@ def generate_cards_for_players(num_of_players=8):
     else:
         max_card_rank = 12
 
-    players = []
+    cards = []
     card_num_per_player = 80 // num_of_players
     deck = shuffle(create_all_cards(max_card_rank))
     for player_number in range(num_of_players):
-        begin = card_num_per_player * player_number
-        end = begin + card_num_per_player
-        cards = list_to_dict(deck[begin:end])
-        players.append(Player(f'Player{player_number + 1}', cards))
+        cards.append(deck[card_num_per_player * player_number: card_num_per_player * player_number + card_num_per_player])
     
-    remaining_cards = deck[num_of_players * card_num_per_player:]
+    # Now append the remaining cards
+    cards.append(deck[num_of_players * card_num_per_player:])
+
+    return cards
+
+cards = generate_cards_for_players()
+
+Player(f'Player{player_number + 1}', cards)
