@@ -11,6 +11,11 @@ class Player:
     def __repr__(self):
         return(self.name)
 
+    def set_player_num(self, num):
+        self.player_num = num
+    def get_player_num(self):
+        return self.player_num
+
     def get_cards(self):
         return self.cards
     

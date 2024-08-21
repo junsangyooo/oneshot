@@ -1,6 +1,7 @@
 import random
 from card import Card
 from player import Player
+from game import Game
     
 # Go back to main
 def go_back_to_main(): return
@@ -59,3 +60,9 @@ players = []
 for player_num in range(num_of_players):
     players.append(Player(f'Player {num_of_players + 1}', cards))
 
+player_names = input("Please indicates the names of players(Player1,Player2,...)").split(',')
+num_of_players = len(player_names)
+cards = generate_cards_for_players(num_of_players)
+players = []
+for player_num in range(num_of_players):
+    players.append(Player(player_names[player_num], cards))
