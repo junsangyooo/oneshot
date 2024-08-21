@@ -1,55 +1,57 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="style.css">
+    <title>The Great Dalmuti</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 </head>
 <body>
-    <header>
-        <div class="header-title-container">
-            <h1>Hunt the Ace</h1>
-        </div>
-        <div class="header-round-info-container">
-            <div class="header-img-container">
-                <img src="/images/AceSpades.png" alt="" class="header-img">
-            </div>
-            <div class="header-score-container">
-                <h2 class="score">Score&nbsp;<span class="badge">0</span></h2>
-            </div>
-            <div class="header-round-container">
-                <h2 class="round">Round&nbsp;<span class="badge">0</span></h2>
-            </div>
-        </div>
-        <div class="header-status-info-container">
-            <p class="current-status">
-                Click 'Play Game' button to play game
-            </p>
-        </div>
-        <div class="header-button-container">
-            <div class="game-play-button-container">
-                <button id = "playGame" class="play-game">Play Game</button>
-            </div>
-        </div>
-    </header>
-    <main>
-        <div class="card-container">
-            <div class="card-pos-a">
+    <h1>The Great Dalmuti</h1>
+    <div>
+        <input id="roomName" type="text" placeholder="Room Name">
+        <button onclick="createRoom()">Create Room</button>
+        <button onclick="joinRoom()">Join Room</button>
+    </div>
+    <div>
+        <button onclick="dealCards()">Deal Cards</button>
+    </div>
+    <ul id="messages"></ul>
 
-            </div>
-            <div class="card-pos-b">
-                
-            </div>
-            <div class="card-pos-c">
-                
-            </div>
-            <div class="card-pos-d">
-                
-            </div>
-        </div>
-    </main>
-    <script src="index.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('connect', function() {
+            console.log('Connected to the server');
+        });
+
+        socket.on('room_created', function(data) {
+            document.getElementById('messages').innerHTML += `<li>Room ${data.room} created</li>`;
+        });
+
+        socket.on('player_joined', function(data) {
+            document.getElementById('messages').innerHTML += `<li>Player ${data.player} joined</li>`;
+        });
+
+        socket.on('cards_dealt', function(data) {
+            document.getElementById('messages').innerHTML += `<li>Cards: ${data.cards.join(', ')}</li>`;
+        });
+
+        function createRoom() {
+            const room = document.getElementById('roomName').value;
+            socket.emit('create_room', room);
+        }
+
+        function joinRoom() {
+            const room = document.getElementById('roomName').value;
+            socket.emit('join_room', { room: room, player: 'Player1' });
+        }
+
+        function dealCards() {
+            const room = document.getElementById('roomName').value;
+            socket.emit('deal_cards', room);
+        }
+    </script>
 </body>
 </html>
