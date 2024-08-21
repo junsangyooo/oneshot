@@ -1,30 +1,11 @@
 /* static/style.css */
+
 #bannerimage {
     width: 100%;
-    background-image: "home_top_banner.png";
+    background-image: url("home_top_banner.png");
     height: 200px;
     background-position: center;
-}
-
-.playerNameInput {
-    border: 1px solid #cccccc; 
-    padding: 16px 20px;
-    height:50px; 
-    width: 50%; 
-    font-size: 30;
-}
-
-.select {
-    align-self: center;
-    text-align: center;
-    align-items: center;
-    width: 150px;
-    height: 35px;
-}
-.select option {
-  background: #cccccc;
-  color: black;
-  padding: 3px 0;
+    background-size: cover;
 }
 
 body {
@@ -35,15 +16,46 @@ body {
     padding: 20px;
 }
 
-#gameArea {
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     margin-top: 20px;
 }
 
+.playerNameInput {
+    border: 1px solid #cccccc; 
+    padding: 16px 20px;
+    height: 50px; 
+    width: 50%; 
+    font-size: 30px;
+    margin-bottom: 20px;
+}
+
+.select, #roomNumber, #roomName {
+    font-size: 17px;
+    width: 150px;
+    height: 35px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.select option {
+  background: #cccccc;
+  color: black;
+  padding: 3px 0;
+}
+
 button {
-    margin: 5px;
+    margin: 10px;
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
+}
+
+#gameArea {
+    margin-top: 20px;
 }
 
 ul {
