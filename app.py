@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_socketio import SocketIO, join_room, leave_room, send, emit
 import random
 import string
+from game import *
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -19,20 +20,6 @@ def generate_room_code():
         if code not in rooms:
             return code
 
-def create_deck():
-    """Create and shuffle a deck of cards."""
-    # Create a deck with 1-12 in four suits, plus jokers (e.g., use numbers 1-12, with 1 being lowest)
-    deck = list(range(1, 13)) * 4
-    random.shuffle(deck)
-    return deck
-
-def deal_cards(deck, num_players):
-    """Deal cards to players."""
-    hands = [[] for _ in range(num_players)]
-    for i in range(len(deck)):
-        hands[i % num_players].append(deck[i])
-    return hands
-
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -47,14 +34,15 @@ def start_game():
         if room_type == 'create':
             room_code = generate_room_code()
             num_players = int(request.form['numPlayers'])
-            deck = create_deck()
-            hands = deal_cards(deck, num_players)
+            deck = create_all_cards(num_players)
+            hands = generate_cards_for_players(deck, num_players)
             rooms[room_code] = {
                 'players': [player_name],
                 'hands': {player_name: hands[0]},  # Add first player's hand
                 'num_players': num_players,
                 'current_turn': player_name,
-                'game_started': False
+                'game_started': False,
+                'first_game': True
             }
             return redirect(url_for('game', room=room_code, player=player_name))
         elif room_type == 'join':
@@ -71,6 +59,22 @@ def start_game():
                 return redirect(url_for('home'))
     else:
         # For single player game with computers (implementation can be added)
+        num_players = int(request.form['numPlayers'])
+        deck = create_all_cards(num_players)
+        cards = generate_cards_for_players(deck, num_players)
+        players = [player_name]
+        hands = {player_name: cards[0]}
+        for i in range(1, num_players):
+            players.append(f'Computer {i}')
+            hands[f'Computer {i}':cards[i]]
+        rooms[room_code] = {
+            'players': players,
+            'hands': hands,
+            'num_players': num_players,
+            'current_turn': player_name,
+            'game_started': True,
+            'first_game': True
+        }
         return redirect(url_for('game', room='singleplayer', player=player_name))
 
 @app.route('/game/<room>/<player>')

@@ -38,10 +38,14 @@ class Player:
     
     def update_cards(self, cards):
         self.cards = cards
-
-class Game:
-    def __init__(self, players):
-        self.players = players
     
-    def play(self):
+class Computer:
+    def __init__(self, name, cards):
+        self.name = name
+        self.cards = cards
+    def __str__(self):
+        return(self.name)
+    def __repr__(self):
+        return(self.name)
+    def place_cards(self, pre_card, quantity):
         return

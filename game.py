@@ -1,12 +1,16 @@
 import random
 from helper import *
-    
-# Go back to main
-def go_back_to_main(): return
 
 # Create a deck
-def create_all_cards(max_card_rank=12):
+def create_all_cards(num_of_players=8):
     deck = []
+
+    if num_of_players==4:
+        max_card_rank = 10
+    elif num_of_players==5:
+        max_card_rank = 11
+    else:
+        max_card_rank = 12
 
     # Add two Jester cards into the deck
     for i in range(2): deck.append(Card(0))
@@ -33,24 +37,17 @@ def list_to_dict(deck):
     return dict
 
 # Generate list of cards for players
-def generate_cards_for_players(num_of_players=8):
-    if num_of_players==4:
-        max_card_rank = 10
-    elif num_of_players==5:
-        max_card_rank = 11
-    else:
-        max_card_rank = 12
-
-    cards = []
-    card_num_per_player = 80 // num_of_players
-    deck = shuffle(create_all_cards(max_card_rank))
+def generate_cards_for_players(deck, num_of_players=8):
+    hands = []
+    card_num_per_player = len(deck) // num_of_players
+    deck = shuffle(deck)
     for player_number in range(num_of_players):
-        cards.append(deck[card_num_per_player * player_number: card_num_per_player * player_number + card_num_per_player])
+        hands.append(deck[card_num_per_player * player_number: card_num_per_player * player_number + card_num_per_player])
     
     # Now append the remaining cards
-    cards.append(deck[num_of_players * card_num_per_player:])
+    hands.append(deck[num_of_players * card_num_per_player:])
 
-    return cards
+    return hands
 
 num_of_players = 8
 cards = generate_cards_for_players(num_of_players)
