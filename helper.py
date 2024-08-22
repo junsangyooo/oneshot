@@ -13,9 +13,10 @@ class Card:
         return(f'{self.card_rank}. {self.card_name}')
 
 class Player:
-    def __init__(self, name, cards) -> None:
+    def __init__(self, name, cards, is_computer) -> None:
         self.name = name
         self.cards = cards
+        self.is_copmuter = is_computer
     def __str__(self):
         return(self.name)
     def __repr__(self):
@@ -38,14 +39,3 @@ class Player:
     
     def update_cards(self, cards):
         self.cards = cards
-    
-class Computer:
-    def __init__(self, name, cards):
-        self.name = name
-        self.cards = cards
-    def __str__(self):
-        return(self.name)
-    def __repr__(self):
-        return(self.name)
-    def place_cards(self, pre_card, quantity):
-        return

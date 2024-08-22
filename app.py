@@ -36,11 +36,12 @@ def start_game():
             num_players = int(request.form['numPlayers'])
             deck = create_all_cards(num_players)
             hands = generate_cards_for_players(deck, num_players)
+            new_player = Player(player_name, hands[0], False)
             rooms[room_code] = {
-                'players': [player_name],
-                'hands': {player_name: hands[0]},  # Add first player's hand
+                'players': [new_player],
+                'hands': hands,
                 'num_players': num_players,
-                'current_turn': player_name,
+                'current_turn': new_player,
                 'game_started': False,
                 'first_game': True
             }
@@ -49,8 +50,8 @@ def start_game():
             room_code = request.form['roomName']
             if room_code in rooms:
                 room = rooms[room_code]
-                room['players'].append(player_name)
-                room['hands'][player_name] = room['hands'][len(room['players']) - 1]
+                new_player = Player(player_name, room['hands'][len(room['players'])], False)
+                room['players'].append(new_player)
                 if len(room['players']) == room['num_players']:
                     room['game_started'] = True
                     socketio.emit('start_game', room=room_code)
@@ -61,17 +62,16 @@ def start_game():
         # For single player game with computers (implementation can be added)
         num_players = int(request.form['numPlayers'])
         deck = create_all_cards(num_players)
-        cards = generate_cards_for_players(deck, num_players)
-        players = [player_name]
-        hands = {player_name: cards[0]}
+        hands = generate_cards_for_players(deck, num_players)
+        new_player = Player(player_name, hands[0], False)
+        players = [new_player]
         for i in range(1, num_players):
-            players.append(f'Computer {i}')
-            hands[f'Computer {i}':cards[i]]
+            players.append(Player(f'Player {i}', hands[i], True))
         rooms[room_code] = {
             'players': players,
             'hands': hands,
             'num_players': num_players,
-            'current_turn': player_name,
+            'current_turn': new_player,
             'game_started': True,
             'first_game': True
         }
