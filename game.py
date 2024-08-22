@@ -1,58 +1,73 @@
 import random
 from helper import *
 
-# Create a deck
-def create_all_cards(num_of_players=8):
-    deck = []
+class Game:
+    def __init__(self, num_players):
+        self.num_players = num_players
+        self.deck = self.create_all_cards(num_players)
+        self.hands = self.generate_cards_for_players()
+        self.players = []
+        self.current_turn = None
+        self.current_round_cards = []
+        self.first_game = True
 
-    if num_of_players==4:
-        max_card_rank = 10
-    elif num_of_players==5:
-        max_card_rank = 11
-    else:
-        max_card_rank = 12
-
-    # Add two Jester cards into the deck
-    for i in range(2): deck.append(Card(0))
-    # Add all other cards into the deck 
-    for card_rank in range(1, max_card_rank + 1):
-        for card_number in range(card_rank):
-            deck.append(Card(card_rank))
-    
-    return deck
-
-# Shuffle a deck of cards
-def shuffle(deck):
-    random.shuffle(deck)
-    return deck
-
-# Convert a list of cards to a dict
-def list_to_dict(cards):
-    dict = {}
-    for card in cards: 
-        if card in dict:
-            dict[card]+=1
+    def create_all_cards(self):
+        deck = []
+        if self.num_players == 4:
+            max_card_rank = 10
+        elif self.num_players == 5:
+            max_card_rank = 11
         else:
-            dict[card] = 1
-    return dict
+            max_card_rank = 12 
+        
+        for i in range(2): 
+            deck.append(Card(0))  # Jester cards
+        for rank in range(1, max_card_rank + 1):
+            deck.extend([Card(rank) for _ in range(rank)])
+        return deck
 
-# Convert a dict of cards to a list
-def dict_to_list(dict):
-    cards = []
-    for key, value in dict.items():
-        for num_of_cards in range(value):
-            cards.append(key)
-    return cards
+    def shuffle_deck(self):
+        random.shuffle(self.deck)
 
-# Generate list of cards for players
-def generate_cards_for_players(deck, num_of_players=8):
-    hands = []
-    card_num_per_player = len(deck) // num_of_players
-    deck = shuffle(deck)
-    for player_number in range(num_of_players):
-        hands.append(deck[card_num_per_player * player_number: card_num_per_player * player_number + card_num_per_player])
-    
-    # Now append the remaining cards
-    hands.append(deck[num_of_players * card_num_per_player:])
+    def generate_cards_for_players(self):
+        self.shuffle_deck()
+        card_num_per_player = len(self.deck) // self.num_players
+        hands = [self.deck[i * card_num_per_player:(i + 1) * card_num_per_player] for i in range(self.num_players)]
+        hands.append(self.deck[card_num_per_player * self.num_players:])
+        return hands
 
-    return hands
+    def add_player(self, player_name, is_computer=False):
+        player_hand = self.hands[len(self.players)]
+        player = Player(player_name, player_hand, is_computer)
+        self.players.append(player)
+
+    def play_card(self, player_name, card_rank, quantity):
+        player = self.get_player(player_name)
+        if card_rank in player.get_dict() and player.get_dict()[card_rank] > 0:
+            player.get_dict()[card_rank] -= 1
+            self.current_round_cards.append((player, card_rank))
+            self.determine_next_player()
+            return True
+        else:
+            return False
+
+    def pass_turn(self, player_name):
+        self.determine_next_player()
+
+    def determine_next_player(self):
+        current_index = self.players.index(self.current_turn)
+        next_index = (current_index + 1) % self.num_players
+        self.current_turn = self.players[next_index]
+
+    def get_player(self, player_name):
+        for player in self.players:
+            if player.name == player_name:
+                return player
+        return None
+
+    def is_round_over(self):
+        return all(player.is_out_of_cards() for player, _ in self.current_round_cards)
+
+    def reset_round(self):
+        self.current_round_cards = []
+        self.determine_next_player()
