@@ -3,6 +3,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from flask_socketio import SocketIO, join_room, leave_room, send, emit
 from game import Game
+import random, string
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
