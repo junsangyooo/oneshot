@@ -1,29 +1,12 @@
-CARD_NAMES = ["Jester", "Dalmuti", "Archbishop", "Earl Marshal", "Baroness", "Abbess", "Knight", "Seamstress", "Mason", "Cook", "Shepherdess", "Stonecutter", "Peasant"]
-CARD_NUMBERS = [13, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-EMPTY_HAND_DICT = {i : 0 for i in range(1, 14)}
-
-class Card:
-    def __init__(self, card_rank):
-        self.rank = card_rank
-        self.name = CARD_NAMES[card_rank]
-
-    def __str__(self):
-        return(f'{self.rank}. {self.name}')
-    
-    def __repr__(self):
-        return(f'{self.rank}. {self.name}')
-
-    def get_rank(self):
-        return self.rank
-    def get_name(self):
-        return self.name
+CARD_NAMES = {1: "Dalmuti", 2:"Archbishop", 3: "Earl Marshal", 4: "Baroness", 5: "Abbess", 6: "Knight", 
+              7: "Seamstress", 8: "Mason", 9: "Cook", 10: "Shepherdess", 11: "Stonecutter", 12: "Peasant", 13: "Jester"}
 
 class Player:
     def __init__(self, name, hand, is_computer) -> None:
         self.name = name
         self.hand = hand
         self.is_copmuter = is_computer
-        self.set_dict(self.hand)
+        self.passed = False
 
     def __str__(self):
         return(self.name)
@@ -40,12 +23,18 @@ class Player:
 
     def set_hand(self, hand):
         self.hand = hand
+        self.set_dict(self.hand)
     def get_hand(self):
         return self.hand
-
-    def set_dict(self, hand):
-        self.dict = EMPTY_HAND_DICT
-        for card in hand:
-            self.dict[card.get_rank()] += 1
-    def get_dict(self):
-        return self.dict
+    
+    def play_cards(self, card, quantity):
+        if self.hand.count(card) >= quantity:
+            for _ in range(quantity):
+                self.hand.remove(card)
+    
+    def pass_round(self):
+        self.passed = True
+    def set_passed(self, passed):
+        self.passed = passed
+    def get_passed(self):
+        return self.passed

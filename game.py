@@ -9,6 +9,8 @@ class Game:
         self.players = []
         self.current_turn = None
         self.current_round_cards = []
+        self.current_round_quantity = 0
+        self.current_round_start = True
         self.first_game = True
 
     def create_all_cards(self):
@@ -21,9 +23,9 @@ class Game:
             max_card_rank = 12 
         
         for i in range(2): 
-            deck.append(Card(0))  # Jester cards
+            deck.append(13)  # Jester cards
         for rank in range(1, max_card_rank + 1):
-            deck.extend([Card(rank) for _ in range(rank)])
+            deck.extend([rank for _ in range(rank)])
         return deck
 
     def shuffle_deck(self):
@@ -43,13 +45,13 @@ class Game:
 
     def play_card(self, player_name, card_rank, quantity):
         player = self.get_player(player_name)
-        if card_rank in player.get_dict() and player.get_dict()[card_rank] > 0:
-            player.get_dict()[card_rank] -= 1
-            self.current_round_cards.append((player, card_rank))
+        if player.get_hand().count(card_rank) >= quantity:
+            player.play_cards(card_rank, quantity)
+            self.current_round_cards.append((player, card_rank, quantity))
             self.determine_next_player()
             return True
-        else:
-            return False
+        print("You don't have enough cards")
+        return False
 
     def pass_turn(self, player_name):
         self.determine_next_player()
