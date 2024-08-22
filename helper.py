@@ -31,9 +31,7 @@ class Player:
         if self.hand.count(card) >= quantity:
             for _ in range(quantity):
                 self.hand.remove(card)
-    
-    def pass_round(self):
-        self.passed = True
+                
     def set_passed(self, passed):
         self.passed = passed
     def get_passed(self):

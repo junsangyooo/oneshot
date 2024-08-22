@@ -10,7 +10,7 @@ class Game:
         self.current_turn = None
         self.current_round_cards = []
         self.current_round_quantity = 0
-        self.current_round_start = True
+        self.current_round_winner = None
         self.first_game = True
 
     def create_all_cards(self):
@@ -54,6 +54,8 @@ class Game:
         return False
 
     def pass_turn(self, player_name):
+        player = self.get_player(player_name)
+        player.set_passed(True)
         self.determine_next_player()
 
     def determine_next_player(self):
