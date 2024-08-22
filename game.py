@@ -27,14 +27,22 @@ def shuffle(deck):
     return deck
 
 # Convert a list of cards to a dict
-def list_to_dict(deck):
+def list_to_dict(cards):
     dict = {}
-    for card in deck: 
+    for card in cards: 
         if card in dict:
             dict[card]+=1
         else:
             dict[card] = 1
     return dict
+
+# Convert a dict of cards to a list
+def dict_to_list(dict):
+    cards = []
+    for key, value in dict.items():
+        for num_of_cards in range(value):
+            cards.append(key)
+    return cards
 
 # Generate list of cards for players
 def generate_cards_for_players(deck, num_of_players=8):
@@ -48,16 +56,3 @@ def generate_cards_for_players(deck, num_of_players=8):
     hands.append(deck[num_of_players * card_num_per_player:])
 
     return hands
-
-num_of_players = 8
-cards = generate_cards_for_players(num_of_players)
-players = []
-for player_num in range(num_of_players):
-    players.append(Player(f'Player {num_of_players + 1}', cards))
-
-player_names = input("Please indicates the names of players(Player1,Player2,...)").split(',')
-num_of_players = len(player_names)
-cards = generate_cards_for_players(num_of_players)
-players = []
-for player_num in range(num_of_players):
-    players.append(Player(player_names[player_num], cards))
