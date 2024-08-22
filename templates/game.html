@@ -7,7 +7,7 @@
     <title>The Great Dalmuti - Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="gameBody">
+<body class="gameBody" data-room="{{ room }}" data-player="{{ player }}">
     <div id="gameContainer">
         <!-- Player section -->
         <div id="playerSection">
@@ -33,8 +33,7 @@
         <!-- Control buttons section -->
         <div id="controlSection">
             <button class="controlButton" id="settingsButton"></button>
-            <button class="controlButton" id="passButton" onclick=""></button>
-            
+            <button class="controlButton" id="passButton"></button>
         </div>
     </div>
 

@@ -1,48 +1,48 @@
 // static/game.js
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Initial setup and socket connections here
     const socket = io();
+    const room = document.body.getAttribute('data-room');
+    const playerName = document.body.getAttribute('data-player');
 
     const playerList = document.getElementById('players');
     const handList = document.getElementById('hand');
     const board = document.getElementById('board');
 
-    // Example to add players to the player section
-    const players = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
-    players.forEach(player => {
+    // Join the room
+    socket.emit('join', { room: room, player: playerName });
+
+    // Update player list when a new player joins
+    socket.on('player_joined', function(data) {
         const li = document.createElement('li');
-        li.textContent = player;
+        li.textContent = data.player;
         playerList.appendChild(li);
     });
 
-    // Example to add cards to the player's hand
-    const handCards = ['2', '4', '5', '7', '10', '12'];
-    handCards.forEach(card => {
-        const li = document.createElement('li');
-        li.textContent = card;
-        handList.appendChild(li);
+    // Handle game start
+    socket.on('start_game', function() {
+        // Logic to start the game (deal cards, etc.)
+        alert('The game has started!');
     });
 
-    // Event listeners for the buttons
-    document.getElementById('drawCardButton').addEventListener('click', function() {
-        // Logic for drawing a card
-        alert("Draw card button clicked");
+    // Handle card play
+    socket.on('card_played', function(data) {
+        board.textContent = `${data.player} played ${data.card}`;
+        // Logic to update the board with the played card
     });
 
-    document.getElementById('emojiButton').addEventListener('click', function() {
-        // Logic for sending an emoji
-        alert("Emoji button clicked");
+    // Handle passing turn
+    socket.on('turn_passed', function(data) {
+        alert(`${data.player} has passed their turn.`);
+    });
+
+    // Event listeners for buttons
+    document.getElementById('passButton').addEventListener('click', function() {
+        socket.emit('pass_turn', { room: room, player: playerName });
     });
 
     document.getElementById('settingsButton').addEventListener('click', function() {
-        // Logic for opening settings
-        alert("Settings button clicked");
-    });
-
-    // Example socket connection for real-time updates
-    socket.on('updateBoard', function(data) {
-        // Update the board with new data
-        board.textContent = `Card played: ${data.card}`;
+        // Logic to open settings
+        alert('Settings button clicked');
     });
 });
