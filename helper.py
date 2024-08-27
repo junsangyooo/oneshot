@@ -2,9 +2,8 @@ CARD_NAMES = {1: "Dalmuti", 2:"Archbishop", 3: "Earl Marshal", 4: "Baroness", 5:
               7: "Seamstress", 8: "Mason", 9: "Cook", 10: "Shepherdess", 11: "Stonecutter", 12: "Peasant", 13: "Jester"}
 
 class Player:
-    def __init__(self, name, hand, is_computer) -> None:
+    def __init__(self, name, is_computer) -> None:
         self.name = name
-        self.hand = hand
         self.is_copmuter = is_computer
         self.passed = False
 
@@ -23,7 +22,6 @@ class Player:
 
     def set_hand(self, hand):
         self.hand = hand
-        self.set_dict(self.hand)
     def get_hand(self):
         return self.hand
     
