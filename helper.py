@@ -26,9 +26,10 @@ class Player:
         return self.hand
     
     def play_cards(self, card, quantity):
-        if self.hand.count(card) >= quantity:
-            for _ in range(quantity):
-                self.hand.remove(card)
+        if self.hand.count(card) < quantity: return False
+        for _ in range(quantity):
+            self.hand.remove(card)
+        return True
                 
     def set_passed(self, passed):
         self.passed = passed
