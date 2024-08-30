@@ -1,4 +1,5 @@
 import random
+from collections import Counter
 from helper import *
 
 class Game:
@@ -126,49 +127,93 @@ class Game:
             elif revolution == "None":
                 self.tax_collection()
         
-        new_round = True
         current_turn = 0
         placed_cards = []
         current_round_card_quantity = 0
-        new_players_list = []
+        winners = []
+        pre_card = 14
+        losers = self.players
         # Start a game
-        while(len(new_players_list) < self.num_players):
-            # each round
-            survived = self.num_players
-            while(True):
-                # If only on player survived, the round is ended
-                if survived == 1:
-                    self.deck.extend(placed_cards)
-                    new_round = True
-                    survived = self.num_players
-                    for player in self.players:
-                        player.set_passed(False)
+        # loop each round
+        while(len(winners) < self.num_players):
+            playing_players = len(losers)
+            last_played_player = losers[current_turn]
+
+            # loop each turn
+            while(playing_players > 0):
+                player = losers[current_turn]
+
+                # If the player already passed, we consider next player
+                if player.get_passed() or player.get_finished():
+                    current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
                     continue
 
-                player = self.players[current_turn]
-
-                # If the player pass, we consider next player
+                # If the player wants to pass, we consider next player
                 passed = bool(input(f"{player}: {player.get_hand()}\nDo you want to pass the current round?(True/False)"))
                 if passed:
-                    current_turn = self.pass_turn()
-                    survived -= 1
+                    player.set_passed(True)
+                    current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
+                    playing_players -= 1
                     continue
                 
                 while(True):
-                    if new_round:
-                        order = input(f"{player}: {player.get_hand()}\nChoose cards to place(card_number,quantity)").split(',')
-                        card = int(order[0])
-                        current_round_card_quantity = int(order[1])
+                    if current_round_card_quantity == 0:
+                        order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
+                        if not player.check_cards(order):
+                            print("You don't have enough cards.")
+                            continue
+                        current_round_card_quantity = len(order)
                     else:
-                        card = int(input(f"{player}: {player.get_hand()}\nChoose cards to place."))
+                        order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
+                        if len(order) is not current_round_card_quantity:
+                            print("The number of cards you want to place is not proper for this round.")
+                            continue
+                        if not player.check_cards(order):
+                            print("You don't have enough cards.")
+                            continue
+                        if self.get_card_num(order) >= pre_card:
+                            print("Your card should be smaller than the previous card.")
+                            continue
                     
-                    if player.play_cards(card, current_round_card_quantity):
-                        for _ in range(current_round_card_quantity):
-                            placed_cards.append(card)
-                        current_turn = self.determine_next_player()
-                        break
-                    print("You don't have enough cards.")
+                    player.play_cards(order)
+                    placed_cards.extend(order)
+                    pre_card = self.get_card_num(order)
+                    break
 
+                last_played_player = current_turn
+                if player.is_finished():
+                    winners.append(player)
+                    player.set_finished = True
+                    playing_players -= 1  
+                current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
+
+            self.deck.extend(placed_cards)
+            current_round_card_quantity = 0
+
+            new_losers = []
+            for player in losers:
+                if player.get_passed(): new_losers.append(player)
+
+            index = last_played_player
+            while losers[index].get_finished: index = index + 1 if index < len(losers) - 1 else 0
+            for i, player in enumerate(new_losers):
+                if player is losers[index]:
+                    current_turn = i
+                    break
+            current_turn = last_played_player
+            losers = new_losers
+            placed_cards = []
+            pre_card = 14
+            for player in new_losers:
+                player.set_passed(True)
+            
+
+
+
+    def get_card_num(self, order):
+        for card in order:
+            if card is not 13: return card
+        return 13          
 
     def play_card(self, card_rank, quantity):
         player = self.players[self.current_turn]
@@ -182,16 +227,11 @@ class Game:
         print("You don't have enough cards")
         return False
 
-    def pass_turn(self, current_turn):
-        player = self.players[current_turn]
-        player.set_passed(True)
-        return self.determine_next_player(current_turn)
-
-    def determine_next_player(self, current_turn):
-        next_turn = (current_turn + 1) % self.num_players
+    def determine_next_player(self, current_turn, losers):
+        next_turn = (current_turn + 1) % losers
         while(self.players[next_turn].get_passed()):
             if next_turn == current_turn: return current_turn
-            next_turn = (current_turn + 1) % self.num_players
+            next_turn = (current_turn + 1) % losers
         return next_turn
 
     def get_player(self, player_name):
