@@ -114,6 +114,11 @@ class Game:
     def greater_revolution(self):
         self.players.reverse()
 
+    def get_card_num(self, order):
+        for card in order:
+            if card is not 13: return card
+        return 13
+
     def start_game(self):
         # Assign hands to each player
         self.generate_cards_for_players()
@@ -206,36 +211,5 @@ class Game:
             pre_card = 14
             for player in new_losers:
                 player.set_passed(True)
-            
 
-
-
-    def get_card_num(self, order):
-        for card in order:
-            if card is not 13: return card
-        return 13          
-
-    def play_card(self, card_rank, quantity):
-        player = self.players[self.current_turn]
-        if player.get_hand().count(card_rank) >= quantity:
-            player.play_cards(card_rank, quantity)
-            for _ in range(quantity):
-                self.current_round_cards.append(card_rank)
-            # self.current_round_cards.append((player, card_rank, quantity))
-            self.determine_next_player()
-            return True
-        print("You don't have enough cards")
-        return False
-
-    def determine_next_player(self, current_turn, losers):
-        next_turn = (current_turn + 1) % losers
-        while(self.players[next_turn].get_passed()):
-            if next_turn == current_turn: return current_turn
-            next_turn = (current_turn + 1) % losers
-        return next_turn
-
-    def get_player(self, player_name):
-        for player in self.players:
-            if player.name == player_name:
-                return player
-        return None
+        self.players = winners
