@@ -1,11 +1,18 @@
 import random
-from collections import Counter
 from player import *
+
+# Game:
+#   - num_players
+#   - deck
+#   - players
+#   - first_game
+#   - 
+
 
 class Game:
     def __init__(self, num_players):
         self.num_players = num_players
-        self.deck = self.create_all_cards(num_players)
+        self.deck = self.create_all_cards()
         self.players = []
         self.first_game = True
 
@@ -14,11 +21,10 @@ class Game:
     def draw_a_card(self):
         card = self.deck.pop()
         return card
-    def put_card_to_deck(self, card, card_list = None):
-        if card_list is None:
-            self.deck.add(card)
-        else:
-            self.deck.extend(card_list)
+    def put_a_card_to_deck(self, card):
+        self.deck.append(card)
+    def put_cards_to_deck(self, card_list):
+        self.deck.extend(card_list)
 
     def set_initial_ranks(self):
         # Shuffle a deck
@@ -38,7 +44,7 @@ class Game:
         self.players = [player for player, _ in player_card_pairs]
 
         # Put the initial_draw back to the deck
-        self.put_card_to_deck(initial_draw)
+        self.put_a_card_to_deck(initial_draw)
 
     def create_all_cards(self):
         deck = []
@@ -119,6 +125,65 @@ class Game:
             if card is not 13: return card
         return 13
 
+    def computer_play(self, player, pre_card, quantity):
+        hand = player.get_hand()
+        # Consider the hand which doesn't contain jester cards
+        jester_num = hand.count(13)
+        hand_wo_jester = hand
+        for _ in range(jester_num): hand_wo_jester.remove(13)
+        
+        # If the hand contains only jester cards
+        if jester_num is len(hand):
+            # If it is the first turn on the round
+            if quantity is 0:
+                return hand
+            else: return None
+
+        # If the hand contains duplicates of only one card except jester
+        if len(hand_wo_jester) is hand_wo_jester.count(hand_wo_jester[0]):
+            # If it is the first turn on the round
+            if quantity is 0:
+                return hand
+            # If the card in hand is lower than previous card
+            if hand_wo_jester[0] < pre_card:
+                # If there are alreay enough cards
+                if len(hand_wo_jester) >= quantity:
+                    return [hand_wo_jester[0]] * quantity
+                # Else if # of card + # of jester staisfies the quantity
+                elif len(hand_wo_jester) + jester_num >= quantity:
+                    while len(hand_wo_jester) < quantity: hand_wo_jester.append(13)
+                    return hand_wo_jester
+            # Else, there are no cards to be placed
+            return None
+        
+        # If it is the first turn on the round
+        if quantity is 0:
+            max_card = max(hand_wo_jester)
+            return [max_card] * hand.count(max_card)
+        
+        # Now we can assure there is a previous card and multiple different cards are in the hand
+        # We only consider the cards where their quantity + jester_num >= quantity
+        for card in range(12, 0, -1):
+            # If the card is lower than the previous card and it is in the hand
+            if card < pre_card and card in hand:
+                # If there are alreay enough cards
+                if hand.count(hand) >= quantity:
+                    return [card] * quantity
+                # Else if # of card + # of jester staisfies the quantity
+                elif hand.count(card) + jester_num >= quantity:
+                    return [card] * hand.count(hand) + [13] * (quantity - hand.count(card))
+        
+        # If nothing returned yet, we know there is no valid card to play
+        return None
+                    
+
+        
+        if pre_card is 14 and hand.count(13) is len(hand):
+            return hand
+        for card in range(12, 0, -1):
+            if card in hand and card < pre_card:
+                return [card] * hand.count(card)
+    
     def start_game(self):
         # Assign hands to each player
         self.generate_cards_for_players()
@@ -144,55 +209,78 @@ class Game:
             playing_players = len(losers)
             last_played_player = losers[current_turn]
 
+            print(losers)
+
             # loop each turn
             while(playing_players > 0):
                 player = losers[current_turn]
+                order = []
 
                 # If the player already passed, we consider next player
                 if player.get_passed() or player.get_finished():
                     current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
                     continue
 
-                # If the player wants to pass, we consider next player
-                passed = bool(input(f"{player}: {player.get_hand()}\nDo you want to pass the current round?(True/False)"))
-                if passed:
-                    player.set_passed(True)
-                    current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
-                    playing_players -= 1
-                    continue
-                
-                while(True):
-                    if current_round_card_quantity == 0:
-                        order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
-                        if not player.check_cards(order):
-                            print("You don't have enough cards.")
-                            continue
-                        current_round_card_quantity = len(order)
-                    else:
-                        order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
-                        if len(order) is not current_round_card_quantity:
-                            print("The number of cards you want to place is not proper for this round.")
-                            continue
-                        if not player.check_cards(order):
-                            print("You don't have enough cards.")
-                            continue
-                        if self.get_card_num(order) >= pre_card:
-                            print("Your card should be smaller than the previous card.")
-                            continue
-                    
-                    player.play_cards(order)
-                    placed_cards.extend(order)
-                    pre_card = self.get_card_num(order)
-                    break
+                if current_round_card_quantity is not 0:
+                    print(f"Previous card: {pre_card}")
 
+                # If the player is a computer
+                if player.is_computer():
+                    order = self.computer_play(player, pre_card, current_round_card_quantity)
+
+                    # if the order is empty, it means the computer passed the turn
+                    if not order:
+                        player.set_passed(True)
+                        current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
+                        playing_players -= 1
+                        print(f"{player} passed.")
+                        continue
+                # Now we know the player is not a computer
+                else:
+                    # If the player wants to pass, we consider next player
+                    passed = bool(input(f"{player}: {player.get_hand()}\nDo you want to pass the current round?(True/False)"))
+                    if passed:
+                        player.set_passed(True)
+                        current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
+                        playing_players -= 1
+                        print(f"{player} passed.")
+                        continue
+                    
+                    # Now ask player for the cards to place
+                    while(True):
+                        if current_round_card_quantity == 0:
+                            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
+                            if not player.check_cards(order):
+                                print("You don't have enough cards.")
+                                continue
+                            current_round_card_quantity = len(order)
+                        else:
+                            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
+                            if len(order) is not current_round_card_quantity:
+                                print("The number of cards you want to place is not proper for this round.")
+                                continue
+                            if not player.check_cards(order):
+                                print("You don't have enough cards.")
+                                continue
+                            if self.get_card_num(order) >= pre_card:
+                                print("Your card should be smaller than the previous card.")
+                                continue
+                        break
+                
+                # We know the order is valid so place the order
+                player.play_cards(order)
+                placed_cards.extend(order)
+                pre_card = self.get_card_num(order)
                 last_played_player = current_turn
+
+                # If the player finished the hand
                 if player.is_finished():
                     winners.append(player)
                     player.set_finished = True
                     playing_players -= 1  
                 current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
 
-            self.deck.extend(placed_cards)
+            self.put_cards_to_deck(placed_cards)
             current_round_card_quantity = 0
 
             new_losers = []
@@ -213,3 +301,11 @@ class Game:
                 player.set_passed(True)
 
         self.players = winners
+        print(f"New player rank is: {self.players}")
+
+
+game = Game(4)
+game.add_player("Jun")
+game.add_player("Computer 1", True)
+game.add_player("Computer 4", True)
+game.add_player("Computer 3", True)
