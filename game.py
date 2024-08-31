@@ -1,6 +1,6 @@
 import random
 from collections import Counter
-from helper import *
+from player import *
 
 class Game:
     def __init__(self, num_players):
