@@ -44,7 +44,9 @@ class Game:
         self.players = [player for player, _ in player_card_pairs]
 
         # Put the initial_draw back to the deck
-        self.put_a_card_to_deck(initial_draw)
+        self.put_cards_to_deck(initial_draw)
+
+        print(f"New rank: {self.players}")
 
     def create_all_cards(self):
         deck = []
@@ -72,7 +74,9 @@ class Game:
         player = Player(player_name, is_computer)
         self.players.append(player)
         if len(self.players) == self.num_players:
+            print(f"All players joined the game. Now we set the initial ranks.")
             self.set_initial_ranks()
+            print(f"Now we start a game.")
             self.start_game()
 
     def pay_tax(self, player, number):
@@ -184,6 +188,26 @@ class Game:
             if card in hand and card < pre_card:
                 return [card] * hand.count(card)
     
+    def determine_next_player(self, players, current_turn, new_round = False):
+        num_players = len(players)
+        if new_round:
+            for _ in range(num_players):
+                if players[current_turn].get_finished():
+                    current_turn = (current_turn + 1) % num_players
+                else: break
+            return current_turn
+        for _ in range(num_players):
+            if players[current_turn].get_finished() or players[current_turn].get_passed():
+                current_turn = (current_turn + 1) % num_players
+            else: break
+        return current_turn
+        
+    def set_new_losers(self, losers):
+        for player in losers:
+            if player.get_finished():
+                losers.remove(player)
+        return losers
+    
     def start_game(self):
         # Assign hands to each player
         self.generate_cards_for_players()
@@ -206,20 +230,13 @@ class Game:
         # Start a game
         # loop each round
         while(len(winners) < self.num_players):
-            playing_players = len(losers)
-            last_played_player = losers[current_turn]
-
+            print(f"New round started.")
             print(losers)
-
+            last_played_player = current_turn
             # loop each turn
-            while(playing_players > 0):
+            while(True):
                 player = losers[current_turn]
                 order = []
-
-                # If the player already passed, we consider next player
-                if player.get_passed() or player.get_finished():
-                    current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
-                    continue
 
                 if current_round_card_quantity is not 0:
                     print(f"Previous card: {pre_card}")
@@ -227,46 +244,47 @@ class Game:
                 # If the player is a computer
                 if player.is_computer():
                     order = self.computer_play(player, pre_card, current_round_card_quantity)
-
-                    # if the order is empty, it means the computer passed the turn
-                    if not order:
-                        player.set_passed(True)
-                        current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
-                        playing_players -= 1
-                        print(f"{player} passed.")
-                        continue
                 # Now we know the player is not a computer
                 else:
                     # If the player wants to pass, we consider next player
                     passed = bool(input(f"{player}: {player.get_hand()}\nDo you want to pass the current round?(True/False)"))
-                    if passed:
-                        player.set_passed(True)
-                        current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
-                        playing_players -= 1
-                        print(f"{player} passed.")
-                        continue
-                    
-                    # Now ask player for the cards to place
-                    while(True):
-                        if current_round_card_quantity == 0:
-                            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
-                            if not player.check_cards(order):
-                                print("You don't have enough cards.")
-                                continue
-                            current_round_card_quantity = len(order)
-                        else:
-                            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
-                            if len(order) is not current_round_card_quantity:
-                                print("The number of cards you want to place is not proper for this round.")
-                                continue
-                            if not player.check_cards(order):
-                                print("You don't have enough cards.")
-                                continue
-                            if self.get_card_num(order) >= pre_card:
-                                print("Your card should be smaller than the previous card.")
-                                continue
-                        break
+                    if not passed:
+                        # Now ask player for the cards to place
+                        while(True):
+                            if current_round_card_quantity == 0:
+                                order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
+                                if not player.check_cards(order):
+                                    print("You don't have enough cards.")
+                                    continue
+                                current_round_card_quantity = len(order)
+                            else:
+                                order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
+                                if len(order) is not current_round_card_quantity:
+                                    print("The number of cards you want to place is not proper for this round.")
+                                    continue
+                                if not player.check_cards(order):
+                                    print("You don't have enough cards.")
+                                    continue
+                                if self.get_card_num(order) >= pre_card:
+                                    print("Your card should be smaller than the previous card.")
+                                    continue
+                            break
                 
+                # if the order is empty, it means the computer passed the turn
+                if not order:
+                    player.set_passed(True)
+                    next_turn = self.determine_next_player(losers, current_turn)
+                    print(f"{player} passed.")
+                    # This case is when the lsat played player is finished and all other player cannot play more
+                    if next_turn is current_turn:
+                        next_player = losers[self.determine_next_player(losers, last_played_player, True)]
+                        losers = self.set_new_losers(losers)
+                        for i, player in enumerate(losers):
+                            if player is next_player:
+                                current_turn = i
+                                break
+                    break
+                        
                 # We know the order is valid so place the order
                 player.play_cards(order)
                 placed_cards.extend(order)
@@ -276,29 +294,26 @@ class Game:
                 # If the player finished the hand
                 if player.is_finished():
                     winners.append(player)
-                    player.set_finished = True
-                    playing_players -= 1  
-                current_turn = 0 if current_turn is len(losers) - 1 else current_turn + 1
+                    player.set_finished(True)
+                next_turn = self.determine_next_player(losers, current_turn)
+                if next_turn is current_turn:
+                    if player.get_finished():
+                        next_player = losers[self.determine_next_player(losers, current_turn, True)]
+                        losers = self.set_new_losers(losers)
+                        for i, player in enumerate(losers):
+                            if player is next_player:
+                                current_turn = i
+                                break
+                        break
+                    break
+                        
 
             self.put_cards_to_deck(placed_cards)
             current_round_card_quantity = 0
-
-            new_losers = []
-            for player in losers:
-                if player.get_passed(): new_losers.append(player)
-
-            index = last_played_player
-            while losers[index].get_finished: index = index + 1 if index < len(losers) - 1 else 0
-            for i, player in enumerate(new_losers):
-                if player is losers[index]:
-                    current_turn = i
-                    break
-            current_turn = last_played_player
-            losers = new_losers
             placed_cards = []
             pre_card = 14
-            for player in new_losers:
-                player.set_passed(True)
+            for player in losers:
+                player.set_passed(False)
 
         self.players = winners
         print(f"New player rank is: {self.players}")
