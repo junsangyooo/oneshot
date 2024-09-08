@@ -161,7 +161,8 @@ class Game:
         return 13
 
     def determine_next_player(self):
-        if not self.players[self.last_player_index].get_finished():
+        last_player = self.players[self.last_player_index]
+        if not last_player.get_finished():
             self.current_player_index = self.last_player_index
             return
         index = (self.last_player_index + 1) % self.num_players
@@ -169,6 +170,8 @@ class Game:
             if not self.players[index].get_finished():
                 self.current_player_index = index
                 return
+            index = (index + 1) % self.num_players
+            
 
     def computer_play(self):
         player = self.players[self.current_player_index]
@@ -218,12 +221,21 @@ class Game:
             if passed: return []
             order = [int(card) for card in input(f"{player}: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}\nChoose cards to place.(card,card,card,...)\n").split(',')]
 
-        if self.round_quantity != 0 and len(order) != self.round_quantity and self.get_card_num(order) >= self.previous_card:
+        if self.round_quantity != 0 and len(order) != self.round_quantity:
+            return self.get_cards_to_play()
+        elif  self.get_card_num(order) >= self.previous_card:
             return self.get_cards_to_play()
         if player.check_cards(order):
             return order
         return self.get_cards_to_play()
 
+    def only_player(self):
+        for player in self.players:
+            if player.get_passed() or player.get_finished():
+                continue
+            else: break
+        return player
+    
     def run_a_round(self):
         winners = []
         print("New round started.")
@@ -232,11 +244,12 @@ class Game:
         while(True):
             # Set the base case of the round
             if self.all_passed(): break
+            if self.previous_card != 14 and self.round_quantity > 0 and self.last_player_index == self.current_player_index: break
             player = self.players[self.current_player_index]
             if player.get_passed() or player.get_finished():
                 self.current_player_index = (self.current_player_index + 1) % self.num_players
                 continue
-            
+            print(f"{player}'s hand: {player.get_hand()}")
             # Now we know the player is playing the game
             order = []
             # If the player is computer
@@ -250,6 +263,7 @@ class Game:
             if order == []:
                 player.set_passed(True)
                 self.current_player_index = (self.current_player_index + 1) % self.num_players
+                print(f"{player} passed.")
                 continue
             
             # Now this means player placed the cards and it's valid
@@ -265,6 +279,7 @@ class Game:
             if player.is_finished():
                 player.set_finished(True)
                 winners.append(player)
+                print(f"{player} finished the game.")
 
         return winners
     
@@ -305,7 +320,7 @@ class Game:
         # Start a game
         # loop each round
         winners = []
-        while(len(winners) < self.num_players):
+        while(True):
             # Run a round and get the winners from the round
             new_winners = self.run_a_round()
             winners.extend(new_winners)
@@ -318,11 +333,25 @@ class Game:
             self.placed_cards = []
             self.round_quantity = 0
             self.previous_card = 14
+            for player in self.players:
+                player.set_passed(False)
+            
+            if len(winners) == self.num_players:
+                break
+            if len(winners) == self.num_players - 1:
+                winners.append(self.only_player())
+                break
+            
 
         self.players = winners
         self.current_player_index = 0
         self.last_player_index = 0
+        for player in self.players:
+            player.set_passed(False)
+            player.set_finished(False)
         print(f"New player rank is: {self.players}")
+
+        self.after_game_ended()
     
     def after_game_ended(self):
         new_game = False
