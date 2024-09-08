@@ -195,8 +195,8 @@ class Game:
                     return [card] * num_card + [13] * (self.round_quantity - num_card)
         return []
         
-    def all_passed(self, players=self.players):
-        for player in players:
+    def all_passed(self):
+        for player in self.players:
             if not player.get_passed() and not player.get_finished():
                 return False
         return True
