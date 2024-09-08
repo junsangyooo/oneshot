@@ -29,6 +29,9 @@ class Game:
         return card
     def put_cards_to_deck(self, card_list):
         self.deck.extend(card_list)
+    def string_to_bool(self, str):
+        if str == "True": return True
+        else: return False
 
     def set_initial_ranks(self):
         # Shuffle a deck
@@ -103,7 +106,7 @@ class Game:
                             return "Greater Revolution"
                         return "Revolution"
                     return None
-                if bool(input("Do you want to start a revolution?(True/False)\n")):
+                if self.string_to_bool(input("Do you want to start a revolution?(True/False)\n")):
                     if i == self.num_players - 1:
                         return "Greater Revolution"
                     else:
@@ -113,7 +116,7 @@ class Game:
 
     def greater_revolution(self):
         self.players.reverse()
-
+    
     def refund_tax(self, player, number):
         hand = player.get_hand()
         refund = []
@@ -197,8 +200,11 @@ class Game:
         
     def all_passed(self):
         for player in self.players:
-            if not player.get_passed() and not player.get_finished():
-                return False
+            if player.get_passed():
+                continue
+            if player.get_finished():
+                continue
+            return False
         return True
 
     def get_cards_to_play(self):
@@ -208,7 +214,7 @@ class Game:
             order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)\n").split(',')]
         else:
             # Check whether the player wants to plass
-            passed = bool(input(f"{player}, do you want a pass?(True/False)\nYour hand: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}\n"))
+            passed = self.string_to_bool(input(f"{player}, do you want a pass?(True/False)\nYour hand: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}\n"))
             if passed: return []
             order = [int(card) for card in input(f"{player}: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}\nChoose cards to place.(card,card,card,...)\n").split(',')]
 
@@ -241,12 +247,13 @@ class Game:
                 order = self.get_cards_to_play()
 
             # If order is None, pass the turn
-            if order is None:
+            if order == []:
                 player.set_passed(True)
                 self.current_player_index = (self.current_player_index + 1) % self.num_players
                 continue
             
             # Now this means player placed the cards and it's valid
+            print(f"{player} played {order}")
             player.play_cards(order)
             self.last_player_index = self.current_player_index
             self.placed_cards.extend(order)
@@ -265,9 +272,6 @@ class Game:
         # Assign hands to each player
         self.generate_cards_for_players()
 
-        self.print_player_hands()
-        self.print_deck()
-
         # If there are leftover cards
         player_index = 0
         while self.deck:
@@ -277,13 +281,12 @@ class Game:
                 hand = player.get_hand()
                 hand.append(card)
                 player.set_hand(hand)
-            elif bool(input(f"{player}, do you want a draw a card?(True/False)\n")):
+            elif self.string_to_bool(input(f"{player}, do you want a draw a card?(True/False)\nYour hand: {player.get_hand()}\n")):
                 card = self.draw_a_card()
                 hand = player.get_hand()
                 hand.append(card)
                 player.set_hand(hand)
             player_index = (player_index + 1) % self.num_players
-        self.print_player_hands()
 
         # Revolution
         revolution = self.check_revolution()
@@ -325,7 +328,7 @@ class Game:
         new_game = False
         for player in self.players:
             if not player.get_is_computer():
-                play_again = bool(input(f"Do you want to play again?(True/False)\n"))
+                play_again = self.string_to_bool(input(f"Do you want to play again?(True/False)\n"))
                 if play_again:
                     new_game = True
                     continue
