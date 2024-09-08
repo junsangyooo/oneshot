@@ -4,9 +4,9 @@ CARD_NAMES = {1: "Dalmuti", 2:"Archbishop", 3: "Earl Marshal", 4: "Baroness", 5:
               7: "Seamstress", 8: "Mason", 9: "Cook", 10: "Shepherdess", 11: "Stonecutter", 12: "Peasant", 13: "Jester"}
 
 class Player:
-    def __init__(self, name, is_computer) -> None:
+    def __init__(self, name, is_computer = False) -> None:
         self.name = name
-        self.is_copmuter = is_computer
+        self.is_computer = is_computer
         self.passed = False
         self.finished = False
 
@@ -15,7 +15,7 @@ class Player:
     def __repr__(self):
         return(self.name)
 
-    def is_computer(self):
+    def get_is_computer(self):
         return self.is_computer
     
     def set_player_rank(self, num):

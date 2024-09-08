@@ -179,14 +179,6 @@ class Game:
         
         # If nothing returned yet, we know there is no valid card to play
         return None
-                    
-
-        
-        if pre_card is 14 and hand.count(13) is len(hand):
-            return hand
-        for card in range(12, 0, -1):
-            if card in hand and card < pre_card:
-                return [card] * hand.count(card)
     
     def determine_next_player(self, players, current_turn, new_round = False):
         num_players = len(players)
@@ -242,7 +234,7 @@ class Game:
                     print(f"Previous card: {pre_card}")
 
                 # If the player is a computer
-                if player.is_computer():
+                if player.get_is_computer():
                     order = self.computer_play(player, pre_card, current_round_card_quantity)
                 # Now we know the player is not a computer
                 else:
