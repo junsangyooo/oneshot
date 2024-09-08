@@ -9,12 +9,15 @@ class Player:
         self.is_computer = is_computer
         self.passed = False
         self.finished = False
+        self.hand = []
 
     def __str__(self):
         return(self.name)
     def __repr__(self):
         return(self.name)
 
+    def set_is_computer(self, is_computer):
+        self.is_computer = is_computer
     def get_is_computer(self):
         return self.is_computer
     

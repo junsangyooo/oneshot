@@ -47,6 +47,7 @@ class Game:
         self.put_cards_to_deck(initial_draw)
 
         print(f"New rank: {self.players}")
+        print(f"Lengh of deck: {len(self.deck)}\nThe deck: {self.deck}")
 
     def create_all_cards(self):
         deck = []
@@ -63,6 +64,15 @@ class Game:
             deck.extend([rank for _ in range(rank)])
         return deck
 
+    def print_player_hands(self):
+        for player in self.players:
+            hand = player.get_hand()
+            hand.sort()
+            print(f"{player}'s hand: {hand}")
+    
+    def print_deck(self):
+        print(self.deck)
+
     def generate_cards_for_players(self):
         self.shuffle_deck()
         card_num_per_player = len(self.deck) // self.num_players
@@ -78,17 +88,17 @@ class Game:
             self.set_initial_ranks()
             print(f"Now we start a game.")
             self.start_game()
-
-    def pay_tax(self, player, number):
-        hand = player.get_hand()
-        hand.sort(reverse=True)
-        tax = [hand.pop() for _ in range(number)]
-        player.set_hand(hand)
-        return tax
-        
+          
     def check_revolution(self):
         for i, player in enumerate(self.players):
-            if player.get_hand().count(13) == 2:
+            hand = player.get_hand()
+            if hand.count(13) == 2:
+                if player.get_is_computer():
+                    if i > 1:
+                        if i == self.num_players - 1:
+                            return "Greater Revolution"
+                        return "Revolution"
+                    return None
                 if bool(input("Do you want to start a revolution?(True/False)")):
                     if i == self.num_players - 1:
                         return "Greater Revolution"
@@ -97,37 +107,65 @@ class Game:
                 return "None"
         return "None"
 
-    def tax_collection(self):
-        # First, collect tax from the last player
-        collector = self.players[0]
-        payer = self.players[-1]
-        tax = self.pay_tax(payer, 2)
-        new_hand = collector.get_hand().extend(tax)
-        refund = []
-        for _ in range(2):
-            card = int(input(f"Which card do you want to give to {payer}?\n{new_hand}"))
-            new_hand.remove(card)
-            refund.append(card)
-        collector.set_hand(new_hand)
-        payer.set_hand(payer.get_hand().extend(refund))
-
-        # collect tax from the second_to_last player
-        collector = self.players[1]
-        payer = self.players[-2]
-        tax = self.pay_tax(payer, 1)
-        new_hand = collector.get_hand().extend(tax)
-        refund = int(input(f"Which card do you want to give to {payer}?\n{new_hand}"))
-        new_hand.remove(refund)
-        collector.set_hand(new_hand)
-        payer.set_hand(payer.get_hand().append(refund))
-
     def greater_revolution(self):
         self.players.reverse()
+
+    def refund_tax(self, player, number):
+        hand = player.get_hand()
+        refund = []
+        if player.get_is_computer():
+            hand.sort()
+            jester_num = hand.count(13)
+            for _ in range(jester_num):
+                hand.remove(13)
+            refund = [hand.pop() for _ in range(number)]
+            for _ in range(jester_num):
+                hand.append(13)
+        else:
+            while len(refund) < number:
+                card = int(input(f"Which card do you want to give to a payer?\n{hand}"))
+                if card in hand:
+                    hand.remove(card)
+                    refund.append(card)
+                else:
+                    print("The card is not in your hand.")
+        player.set_hand(hand)
+        return refund    
+    
+    def tax_collection(self, collector, payer, number):
+        collector_hand = collector.get_hand()
+        payer_hand = payer.get_hand()
+
+        # Get the tax
+        payer_hand.sort(reverse=True)
+        tax = [payer_hand.pop() for _ in range(number)]
+        # Add the tax to the collector's hand
+        collector_hand.extend(tax)
+        collector.set_hand(collector_hand)
+        # Get the refund
+        refund = self.refund_tax(collector, number)
+        # Add the refund to the payer's hand
+        payer_hand.extend(refund)
+        payer.set_hand(payer_hand)
 
     def get_card_num(self, order):
         for card in order:
             if card is not 13: return card
         return 13
+
+    def determine_next_player(self, players, current_turn, new_round = False):
+        num_players = len(players)
+        if new_round:
+            for _ in range(num_players):
+                if players[current_turn].get_finished():
+                    current_turn = (current_turn + 1) % num_players
+                else: break
+            return current_turn
+        for _ in range(num_players):
+            if players[current_turn].get_finished() or players[current_turn].get_passed():
+                current_turn = (current_turn + 1) % num_players
+            else: break
+        return current_turn
 
     def computer_play(self, player, pre_card, quantity):
         hand = player.get_hand()
@@ -179,20 +217,6 @@ class Game:
         
         # If nothing returned yet, we know there is no valid card to play
         return None
-    
-    def determine_next_player(self, players, current_turn, new_round = False):
-        num_players = len(players)
-        if new_round:
-            for _ in range(num_players):
-                if players[current_turn].get_finished():
-                    current_turn = (current_turn + 1) % num_players
-                else: break
-            return current_turn
-        for _ in range(num_players):
-            if players[current_turn].get_finished() or players[current_turn].get_passed():
-                current_turn = (current_turn + 1) % num_players
-            else: break
-        return current_turn
         
     def set_new_losers(self, losers):
         for player in losers:
@@ -204,14 +228,41 @@ class Game:
         # Assign hands to each player
         self.generate_cards_for_players()
 
+        self.print_player_hands()
+        self.print_deck()
+
+        # If there are leftover cards
+        player_index = 0
+        while self.deck:
+            player = self.players[player_index]
+            if player.get_is_computer():
+                card = self.draw_a_card()
+                hand = player.get_hand()
+                hand.append(card)
+                player.set_hand(hand)
+            elif bool(input(f"{player}, do you want a draw a card?(True/False)")):
+                card = self.draw_a_card()
+                hand = player.get_hand()
+                hand.append(card)
+                player.set_hand(hand)
+            player_index = (player_index + 1) % self.num_players
+        self.print_player_hands()
+
+        # Revolution
+        revolution = self.check_revolution()
+        if revolution == "Greater Revolution":
+            self.greater_revolution()
+
         # Collect taxes
-        if not self.first_game:
-            revolution = self.check_revolution()
-            if revolution == "Greater Revolution":
-                self.greater_revolution()
-                self.tax_collection()
-            elif revolution == "None":
-                self.tax_collection()
+        if not self.first_game and revolution != "Revolution":
+            self.tax_collection(self.players[0], self.players[-1], 2)
+            self.tax_collection(self.players[1], self.players[-2], 1)
+            
+        self.print_player_hands()
+
+        self.first_game = False
+
+        return
         
         current_turn = 0
         placed_cards = []
