@@ -103,7 +103,7 @@ class Game:
                             return "Greater Revolution"
                         return "Revolution"
                     return None
-                if bool(input("Do you want to start a revolution?(True/False)")):
+                if bool(input("Do you want to start a revolution?(True/False)\n")):
                     if i == self.num_players - 1:
                         return "Greater Revolution"
                     else:
@@ -127,7 +127,7 @@ class Game:
                 hand.append(13)
         else:
             while len(refund) < number:
-                card = int(input(f"Which card do you want to give to a payer?\n{hand}"))
+                card = int(input(f"Which card do you want to give to a payer?\nYour hand: {hand}\n"))
                 if card in hand:
                     hand.remove(card)
                     refund.append(card)
@@ -154,7 +154,7 @@ class Game:
 
     def get_card_num(self, order):
         for card in order:
-            if card is not 13: return card
+            if card != 13: return card
         return 13
 
     def determine_next_player(self):
@@ -175,7 +175,7 @@ class Game:
         jester_num = hand.count(13)
         if jester_num is len(hand):
             # If it is the first turn on the round
-            if self.round_quantity is 0:
+            if self.round_quantity == 0:
                 return hand
             else: return []
 
@@ -184,7 +184,7 @@ class Game:
             if card not in hand:
                 continue
             # If it is the first turn on the round
-            if self.round_quantity is 0:
+            if self.round_quantity == 0:
                 return [card] * hand.count(card)
             # Check if the card is valid to play
             if card < self.previous_card:
@@ -205,12 +205,12 @@ class Game:
         player = self.players[self.current_player_index]
         order = []
         if self.round_quantity == 0:
-            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)").split(',')]
+            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nChoose cards to place.(card,card,card,...)\n").split(',')]
         else:
             # Check whether the player wants to plass
-            passed = bool(input(f"{player}, do you want a pass?(True/False)\nYour hand: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}"))
+            passed = bool(input(f"{player}, do you want a pass?(True/False)\nYour hand: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}\n"))
             if passed: return []
-            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}\nChoose cards to place.(card,card,card,...)").split(',')]
+            order = [int(card) for card in input(f"{player}: {player.get_hand()}\nPrevious card: {self.previous_card}, Quantity: {self.round_quantity}\nChoose cards to place.(card,card,card,...)\n").split(',')]
 
         if self.round_quantity != 0 and len(order) != self.round_quantity and self.get_card_num(order) >= self.previous_card:
             return self.get_cards_to_play()
@@ -277,7 +277,7 @@ class Game:
                 hand = player.get_hand()
                 hand.append(card)
                 player.set_hand(hand)
-            elif bool(input(f"{player}, do you want a draw a card?(True/False)")):
+            elif bool(input(f"{player}, do you want a draw a card?(True/False)\n")):
                 card = self.draw_a_card()
                 hand = player.get_hand()
                 hand.append(card)
@@ -325,7 +325,7 @@ class Game:
         new_game = False
         for player in self.players:
             if not player.get_is_computer():
-                play_again = bool(input(f"Do you want to play again?(True/False)"))
+                play_again = bool(input(f"Do you want to play again?(True/False)\n"))
                 if play_again:
                     new_game = True
                     continue
