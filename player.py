@@ -35,6 +35,7 @@ class Player:
         if 13 in cards:
             jester_num = cards.count(13)
             if self.hand.count(13) < jester_num: return False
+            if self.hand.count(13) == jester_num: return True
             for _ in range(jester_num):
                 cards.remove(13)
         if cards.count(cards[0]) is not len(cards): return False
