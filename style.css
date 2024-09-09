@@ -47,8 +47,10 @@ form {
   padding: 3px 0;
 }
 
-.gameBody{
-    /* background-color: 8BE753; */
+
+/* static/style.css */
+
+.gameBody {
     background-color: #1e3c6d;
     font-family: Arial, sans-serif;
     margin: 0;
@@ -69,71 +71,49 @@ form {
     box-sizing: border-box;
 }
 
-#playerSection {
-    width: 10%;
+/* Player circles */
+#playerCircles {
+    display: flex;
+    justify-content: space-around;
+    position: relative;
+    width: 100%;
     height: 100%;
-    background-color: #1e3c6d; /* Darker blue for player section */
-    padding: 10px;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    position: absolute;
-    left: 0;
-    top:0;
-    bottom:0;
 }
 
+.playerCircle {
+    width: 130px;
+    height: 130px;
+    background-color: #b0b0b0; /* Gray color for inactive players */
+    border-radius: 50%;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.playerCircle.active {
+    background-color: #ffcc00; /* Yellow color for active players */
+}
+
+#player1 { left: 5%; top: 90%; }
+#player2 { left: 5%; top: 40%; }
+#player3 { left: 30%; top: 5%; }
+#player4 { center; top: 5%; }
+#player5 { right: 30%; top: 5%; }
+#player6 { right: 5%; top: 40%; }
+#player7 { right: 5%; top: 90%; }
+
+/* Board section */
 #boardSection {
-    width: 70%;
-    height: 80%;
+    width: 60%;
+    height: 100%;
     margin: 0 auto;
-    background-color: #335a92; /* Slightly lighter blue for board */
+    background-color: #00cc44; /* Green for the board */
     border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-#handSection {
-    width: 70%;
-    margin: 0 auto;
-    background-color: #2b4d80; /* Darker blue for hand section */
-    border-radius: 10px;
-    padding: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 2%;
-}
-
-#controlSection {
-    width: 10%;
-    background-color: #2b4d80; /* Darker blue for control section */
-    padding: 10px;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    position: absolute;
-    right: 0;
-    top:0;
-    bottom:0;
-    align-items: center;
-}
-
-#players {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-#players li {
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #4475b3; /* Medium blue for player cards */
-    border-radius: 5px;
-    text-align: center;
+    border: 2px solid white;
 }
 
 #board {
@@ -142,7 +122,20 @@ form {
     display: flex;
     justify-content: center;
     align-items: center;
-    border: 2px dashed #ffffff; /* Dashed border to represent the board area */
+}
+
+/* Hand section */
+#handSection {
+    width: 80%;
+    height: 15%;
+    bottom: 0%;
+    background-color: #00aaff; /* Blue for hand section */
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
 }
 
 #hand {
@@ -162,26 +155,37 @@ form {
     cursor: pointer;
 }
 
-#settingsButton{
-    background: "assets/setting.png";
-    width: 50px;
-    height: 50px;
+/* Rank section */
+#rankSection {
+    position: absolute;
+    left: 5%;
+    bottom: 5%;
+    width: 80px;
+    height: 80px;
+    background-color: #ffff00; /* Yellow for rank */
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
 }
 
-
-#passButton{
-    background: "assets/pass.png";
-    width: 50px;
-    height: 50px;
+/* Control section (pass button) */
+#controlSection {
+    position: absolute;
+    right: 5%;
+    bottom: 5%;
 }
 
-button {
-    margin: 10px;
-    padding: 10px 20px;
-    font-size: 16px;
+#passButton {
+    background-color: #8B0000; /* Dark red for pass button */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    border: none;
     cursor: pointer;
 }
 
-button:hover {
-    background-color: #5a8bc1;
+#passButton:hover {
+    background-color: #ff0000; /* Brighter red on hover */
 }
