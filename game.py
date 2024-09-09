@@ -346,9 +346,6 @@ class Game:
         self.players = winners
         self.current_player_index = 0
         self.last_player_index = 0
-        for player in self.players:
-            player.set_passed(False)
-            player.set_finished(False)
         print(f"New player rank is: {self.players}")
 
         self.after_game_ended()
@@ -363,6 +360,8 @@ class Game:
                     continue
                 player.set_is_computer(True)
         if new_game:
+            for player in self.players:
+                player.new_game()
             self.start_game()
 
 
