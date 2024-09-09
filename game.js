@@ -2,47 +2,52 @@
 
 document.addEventListener("DOMContentLoaded", function() {
     const socket = io();
+
     const room = document.body.getAttribute('data-room');
     const playerName = document.body.getAttribute('data-player');
+    const numPlayers = document.body.getAttribute('data-num-players');
 
-    const playerList = document.getElementById('players');
-    const handList = document.getElementById('hand');
-    const board = document.getElementById('board');
+    // Activate player circles based on number of players
+    const playerCircles = document.querySelectorAll('.playerCircle');
+    activatePlayers(numPlayers);
 
-    // Join the room
-    socket.emit('join', { room: room, player: playerName });
+    function activatePlayers(numPlayers) {
+        const activationMap = {
+            4: [2, 4, 6],
+            5: [2, 3, 5, 6],
+            6: [2, 3, 4, 5, 6],
+            7: [1, 2, 3, 5, 6, 7],
+            8: [1, 2, 3, 4, 5, 6, 7]
+        };
+        const activePlayers = activationMap[numPlayers];
+        playerCircles.forEach((circle, index) => {
+            if (activePlayers.includes(index + 1)) {
+                circle.classList.add('active');
+            }
+        });
+    }
 
-    // Update player list when a new player joins
-    socket.on('player_joined', function(data) {
-        const li = document.createElement('li');
-        li.textContent = data.player;
-        playerList.appendChild(li);
-    });
-
-    // Handle game start
-    socket.on('start_game', function() {
-        // Logic to start the game (deal cards, etc.)
-        alert('The game has started!');
-    });
-
-    // Handle card play
-    socket.on('card_played', function(data) {
-        board.textContent = `${data.player} played ${data.card}`;
-        // Logic to update the board with the played card
-    });
-
-    // Handle passing turn
-    socket.on('turn_passed', function(data) {
-        alert(`${data.player} has passed their turn.`);
-    });
-
-    // Event listeners for buttons
+    // Handle pass turn
     document.getElementById('passButton').addEventListener('click', function() {
         socket.emit('pass_turn', { room: room, player: playerName });
     });
 
-    document.getElementById('settingsButton').addEventListener('click', function() {
-        // Logic to open settings
-        alert('Settings button clicked');
+    // Listen for card played updates
+    socket.on('card_played', function(data) {
+        updateBoard(data);
     });
+
+    // Listen for turn passed updates
+    socket.on('turn_passed', function(data) {
+        console.log(`${data.player} passed. Next player: ${data.next_player}`);
+    });
+
+    // Update board UI (cards played)
+    function updateBoard(data) {
+        const board = document.getElementById('board');
+        board.textContent = `${data.player} played ${data.card}`;
+        // Additional logic to render the played cards visually
+    }
+
+    // Additional UI updates based on game events...
 });
