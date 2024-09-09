@@ -1,5 +1,3 @@
-from collections import Counter
-
 CARD_NAMES = {1: "Dalmuti", 2:"Archbishop", 3: "Earl Marshal", 4: "Baroness", 5: "Abbess", 6: "Knight", 
               7: "Seamstress", 8: "Mason", 9: "Cook", 10: "Shepherdess", 11: "Stonecutter", 12: "Peasant", 13: "Jester"}
 
@@ -20,11 +18,6 @@ class Player:
         self.is_computer = is_computer
     def get_is_computer(self):
         return self.is_computer
-    
-    def set_player_rank(self, num):
-        self.player_rank = num
-    def get_player_rank(self):
-        return self.player_rank
 
     def set_hand(self, hand):
         self.hand = hand
@@ -56,7 +49,7 @@ class Player:
     def get_finished(self):
         return self.finished
     
-    def new_game(self, rank):
-        self.set_player_rank(rank)
+    def new_game(self):
         self.set_passed(False)
+        self.set_finished(False)
         self.set_hand([])
