@@ -2,7 +2,7 @@
 
 from flask import Flask, render_template, request, redirect, url_for
 from flask_socketio import SocketIO, join_room, leave_room, send, emit
-from game import Game
+from game_cli import Game
 import random, string
 
 app = Flask(__name__)
@@ -41,7 +41,6 @@ def start_game():
                 game = rooms[room_code]
                 game.add_player(player_name)
                 if len(game.players) == game.num_players:
-                    game.first_game = False
                     socketio.emit('start_game', room=room_code)
                 return redirect(url_for('game', room=room_code, player=player_name))
             else:
