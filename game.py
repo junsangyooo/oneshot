@@ -1,14 +1,6 @@
 import random
 from player import *
 
-# Game:
-#   - num_players
-#   - deck
-#   - players
-#   - first_game
-#   - 
-
-
 class Game:
     def __init__(self, num_players):
         self.num_players = num_players
@@ -363,10 +355,3 @@ class Game:
             for player in self.players:
                 player.new_game()
             self.start_game()
-
-
-game = Game(4)
-game.add_player("Jun")
-game.add_player("Computer 1", True)
-game.add_player("Computer 4", True)
-game.add_player("Computer 3", True)
