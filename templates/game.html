@@ -7,36 +7,47 @@
     <title>The Great Dalmuti - Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="gameBody" data-room="{{ room }}" data-player="{{ player }}">
+<body class="gameBody" data-num-players="{{ game.num_players }}" data-player="{{ player }}">
     <div id="gameContainer">
-        <!-- Player section -->
-        <div id="playerSection">
-            <ul id="players">
-                <!-- Dynamically populated list of players -->
-            </ul>
+        <!-- Player Sections -->
+        <div id="playerCircles">
+            <div class="playerCircle" id="player1"></div>
+            <div class="playerCircle" id="player2"></div>
+            <div class="playerCircle" id="player3"></div>
+            <div class="playerCircle" id="player4"></div>
+            <div class="playerCircle" id="player5"></div>
+            <div class="playerCircle" id="player6"></div>
+            <div class="playerCircle" id="player7"></div>
         </div>
 
-        <!-- Board section -->
+        <!-- Board Section -->
         <div id="boardSection">
             <div id="board">
-                <!-- The board where cards are played -->
+                <!-- Cards placed on the board -->
             </div>
         </div>
 
-        <!-- My Hand section -->
+        <!-- Hand Section (Player's Cards) -->
         <div id="handSection">
             <ul id="hand">
                 <!-- Dynamically populated list of player's cards -->
             </ul>
         </div>
 
+        <!-- Rank Section -->
+        <div id="rankSection">
+            <div id="rank">
+                <!-- Player rank -->
+            </div>
+        </div>
+
         <!-- Control buttons section -->
         <div id="controlSection">
-            <button class="controlButton" id="settingsButton"></button>
             <button class="controlButton" id="passButton"></button>
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
 </body>
 </html>
