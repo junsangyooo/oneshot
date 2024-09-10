@@ -51,7 +51,6 @@ form {
 /* static/style.css */
 
 .gameBody {
-    background-color: #1e3c6d;
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
@@ -72,12 +71,13 @@ form {
 }
 
 /* Player circles */
-#playerCircles {
+#boardSection {
     display: flex;
     justify-content: space-around;
     position: relative;
     width: 100%;
-    height: 100%;
+    height: 80%;
+    top: 0;
 }
 
 .playerCircle {
@@ -86,64 +86,53 @@ form {
     background-color: #b0b0b0; /* Gray color for inactive players */
     border-radius: 50%;
     position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .playerCircle.active {
     background-color: #ffcc00; /* Yellow color for active players */
 }
 
-#player1 { left: 5%; top: 90%; }
-#player2 { left: 5%; top: 40%; }
+#player1 { left: 5%; top: 70%; }
+#player2 { left: 5%; top: 30%; }
 #player3 { left: 30%; top: 5%; }
 #player4 { left: 50%; top: 5%; transform: translateX(-50%); }
 #player5 { right: 30%; top: 5%; }
-#player6 { right: 5%; top: 40%; }
-#player7 { right: 5%; top: 90%; }
-
-/* Board section */
-#boardSection {
-    width: 60%;
-    height: 100%;
-    margin: 0 auto;
-    background-color: #00cc44; /* Green for the board */
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 2px solid white;
-}
+#player6 { right: 5%; top: 30%; }
+#player7 { right: 5%; top: 70%; }
 
 #board {
-    width: 100%;
-    height: 100%;
+    width: 70%;
+    height: 70%;
+    top: 30%;
     display: flex;
     justify-content: center;
     align-items: center;
+    background-color: #00cc44;
+    border-radius: 10px;
+    position: absolute;
 }
 
-/* Hand section */
-#handSection {
-    width: 80%;
-    height: 15%;
-    bottom: 0%;
-    background-color: #00aaff; /* Blue for hand section */
-    border-radius: 10px;
-    padding: 10px;
+/* Player Control Section */
+#playerControlBody {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
+    justify-content: space-around;
+    position: relative;
+    width: 100%;
+    height: 20%;
+    bottom: 0;
+    padding: 0;
 }
 
 #hand {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    width: 70%;
+    height: 80%;
+    bottom: 10%;
+    background-color: #00aaff; /* Blue for hand section */
+    border-radius: 10px;
     display: flex;
     justify-content: center;
+    align-items: center;
+    position: absolute;
 }
 
 #hand li {
@@ -156,12 +145,12 @@ form {
 }
 
 /* Rank section */
-#rankSection {
+#rank {
     position: absolute;
-    left: 5%;
-    bottom: 5%;
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 80%;
+    bottom: 10%;
+    left: 10%;
     background-color: #ffff00; /* Yellow for rank */
     border-radius: 10px;
     display: flex;
@@ -170,18 +159,12 @@ form {
     font-size: 24px;
 }
 
-/* Control section (pass button) */
-#controlSection {
-    position: absolute;
-    right: 5%;
-    bottom: 5%;
-}
-
 #passButton {
+    position: flex;
     background-color: #8B0000; /* Dark red for pass button */
     border-radius: 50%;
-    width: 60px;
-    height: 60px;
+    width: 100px;
+    height: 100px;
     border: none;
     cursor: pointer;
 }

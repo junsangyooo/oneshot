@@ -10,7 +10,7 @@
 <body class="gameBody" data-num-players="{{ game.num_players }}" data-player="{{ player }}">
     <div id="gameContainer">
         <!-- Player Sections -->
-        <div id="playerCircles">
+        <div id="boardSection">
             <div class="playerCircle" id="player1"></div>
             <div class="playerCircle" id="player2"></div>
             <div class="playerCircle" id="player3"></div>
@@ -18,32 +18,22 @@
             <div class="playerCircle" id="player5"></div>
             <div class="playerCircle" id="player6"></div>
             <div class="playerCircle" id="player7"></div>
-        </div>
-
-        <!-- Board Section -->
-        <div id="boardSection">
+          
             <div id="board">
                 <!-- Cards placed on the board -->
             </div>
         </div>
-
-        <!-- Hand Section (Player's Cards) -->
-        <div id="handSection">
-            <ul id="hand">
-                <!-- Dynamically populated list of player's cards -->
-            </ul>
-        </div>
-
-        <!-- Rank Section -->
-        <div id="rankSection">
+        
+        <div id="playerControlBody">
             <div id="rank">
                 <!-- Player rank -->
             </div>
-        </div>
-
-        <!-- Control buttons section -->
-        <div id="controlSection">
-            <button class="controlButton" id="passButton"></button>
+          
+            <ul id="hand">
+                <!-- Dynamically populated list of player's cards -->
+            </ul>
+          
+            <button id="passButton"></button>
         </div>
     </div>
 
