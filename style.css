@@ -98,7 +98,7 @@ form {
 #player1 { left: 5%; top: 90%; }
 #player2 { left: 5%; top: 40%; }
 #player3 { left: 30%; top: 5%; }
-#player4 { center; top: 5%; }
+#player4 { left: 50%; top: 5%; transform: translateX(-50%); }
 #player5 { right: 30%; top: 5%; }
 #player6 { right: 5%; top: 40%; }
 #player7 { right: 5%; top: 90%; }
