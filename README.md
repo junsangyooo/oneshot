@@ -1,5 +1,10 @@
 # Set up Flutter
 
+## Create an Android Folder to save Flutter and Android SDK
+```bash
+# Move to Android folder
+cd Android
+```
 ## Install Basic Dependencies
 ```bash
 sudo apt update
@@ -8,47 +13,68 @@ sudo apt install -y wget git unzip zip xz-utils curl libglu1-mesa ninja-build li
 
 ## Install Flutter
 ```bash
-# Download Flutter SDK
-wget https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.10.5-stable.tar.xz
+# Download Flutter using git clone
+git clone https://github.com/flutter/flutter.git
+git clone https://github.com/flutter/flutter.git -b stable
+# Add the flutter tool to your path
+export PATH="$PATH:`pwd`/flutter/bin"
 
-# Extract and Move Flutter
-tar xf flutter_linux_3.10.5-stable.tar.xz
-sudo mv flutter /usr/local/flutter
+# Set the environment variable of flutter
+nano ~/.bashrc
+# Go to the bottom line and type
+# {
+# Flutter
+export PATH=/workplaces/{codespace-name}/Android/flutter/bin:$PATH
+# }
+# Save and exit ctrl + x
 
-# Add Flutter to PATH
-echo 'export PATH="$PATH:/usr/local/flutter/bin"' >> ~/.bashrc
-source ~/.bashrc
-
-# Verify
-flutter doctor
+# Check the installation
+flutter doctor # if it cannot found, restart the codespace and rerun
 ```
 
-## Install Android SDK
+## Resolve the 'Android toolchain' issue
 ```bash
 # Download Command-Line Tools
-wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-# Remove the current cmdline-tools/latest directory
-sudo rm -rf /usr/lib/android-sdk/cmdline-tools/latest
-# Extract and move the tools
-sudo mkdir -p /usr/lib/android-sdk/cmdline-tools
-sudo unzip commandlinetools-linux-8512546_latest.zip -d /usr/lib/android-sdk/cmdline-tools
-sudo mv /usr/lib/android-sdk/cmdline-tools/cmdline-tools /usr/lib/android-sdk/cmdline-tools/latest
-# Verify the bin directory
-ls /usr/lib/android-sdk/cmdline-tools/latest/bin
+# Go to 'https://developer.android.com/studio?hl=ko'
+# download command line tools for linux e.g. commandlinetools-linux-11076708_latest.zip
+# Upload the file to the main repo
+# unzip name.zip 
+# e.g. unzip commandlinetools-linux-11076708_latest.zip
 
-# Update the .bashrc file
-echo 'export ANDROID_HOME=/usr/lib/android-sdk' >> ~/.bashrc
-echo 'export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools' >> ~/.bashrc
-source ~/.bashrc
+# Move the cmdline-tools to Android
+mv cmdline-tools Android
 
-# Verify that sdkmanager is now found
-sdkmanager --version
+# Create a new directory, 'latest' in the cmdline-tools
+mkdir Android/cmdline-tools/latest
 
-# Change the ownership of the Android SDK directory to your user (codespace in GitHub Codespaces):
-sudo chown -R $(whoami):$(whoami) /usr/lib/android-sdk
+# Move all files and folders alreay existed in the cmdline-tools into the latest
+mv Android/cmdline-tools/* Android/cmdline-tools/latest/
+# Again, set the environment variable of flutter
+nano ~/.bashrc
+# Go to the bottom line and type below
+# {
+# Android
+export ANDROID=/workspaces/{codespace-name}/Android
+export PATH=$ANDROID/cmdline-tools:$PATH
+export PATH=$ANDROID/cmdline-tools/latest/bin:$PATH
+# Android SDK
+export ANDROID_SDK=/workspaces/{codespace-name}/Android
+export PATH=$ANDROID_SDK:$PATH
+# }
+# Save and exit ctrl + x
 
-# Verify the ownership
-ls -ld /usr/lib/android-sdk
+# Install sdkmanager
+/workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager --install "cmdline-tools;latest"
+# Accept the SDK Licenses
+/workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager --licenses
+# Install latest version packages
+/workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1" "system-images;android-33;google_apis;x86_64"
+# /workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.1"
+# /workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
+
+# Accept Android Licenses
+flutter doctor --android-licenses
+
 
 # Install SDK Components
 sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
@@ -60,16 +86,9 @@ flutter doctor --android-licenses
 flutter doctor
 ```
 
-## Install Chrome
+## Resolve the 'Linux toolchain' issue
 ```bash
-# Install Chrome
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome-stable_current_amd64.deb
-sudo apt-get install -f
-
-# Set Chrome Executable Path
-export CHROME_EXECUTABLE=/usr/bin/google-chrome
-
-# Verify Chrome Installation
-google-chrome --version
+# Install ninja-build
+sudo apt install ninja-build
+sudo apt install libgtk-3-dev
 ```
