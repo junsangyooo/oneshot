@@ -2,6 +2,8 @@
 
 ## Create an Android Folder to save Flutter and Android SDK
 ```bash
+# Create a Folder
+mkdir Android
 # Move to Android folder
 cd Android
 ```
@@ -24,9 +26,11 @@ nano ~/.bashrc
 # Go to the bottom line and type
 # {
 # Flutter
-export PATH=/workplaces/{codespace-name}/Android/flutter/bin:$PATH
+export PATH=/workspaces/{codespace-name}/Android/flutter/bin:$PATH
 # }
 # Save and exit ctrl + x
+# Reload the ~/.bashrc
+source ~/.bashrc
 
 # Check the installation
 flutter doctor # if it cannot found, restart the codespace and rerun
@@ -41,6 +45,9 @@ flutter doctor # if it cannot found, restart the codespace and rerun
 # unzip name.zip 
 # e.g. unzip commandlinetools-linux-11076708_latest.zip
 
+# Remove the zip file
+# e.g. rm commandlinetools-linux-11076708_latest.zip
+
 # Move the cmdline-tools to Android
 mv cmdline-tools Android
 
@@ -53,31 +60,33 @@ mv Android/cmdline-tools/* Android/cmdline-tools/latest/
 nano ~/.bashrc
 # Go to the bottom line and type below
 # {
+
 # Android
-export ANDROID=/workspaces/{codespace-name}/Android
+export ANDROID=/workspaces/{Codespace-Name}/Android
 export PATH=$ANDROID/cmdline-tools:$PATH
 export PATH=$ANDROID/cmdline-tools/latest/bin:$PATH
+export PATH=$ANDROID/platform-tools:$PATH
+
 # Android SDK
-export ANDROID_SDK=/workspaces/{codespace-name}/Android
+export ANDROID_SDK=/workspaces/{Codespace-Name}/Android
 export PATH=$ANDROID_SDK:$PATH
+
+# # Android SDK
+# export ANDROID_SDK=/workspaces/{Codespace-Name}/Android
+# export PATH=$ANDROID_SDK/platform-tools:$ANDROID_SDK/cmdline-tools/latest/bin:$PATH
 # }
 # Save and exit ctrl + x
+# Reload the ~/.bashrc
+source ~/.bashrc
 
-# Install sdkmanager
+# Install sdk
 /workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager --install "cmdline-tools;latest"
 # Accept the SDK Licenses
 /workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager --licenses
 # Install latest version packages
-/workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.1" "system-images;android-33;google_apis;x86_64"
-# /workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.1"
-# /workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
-
-# Accept Android Licenses
-flutter doctor --android-licenses
-
-
-# Install SDK Components
-sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+/workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" 
+/workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0"
+/workspaces/{codespace-name}/Android/cmdline-tools/latest/bin/sdkmanager "system-images;android-33;google_apis;x86_64"
 
 # Accept Android Licenses
 flutter doctor --android-licenses
