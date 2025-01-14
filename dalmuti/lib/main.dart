@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'game_components.dart';
 
 void main() {
   runApp(const MyApp());
