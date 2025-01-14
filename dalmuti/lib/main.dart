@@ -1,5 +1,7 @@
+// import 'dart:ffi';
+
 import 'package:flutter/material.dart';
-import 'game_components.dart';
+// import 'game_components.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,15 +32,30 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // int count = 0;
+  // @override
+  // Widget build(BuildContext context) {
+  //   return Scaffold(
+  //     appBar: AppBar(
+  //       title: Text('$count'),
+  //     ),
+  //     body: Center(
+  //       child: ElevatedButton(onPressed:(){
+  //         count++;
+  //       }, child: const Text('Button')),
+  //     ),
+  //   );
+  // }
+  int _counter = 0;
+
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Test Flutter"),
-      ),
-      body: Center(
-        child: const Text("Hello Jun!"),
-      ),
-    );
+    return Text('$_counter');
   }
 }
