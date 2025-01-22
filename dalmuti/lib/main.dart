@@ -14,48 +14,54 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'flutter practice',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(),
+      title: '',
+      home: ClickCounterScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
+class ClickCounterScreen extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ClickCounterScreen> createState() => _ClickCounterScreen();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  // int count = 0;
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     appBar: AppBar(
-  //       title: Text('$count'),
-  //     ),
-  //     body: Center(
-  //       child: ElevatedButton(onPressed:(){
-  //         count++;
-  //       }, child: const Text('Button')),
-  //     ),
-  //   );
-  // }
-  int _counter = 0;
+class _ClickCounterScreen extends State<ClickCounterScreen> {
+  int count = 0;
 
-  void _incrementCounter() {
+  void _increment(){
     setState(() {
-      _counter++;
+      count++;
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
-    return Text('$_counter');
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Counter"),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "You clicked",
+            style: TextStyle(fontSize: 20),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'number of times.',
+            style: TextStyle(fontSize: 20),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _increment,
+        tooltip: "Increment",
+        child: Icon(Icons.add),
+      ),
+    );
   }
 }
