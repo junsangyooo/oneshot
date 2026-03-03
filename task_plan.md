@@ -785,7 +785,78 @@ Step 9.5: ONE Store 출시
 
 ---
 
-## 14. 미결정 사항 (추후 결정)
+## 14. 디자인 시스템 (확정)
+
+### 테마: Clean Ivory
+- 폰트: **Plus Jakarta Sans** (Google Fonts)
+- 톤: 깔끔, 친근, 모던
+- 배경: 오프 화이트 (#FAFAF9)
+- 포인트: 딥 인디고 (#4F46E5)
+
+### 컬러 팔레트
+
+| 토큰 | Hex | 용도 |
+|------|-----|------|
+| `primary` | #4F46E5 | 주요 버튼, 강조 |
+| `primary-light` | #818CF8 | 호버, 선택 |
+| `primary-dark` | #3730A3 | 눌림 상태 |
+| `on-primary` | #FFFFFF | 주요 버튼 위 텍스트 |
+| `background` | #FAFAF9 | 앱 배경 |
+| `surface` | #FFFFFF | 카드, 패널 |
+| `surface-variant` | #F5F5F4 | 입력창, 비활성 |
+| `on-background` | #1C1917 | 본문 텍스트 |
+| `on-surface` | #44403C | 보조 텍스트 |
+| `on-surface-variant` | #78716C | 비활성 텍스트 |
+| `error` | #DC2626 | 에러 |
+| `success` | #16A34A | 성공, 승리 |
+| `coin` | #F59E0B | 코인 관련 |
+| `outline` | #E7E5E4 | 구분선, 테두리 |
+
+### 타이포그래피 (Plus Jakarta Sans)
+
+| 토큰 | 크기 | 굵기 | 행간 |
+|------|------|------|------|
+| `display-lg` | 40px | ExtraBold (800) | 48px |
+| `display-md` | 32px | Bold (700) | 40px |
+| `heading-lg` | 24px | SemiBold (600) | 32px |
+| `heading-md` | 20px | SemiBold (600) | 28px |
+| `heading-sm` | 18px | Medium (500) | 24px |
+| `body-lg` | 16px | Regular (400) | 24px |
+| `body-md` | 14px | Regular (400) | 20px |
+| `body-sm` | 12px | Regular (400) | 16px |
+| `label-lg` | 16px | SemiBold (600) | 20px |
+| `label-md` | 14px | SemiBold (600) | 18px |
+| `label-sm` | 12px | Medium (500) | 16px |
+| `number-lg` | 48px | ExtraBold (800) | 56px |
+| `number-md` | 32px | Bold (700) | 40px |
+| `number-sm` | 20px | SemiBold (600) | 28px |
+
+### 스페이싱
+
+| 토큰 | 값 |
+|------|-----|
+| `space-2xs` | 2px |
+| `space-xs` | 4px |
+| `space-sm` | 8px |
+| `space-md` | 12px |
+| `space-lg` | 16px |
+| `space-xl` | 24px |
+| `space-2xl` | 32px |
+| `space-3xl` | 48px |
+
+### Border Radius
+
+| 토큰 | 값 |
+|------|-----|
+| `radius-sm` | 4px |
+| `radius-md` | 8px |
+| `radius-lg` | 12px |
+| `radius-xl` | 16px |
+| `radius-full` | 999px |
+
+---
+
+## 15. 미결정 사항 (추후 결정)
 
 - [ ] 참가비 배율별 네이밍
 - [ ] 코인 상점 패키지 네이밍
@@ -793,7 +864,6 @@ Step 9.5: ONE Store 출시
 - [ ] 앱 로고 디자인
 - [ ] 카드 비주얼 디자인 (숫자만? 일러스트?)
 - [ ] 카드 스킨 종류 및 가격
-- [ ] 컬러 테마
 - [ ] 사운드 에셋
 - [ ] 턴 타이머 필요 여부 (30초? 없음?)
 - [ ] 나머지 카드 처리 (균등 배분 안 될 때)
