@@ -856,7 +856,259 @@ Step 9.5: ONE Store 출시
 
 ---
 
-## 15. 미결정 사항 (추후 결정)
+## 15. 데이터 스키마 (확정)
+
+### Firestore 컬렉션 구조
+
+```
+firestore/
+├── users/{uid}                    ← 유저 정보
+├── rooms/{roomCode}               ← 방 정보 (대기실)
+├── games/{gameId}                 ← 게임 진행 상태
+│   └── hands/{uid}                ← 각 플레이어 핸드 (서브컬렉션)
+├── transactions/{txId}            ← 코인 거래 기록
+└── skins/{skinId}                 ← 스킨 상품 목록
+```
+
+### users/{uid}
+
+```javascript
+{
+  uid: string,
+  nickname: string,               // 게스트: 랜덤, 수정 가능
+  authType: "anonymous" | "google" | "apple",
+  coins: number,                  // 현재 잔액 (초기 1,000)
+  totalCoinsEarned: number,
+  totalCoinsSpent: number,
+  dailyAdCount: number,           // 오늘 보상형 광고 횟수
+  lastAdResetDate: string,        // "2026-03-04"
+  stats: {
+    totalGames: number,
+    wins: number,
+    winRate: number,
+    currentStreak: number,
+    maxStreak: number,
+    totalCoinsWon: number,
+  },
+  ownedSkins: string[],           // ["default", "gold"]
+  equippedSkin: string,
+  titles: string[],               // ["대부"]
+  equippedTitle: string | null,
+  currentRoomCode: string | null, // 중복 입장 방지
+  createdAt: Timestamp,
+  lastActiveAt: Timestamp,
+  fcmToken: string | null,
+}
+```
+
+### rooms/{roomCode}
+
+```javascript
+{
+  code: string,                   // "A3K7"
+  hostUid: string,
+  isPublic: boolean,
+  settings: {
+    maxPlayers: number,           // 2~10
+    cardRange: number,            // 8~15
+    jokerCount: number,           // 0~4
+    totalRounds: number,          // 1~10, 0 = 무제한
+    winCondition: "points" | "wins",
+    betMultiplier: number,        // α (0~9)
+  },
+  entryFee: number,               // 100 + 100 * α
+  players: [{
+    uid: string,
+    nickname: string,
+    equippedSkin: string,
+    equippedTitle: string | null,
+    joinedAt: Timestamp,
+  }],
+  playerCount: number,
+  status: "waiting" | "playing" | "finished",
+  gameId: string | null,
+  createdAt: Timestamp,
+  expiresAt: Timestamp,           // +30분
+}
+```
+
+### games/{gameId}
+
+```javascript
+{
+  gameId: string,
+  roomCode: string,
+  settings: { cardRange, jokerCount, totalRounds, winCondition },
+  entryFee: number,
+  totalPot: number,
+  players: [{
+    uid: string,
+    nickname: string,
+    skin: string,
+    handCount: number,            // 남은 카드 수 (공개)
+    score: number,
+    roundWins: number,
+    isOut: boolean,
+    isDisconnected: boolean,
+    finishOrder: number | null,
+  }],
+  currentRound: number,
+  turn: {
+    currentPlayerIndex: number,
+    pile: {
+      cards: [{ number: number, isJoker: boolean }],
+      playedByUid: string,
+      quantity: number,
+      value: number,
+    } | null,                     // null = 새 시작
+    passCount: number,
+    activePlayers: number,
+  },
+  roundResults: [{
+    round: number,
+    rankings: [{ uid, nickname, rank, score }],
+  }],
+  status: "dealing" | "playing" | "roundEnd" | "gameEnd",
+  finalResult: {
+    winnerUid: string,
+    winnerNickname: string,
+    rankings: [{ uid, nickname, totalScore, rank }],
+    potAwarded: boolean,
+  } | null,
+  createdAt: Timestamp,
+  updatedAt: Timestamp,
+  finishedAt: Timestamp | null,
+}
+```
+
+### games/{gameId}/hands/{uid} (서브컬렉션 - 본인만 읽기)
+
+```javascript
+{
+  uid: string,
+  cards: [{ number: number, isJoker: boolean }],
+  cardCount: number,
+  updatedAt: Timestamp,
+}
+```
+
+### transactions/{txId}
+
+```javascript
+{
+  txId: string,
+  uid: string,
+  type: "signup_bonus" | "ad_reward" | "iap_purchase" | "game_entry"
+      | "game_entry_refund" | "game_win" | "skin_purchase",
+  amount: number,                 // +획득 / -소비
+  balanceAfter: number,
+  relatedGameId: string | null,
+  relatedRoomCode: string | null,
+  relatedIapProductId: string | null,
+  relatedSkinId: string | null,
+  receipt: {
+    store: "apple" | "google" | "onestore",
+    receiptData: string,
+    verified: boolean,
+  } | null,
+  createdAt: Timestamp,
+}
+```
+
+### skins/{skinId}
+
+```javascript
+{
+  skinId: string,
+  name: string,
+  description: string,
+  price: number,                  // 코인
+  previewImageUrl: string,
+  rarity: "common" | "rare" | "epic" | "legendary",
+  isAvailable: boolean,
+  sortOrder: number,
+  createdAt: Timestamp,
+}
+```
+
+### Firestore Security Rules
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read: if request.auth.uid == uid;
+      allow create: if request.auth.uid == uid;
+      allow update: if request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['coins', 'totalCoinsEarned', 'totalCoinsSpent', 'stats']);
+    }
+    match /rooms/{roomCode} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null
+        && (request.auth.uid == resource.data.hostUid
+            || request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['players', 'playerCount']));
+    }
+    match /games/{gameId} {
+      allow read: if request.auth.uid in resource.data.players.map(p => p.uid);
+      allow write: if false;
+      match /hands/{uid} {
+        allow read: if request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+    match /transactions/{txId} {
+      allow read: if request.auth.uid == resource.data.uid;
+      allow write: if false;
+    }
+    match /skins/{skinId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
+```
+
+### Cloud Functions 목록
+
+| Function | 트리거 | 하는 일 |
+|----------|--------|--------|
+| `onUserCreate` | Auth onCreate | 유저 문서 생성, 1,000코인 지급 |
+| `claimAdReward` | HTTPS callable | 5회 제한 체크, 100코인 지급 |
+| `purchaseCoins` | HTTPS callable | IAP 영수증 검증, 코인 지급 |
+| `createRoom` | HTTPS callable | 방 생성, 참가비 차감 |
+| `joinRoom` | HTTPS callable | 입장 검증, 참가비 차감 |
+| `leaveRoom` | HTTPS callable | 퇴장, 대기 중이면 환불 |
+| `startGame` | HTTPS callable | 덱 생성, 셔플, 핸드 배분 |
+| `playCards` | HTTPS callable | 유효성 검증, 카드 제출, 턴 진행 |
+| `passTurn` | HTTPS callable | 패스 처리, 새 시작 판정 |
+| `endRound` | 자동 | 순위 계산, 점수 부여 |
+| `endGame` | 자동 | 1등에게 totalPot 지급 |
+| `cleanupExpiredRooms` | Scheduled (5분) | 만료된 방 삭제, 참가비 환불 |
+| `purchaseSkin` | HTTPS callable | 코인 차감, 스킨 부여 |
+
+### 에러/엣지 케이스
+
+| 상황 | 처리 |
+|------|------|
+| 코인 부족 입장 | 클라이언트+서버 모두 검증 → 에러 |
+| 방 꽉 참 | playerCount 체크 → 에러 |
+| 중복 방 입장 | currentRoomCode 체크 → 에러 |
+| 게임 중 플레이어 나감 | isDisconnected, 자동 패스, 참가비 몰수 |
+| 호스트 나감 (대기실) | 다음 플레이어에게 이관 |
+| 모두 나감 | 방 삭제, 남은 1명 자동 승리 |
+| 네트워크 끊김 | 오프라인 캐시 + 재접속 복구 |
+| 동시 카드 제출 | 트랜잭션으로 원자성 보장 |
+| IAP 결제 성공 + 코인 미지급 | 영수증 저장, 재검증 가능 |
+| 균등 배분 안 되는 카드 | 가장 높은 숫자 카드부터 제거 |
+| 앱 강제 종료 | gameId로 게임 화면 복귀 |
+
+---
+
+## 16. 미결정 사항 (추후 결정)
 
 - [ ] 참가비 배율별 네이밍
 - [ ] 코인 상점 패키지 네이밍

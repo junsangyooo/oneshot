@@ -40,7 +40,25 @@
 - 구현 9단계 세부 스텝 작성
 - 예상 개발 기간: 16~27일
 
+## 2026-03-03 세션 4
+- 디자인 시스템 확정: **Clean Ivory** (Theme C)
+  - Font: Plus Jakarta Sans
+  - Primary: #4F46E5 (Deep Indigo)
+  - Background: #FAFAF9 (Off White)
+- 테마 판매 검토 → 제외 (공유 경험 문제, 스킨과 중복, QA 3배)
+- 과금 아이템은 "남에게 보이는 것"에 집중 (카드 스킨, 칭호)
+- Figma에 3개 테마 프리뷰 페이지 생성 완료
+
+## 2026-03-04 세션 5
+- **데이터 스키마 확정**
+  - Firestore 6개 컬렉션: users, rooms, games, games/hands, transactions, skins
+  - Security Rules 설계 (핸드 본인만 읽기, 코인은 서버만 수정)
+  - Cloud Functions 13개 정의
+  - 에러/엣지 케이스 11개 정의
+- task_plan.md 섹션 15에 전체 스키마 반영
+
 ### 다음 할 일
-- 미결정 사항 확정 (네이밍, 스킨, 등급 전략 등)
-- Figma에서 UI 디자인 시작
-- Phase 1 프로젝트 세팅 시작
+- 와이어프레임 (모든 화면 구조 확정)
+- 카드 비주얼 정의
+- Hi-Fi 디자인 (Figma)
+- 개발 시작
