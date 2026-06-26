@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OneShot — Sequence Complete</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="oneshot.css" />
+    <style>
+      body { overflow: hidden; }
+      .shell {
+        position: relative; z-index: 2; height: 100svh; overflow: hidden;
+        padding: var(--frame-pad); display: grid; grid-template-rows: auto 1fr auto; gap: 18px;
+      }
+      .topbar, .botbar { display: flex; justify-content: space-between; align-items: flex-start; }
+      .botbar { align-items: flex-end; }
+      .readout--r { text-align: right; }
+
+      .stage {
+        align-self: center; justify-self: center; width: min(820px, 94vw);
+        display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 20px;
+        max-height: 100%; min-height: 0;
+      }
+      .head { text-align: center; display: grid; gap: 8px; }
+      .head .eyebrow { font-size: 11px; letter-spacing: 0.4em; color: var(--ink-faint); text-transform: uppercase; }
+      .head h1 {
+        margin: 0; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em;
+        font-size: clamp(38px, 7vw, 76px); line-height: 0.92; color: #d6d3df;
+        text-shadow: 0 0 40px rgb(var(--glow-red) / 0.3);
+      }
+      .head .mod { font-size: 12px; letter-spacing: 0.2em; color: var(--cyan); text-transform: uppercase; }
+
+      /* champion */
+      .champ {
+        position: relative; border: 1px solid var(--gold); padding: 22px 26px;
+        display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 22px;
+        background: linear-gradient(100deg, rgb(244 185 66 / 0.12), rgb(244 185 66 / 0.02));
+      }
+      .champ::before, .champ::after { content: ""; position: absolute; width: 18px; height: 18px; border-color: var(--gold); }
+      .champ::before { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
+      .champ::after { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; }
+      .champ .crown { font-size: 30px; color: var(--gold); }
+      .champ .glyph {
+        width: 56px; height: 56px; display: grid; place-items: center; border: 1px solid var(--gold);
+        color: var(--gold); font-size: 26px;
+        background-image: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0, rgb(255 255 255 / 0.05) 1px, transparent 1px, transparent 3px);
+      }
+      .champ .who { display: grid; gap: 4px; }
+      .champ .rolelbl { font-size: 10px; letter-spacing: 0.24em; color: var(--gold); }
+      .champ .nm { font-family: var(--font-mono); font-weight: 700; font-size: clamp(20px, 3vw, 30px); letter-spacing: 0.05em; color: #fff; }
+      .champ .sc { text-align: right; }
+      .champ .sc b { display: block; font-size: clamp(22px, 3vw, 32px); color: var(--gold); font-weight: 700; }
+      .champ .sc span { font-size: 10px; letter-spacing: 0.18em; color: var(--ink-dim); }
+
+      /* ranking table */
+      .table { min-height: 0; overflow-y: auto; display: grid; gap: 2px; align-content: start; padding-right: 6px; }
+      .table::-webkit-scrollbar { width: 4px; }
+      .table::-webkit-scrollbar-thumb { background: var(--line-bright); }
+      .r {
+        display: grid; grid-template-columns: 40px 44px 1fr auto; align-items: center; gap: 14px;
+        padding: 13px 12px; border: 1px solid var(--line); border-left: 2px solid var(--line-bright);
+      }
+      .r .pos { font-family: var(--font-mono); font-weight: 700; font-size: 16px; color: var(--ink-dim); text-align: center; }
+      .r .glyph {
+        width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line-bright);
+        font-size: 15px; color: var(--ink);
+        background-image: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0, rgb(255 255 255 / 0.05) 1px, transparent 1px, transparent 3px);
+      }
+      .r .nm { font-size: 13px; letter-spacing: 0.05em; color: var(--ink); }
+      .r .nm small { display: block; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.06em; margin-top: 2px; }
+      .r .sc { font-size: 14px; color: var(--ink); letter-spacing: 0.06em; }
+      .r .sc span { color: var(--ink-faint); font-size: 10px; }
+      .r.off { opacity: 0.5; }
+
+      .actions { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px; }
+      .actions .btn { justify-content: center; }
+
+      @media (max-width: 720px) {
+        .champ { grid-template-columns: auto 1fr; }
+        .champ .sc { grid-column: 1 / -1; text-align: left; }
+        .actions { grid-template-columns: 1fr; }
+        body { overflow: auto; } .shell { height: auto; }
+        .stage { grid-template-rows: none; } .table { overflow: visible; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="fx fx--grid"></div>
+    <div class="fx fx--scanlines"></div>
+    <div class="fx fx--vignette"></div>
+    <div class="sweep"></div>
+
+    <span class="corner corner--tl"></span>
+    <span class="corner corner--tr"></span>
+    <span class="corner corner--bl"></span>
+    <span class="corner corner--br"></span>
+
+    <div class="shell boot">
+      <header class="topbar">
+        <div class="readout" data-bind="topLeft"></div>
+        <div class="readout readout--r" data-bind="topRight"></div>
+      </header>
+
+      <main class="stage">
+        <div class="head">
+          <div class="eyebrow" data-bind="eyebrow"></div>
+          <h1 id="title">SEQUENCE COMPLETE</h1>
+          <div class="mod" data-bind="moduleLine"></div>
+        </div>
+
+        <div class="champ" id="champ"></div>
+
+        <div class="table" id="table"></div>
+
+        <div class="actions">
+          <button class="btn btn--primary" id="return"><span data-bind="returnLabel"></span></button>
+          <button class="btn" id="next"><span data-bind="nextLabel"></span></button>
+          <button class="btn btn--danger" id="close"><span data-bind="closeLabel"></span></button>
+        </div>
+      </main>
+
+      <footer class="botbar">
+        <div class="readout" data-bind="connType"></div>
+        <div class="readout readout--r" data-bind="botRight"></div>
+      </footer>
+    </div>
+
+    <script src="oneshot-data.js"></script>
+    <script>
+      /* final standings: sort by wins, fabricate a flavor "sync score" */
+      const standings = [...OPERATORS]
+        .map((o) => ({ ...o, score: o.wins * 1240 + 860 + (o.tag.charCodeAt(0) % 7) * 30 }))
+        .sort((a, b) => b.score - a.score);
+      const champ = standings[0];
+
+      window.CONTENT = {
+        topLeft: () => `<div>BR-K/S/61X-081</div><div>SECTOR_ID: <span class="hot">#${CONFIG.sector}</span></div><div>STATUS: <span class="cool">CYCLE_COMPLETE</span></div>`,
+        topRight: () => `<div>SYS.OS_V.4.20.1</div><div>${liveClock()}</div><div>LOC: SUB-LEVEL 4</div>`,
+        eyebrow: () => "// CALIBRATION_CYCLE_COMPLETE",
+        moduleLine: () => `${GAMES[0].key}.EXE // ROUND 03`,
+        returnLabel: () => "↩ RETURN_TO_SECTOR",
+        nextLabel: () => "NEXT_MODULE →",
+        closeLabel: () => "⏻ CLOSE_SECTOR",
+        connType: () => `RESULTS_HASH: 9F2C-${champ.tag}71A //<br>VERIFIED_BY_SECTOR`,
+        botRight: () => `<div>A SYSTEM OF CELLS INTERLINKED</div><div>[ ARCHIVING_TRANSCRIPT ]</div>`,
+      };
+
+      document.getElementById("champ").innerHTML = `
+        <span class="crown">♛</span>
+        <span class="glyph glyph--img"><img src="${avatarSrc(champ.avatarId)}" alt="" /></span>
+        <span class="who">
+          <span class="rolelbl">TOP_OPERATOR // CALIBRATION CHAMPION</span>
+          <span class="nm">${champ.name}</span>
+        </span>
+        <span class="sc"><b>${champ.score.toLocaleString("en-US")}</b><span>SYNC_SCORE</span></span>`;
+
+      document.getElementById("table").innerHTML = standings.slice(1).map((o, i) => `
+        <div class="r ${o.status === "OFFLINE" ? "off" : ""}">
+          <span class="pos">${String(i + 2).padStart(2, "0")}</span>
+          ${avatarBox(o.avatarId)}
+          <span class="nm">${o.name}<small>IP: ${o.ip}</small></span>
+          <span class="sc">${o.score.toLocaleString("en-US")} <span>PTS</span></span>
+        </div>`).join("");
+
+      renderBindings();
+      startLiveLoop(["topRight"]);
+
+      document.getElementById("return").addEventListener("click", () => (location.href = "oneshot-lobby.html"));
+      document.getElementById("next").addEventListener("click", () => (location.href = "oneshot-lobby.html"));
+      document.getElementById("close").addEventListener("click", () => (location.href = "oneshot-home.html"));
+    </script>
+  </body>
+</html>

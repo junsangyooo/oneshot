@@ -4,13 +4,17 @@ import { RoomScreen } from "../room/RoomScreen";
 import { ResultsScreen } from "../room/ResultsScreen";
 import { KingGameScreen } from "../games/kinggame/KingGameScreen";
 import { Toast } from "../ui-kit";
+import { StatusScreen } from "../ui/StatusScreen";
+import { useT } from "../i18n";
 import { useRoomStore } from "./useRoomStore";
 import { ErrorScreen } from "./ErrorScreen";
 
 export const App = () => {
+  const t = useT();
   const roomState = useRoomStore((state) => state.roomState);
   const joinResult = useRoomStore((state) => state.joinResult);
   const privateGameState = useRoomStore((state) => state.privateGameState);
+  const connectionState = useRoomStore((state) => state.connectionState);
   const reconnect = useRoomStore((state) => state.reconnect);
   const toast = useRoomStore((state) => state.toast);
   const screenError = useRoomStore((state) => state.screenError);
@@ -28,6 +32,17 @@ export const App = () => {
   let screen = <HomeScreen initialRoomCode={routeRoomCode} />;
   if (!roomState && screenError) {
     screen = <ErrorScreen message={screenError.message} retryable={screenError.retryable} />;
+  } else if (!roomState && connectionState === "connecting") {
+    screen = (
+      <StatusScreen
+        code="LINK_01"
+        accent="cyan"
+        icon="◴"
+        spinner
+        title={t("conn.establishing")}
+        message={t("conn.establishingMsg")}
+      />
+    );
   } else if (roomState?.phase === "lobby") {
     screen = <RoomScreen roomState={roomState} currentPlayerId={joinResult?.playerId ?? null} />;
   } else if (roomState?.phase === "game" && roomState.activeGame?.gameId === "kinggame") {

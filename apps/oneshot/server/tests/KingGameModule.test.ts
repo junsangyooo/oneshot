@@ -8,6 +8,7 @@ const makePlayers = (count: number): PublicPlayerState[] =>
     id: `player-${index + 1}`,
     nickname: `P${index + 1}`,
     avatarKey: `shot-${index + 1}`,
+    themeId: "cyber",
     seatIndex: index,
     isHost: index === 0,
     connectionStatus: "online",

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OneShot — Party Calibration System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="oneshot.css" />
+    <style>
+      body { overflow: hidden; }
+      .shell {
+        position: relative; z-index: 2; height: 100svh;
+        padding: var(--frame-pad);
+        display: grid; grid-template-rows: auto 1fr auto;
+      }
+      .topbar, .botbar { display: flex; justify-content: space-between; align-items: flex-start; }
+      .botbar { align-items: flex-end; }
+      .readout--r { text-align: right; }
+
+      .center {
+        align-self: center; justify-self: center;
+        width: min(680px, 92vw); display: grid; gap: clamp(30px, 5vh, 58px); text-align: center;
+      }
+      .brand { justify-self: center; font-size: clamp(56px, 10.5vw, 128px); }
+      .brand-sub {
+        margin-top: 14px; font-size: clamp(10px, 1.3vw, 13px);
+        letter-spacing: var(--track-wide); color: var(--ink-faint); text-transform: uppercase;
+      }
+      .form { display: grid; gap: 28px; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+
+      /* ---- right-side game library rail ---- */
+      .rail {
+        position: fixed; right: var(--frame-pad); top: 50%; transform: translateY(-50%);
+        width: 270px; z-index: 4;
+        display: grid; gap: 2px;
+      }
+      .rail-head {
+        display: flex; justify-content: space-between; align-items: baseline;
+        font-size: 11px; letter-spacing: 0.18em; color: var(--ink-dim);
+        text-transform: uppercase; margin-bottom: 12px;
+      }
+      .rail-head .n { color: var(--ink-faint); }
+      .grow { /* hint that this list expands into the lobby */ }
+
+      .grow:hover .game-row { opacity: 0.55; }
+      .game-row:hover { opacity: 1 !important; }
+      .game-row {
+        display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px;
+        padding: 11px 12px; border: 1px solid transparent; border-left: 1px solid var(--line);
+        cursor: pointer; transition: opacity 0.18s, background 0.18s, border-color 0.18s;
+      }
+      .game-row:hover { background: rgb(255 255 255 / 0.03); border-color: var(--line-bright); }
+      .game-row.is-active { border-color: rgb(var(--glow-red) / 0.55); background: rgb(var(--glow-red) / 0.08); }
+
+      .glyph {
+        width: 34px; height: 34px; display: grid; place-items: center;
+        border: 1px solid var(--line-bright); font-size: 16px; color: var(--ink);
+        background-image: repeating-linear-gradient(
+          0deg, rgb(255 255 255 / 0.05) 0px, rgb(255 255 255 / 0.05) 1px, transparent 1px, transparent 3px);
+      }
+      .glyph--red { border-color: var(--accent); color: var(--accent); background-color: rgb(var(--glow-red) / 0.12); }
+      .glyph--gold { border-color: var(--gold); color: var(--gold); }
+      .game-row .nm { font-size: 12px; letter-spacing: 0.06em; color: var(--ink); }
+      .game-row .mt { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.05em; }
+      .game-row .pl { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.05em; white-space: nowrap; }
+
+      @media (max-width: 1080px) {
+        .rail { display: none; }
+      }
+      @media (max-width: 560px) {
+        .actions { grid-template-columns: 1fr; }
+        .corner { width: 26px; height: 26px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="fx fx--grid"></div>
+    <div class="fx fx--scanlines"></div>
+    <div class="fx fx--vignette"></div>
+    <div class="sweep"></div>
+
+    <span class="corner corner--tl"></span>
+    <span class="corner corner--tr"></span>
+    <span class="corner corner--bl"></span>
+    <span class="corner corner--br"></span>
+
+    <button class="config-pill" id="cfg">&#x2699; <span data-bind="configLabel"></span></button>
+
+    <!-- RIGHT: game library rail (expands into the lobby module list) -->
+    <aside class="rail boot">
+      <div class="rail-head">
+        <span data-bind="railLabel"></span><span class="n" data-bind="railCount"></span>
+      </div>
+      <div class="grow" id="gameList"></div>
+    </aside>
+
+    <div class="shell boot">
+      <header class="topbar">
+        <div class="readout" data-bind="topLeft"></div>
+        <div class="readout readout--r" data-bind="topRight"></div>
+      </header>
+
+      <main class="center">
+        <div>
+          <span class="brand brand--boot" id="brand" data-text="ONESHOT">ONESHOT</span>
+          <div class="brand-sub" data-bind="tagline"></div>
+        </div>
+
+        <form class="form" id="form" autocomplete="off">
+          <div class="field">
+            <div class="field-head">
+              <span data-bind="nicknameLabel"></span>
+              <span id="count">0/12</span>
+            </div>
+            <input id="nickname" type="text" maxlength="12" data-ph="nicknamePlaceholder" />
+          </div>
+          <div class="field field--code">
+            <div class="field-head">
+              <span data-bind="codeLabel"></span>
+              <span class="opt" data-bind="codeOptional"></span>
+            </div>
+            <input id="code" type="text" maxlength="6" data-ph="codePlaceholder" />
+          </div>
+          <div class="actions">
+            <button class="btn btn--primary" type="submit" id="create">
+              <span data-bind="createLabel"></span><span class="dot" style="margin:0"></span>
+            </button>
+            <button class="btn" type="button" id="join">
+              <span data-bind="joinLabel"></span><span class="enter">&#x21B5;</span>
+            </button>
+          </div>
+        </form>
+      </main>
+
+      <footer class="botbar">
+        <div class="readout">
+          <div data-bind="connected"></div>
+          <div><span class="dot"></span><span data-bind="uptime"></span></div>
+        </div>
+        <div class="readout readout--r" data-bind="bottomRight"></div>
+      </footer>
+    </div>
+
+    <script src="oneshot-data.js"></script>
+    <script>
+      window.CONTENT = {
+        topLeft: () => `<div>BR-K/S/61X-081</div><div>BASELINE TRANSCRIPT A</div><div>STATUS: <span class="hot">ACTIVE</span></div>`,
+        topRight: () => `<div>SYS.OS_V.4.20.1</div><div>LOC: SUB-LEVEL 4</div><div>[${CONFIG.host}]</div>`,
+        tagline: () => "PARTY CALIBRATION SYSTEM",
+        nicknameLabel: () => "IDENTIFICATION NICKNAME",
+        nicknamePlaceholder: () => "ENTER_NAME...",
+        codeLabel: () => "ROOM SECTOR CODE",
+        codeOptional: () => "OPTIONAL",
+        codePlaceholder: () => "X X X X X X",
+        createLabel: () => "CREATE ROOM",
+        joinLabel: () => "JOIN SECTOR",
+        railLabel: () => "GAME_LIBRARY",
+        railCount: () => String(GAMES.length).padStart(2, "0") + " MODULES",
+        configLabel: () => "OPERATOR_CONFIG",
+        bottomRight: () => `<div>A SYSTEM OF CONTROLLED CHAOS</div><div>SCANNING_FOR_PLAYERS...</div>`,
+        connected: liveConnected,
+        uptime: liveUptime,
+      };
+
+      /* build the game rail from the shared catalog */
+      const list = document.getElementById("gameList");
+      list.innerHTML = GAMES.map((g, i) => `
+        <div class="game-row ${i === 0 ? "is-active" : ""}">
+          <span class="glyph glyph--${g.accent}">${g.glyph}</span>
+          <span>
+            <div class="nm">${g.key}</div>
+            <div class="mt">${g.tag}</div>
+          </span>
+          <span class="pl">${g.players}</span>
+        </div>`).join("");
+
+      renderBindings();
+      startLiveLoop(["connected", "uptime"]);
+
+      const nickname = document.getElementById("nickname");
+      const count = document.getElementById("count");
+      const syncNick = () => { count.textContent = `${nickname.value.length}/12`; };
+      nickname.addEventListener("input", syncNick);
+
+      /* prefill from saved identity + wire settings modal */
+      const id0 = loadIdentity();
+      if (id0.nickname) { nickname.value = id0.nickname; syncNick(); }
+      const settings = mountSettings({
+        onSave: (next) => { nickname.value = next.nickname; syncNick(); },
+      });
+      document.getElementById("cfg").addEventListener("click", settings.open);
+
+      document.getElementById("form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        flashGlitch("brand");
+        /* in the real app: createRoom() -> navigate to lobby */
+        setTimeout(() => { location.href = "oneshot-lobby.html"; }, 650);
+      });
+      document.getElementById("join").addEventListener("click", () => flashGlitch("brand"));
+      list.addEventListener("click", (e) => {
+        const row = e.target.closest(".game-row");
+        if (!row) return;
+        list.querySelectorAll(".game-row").forEach((r) => r.classList.remove("is-active"));
+        row.classList.add("is-active");
+      });
+    </script>
+  </body>
+</html>

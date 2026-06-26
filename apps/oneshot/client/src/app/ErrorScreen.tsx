@@ -1,19 +1,20 @@
-import { AlertTriangle, RotateCcw } from "lucide-react";
-import { Button, PhaseBanner } from "../ui-kit";
+import { useT } from "../i18n";
+import { StatusScreen } from "../ui/StatusScreen";
 import { useRoomStore } from "./useRoomStore";
 
 export const ErrorScreen = ({ message, retryable }: { message: string; retryable: boolean }) => {
+  const t = useT();
   const clearScreenError = useRoomStore((state) => state.clearScreenError);
 
   return (
-    <main className="app-screen error-screen">
-      <PhaseBanner icon={<AlertTriangle size={32} />} title="입장 실패" body={message} />
-      <div className="error-actions">
-        <Button variant={retryable ? "primary" : "secondary"} onClick={clearScreenError}>
-          <RotateCcw size={18} />
-          다시 시도
-        </Button>
-      </div>
-    </main>
+    <StatusScreen
+      code="LINK // ERR"
+      accent="red"
+      icon="⚠"
+      glitch
+      title={t("error.title")}
+      message={message}
+      actions={retryable ? [{ label: `↻ ${t("error.retry")}`, primary: true, onClick: clearScreenError }] : [{ label: t("error.retry"), onClick: clearScreenError }]}
+    />
   );
 };

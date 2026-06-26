@@ -18,7 +18,7 @@ export class ColyseusRoomTransport implements RoomTransport {
   private readonly joinResolvers = new Set<(result: JoinResult) => void>();
   private lastJoinResult: JoinResult | null = null;
 
-  async createRoom(input: { nickname: string }): Promise<JoinResult> {
+  async createRoom(input: { nickname: string; avatarKey?: string; themeId?: string }): Promise<JoinResult> {
     const response = await fetch(`${clientConfig.apiUrl}/api/rooms`, { method: "POST" });
     if (!response.ok) {
       throw new Error("방을 만들 수 없습니다.");
@@ -27,22 +27,31 @@ export class ColyseusRoomTransport implements RoomTransport {
     if (typeof createdRoom.roomCode !== "string") {
       throw new Error("방 코드를 받지 못했습니다.");
     }
-    return this.joinByCode({ roomCode: createdRoom.roomCode, nickname: input.nickname });
+    return this.joinByCode({ ...input, roomCode: createdRoom.roomCode });
   }
 
-  async joinByCode(input: { roomCode: string; nickname: string }): Promise<JoinResult> {
+  async joinByCode(input: {
+    roomCode: string;
+    nickname: string;
+    avatarKey?: string;
+    themeId?: string;
+  }): Promise<JoinResult> {
     const room = await this.client.join("party", {
       roomCode: input.roomCode.toUpperCase(),
       nickname: input.nickname,
+      avatarKey: input.avatarKey,
+      themeId: input.themeId,
     });
     return this.bindAndWaitForJoin(room);
   }
 
-  async joinByLink(input: { roomCode: string; nickname?: string }): Promise<JoinResult> {
-    return this.joinByCode({
-      roomCode: input.roomCode,
-      nickname: input.nickname ?? "Guest",
-    });
+  async joinByLink(input: {
+    roomCode: string;
+    nickname?: string;
+    avatarKey?: string;
+    themeId?: string;
+  }): Promise<JoinResult> {
+    return this.joinByCode({ ...input, nickname: input.nickname ?? "Guest" });
   }
 
   async reconnect(input: { reconnectToken: string }): Promise<JoinResult> {

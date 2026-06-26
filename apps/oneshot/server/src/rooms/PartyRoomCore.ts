@@ -95,7 +95,7 @@ export class PartyRoomCore {
     this.callbacks = { ...noopCallbacks, ...callbacks };
   }
 
-  join(input: { nickname?: string }): JoinOutcome | JoinFailure {
+  join(input: { nickname?: string; avatarKey?: string; themeId?: string }): JoinOutcome | JoinFailure {
     if (this.roomState.phase === "game") {
       return {
         ok: false,
@@ -122,7 +122,8 @@ export class PartyRoomCore {
     this.roomState.players[playerId] = {
       id: playerId,
       nickname,
-      avatarKey: this.createAvatarKey(playerId),
+      avatarKey: this.parseAvatarKey(input.avatarKey) ?? this.createAvatarKey(playerId),
+      themeId: this.parseThemeId(input.themeId),
       seatIndex: this.nextSeatIndex(),
       isHost: firstPlayer,
       connectionStatus: "online",
@@ -225,6 +226,9 @@ export class PartyRoomCore {
       case "room:updateNickname":
         this.updateNickname(playerId, message.nickname);
         return;
+      case "room:updateProfile":
+        this.updateProfile(playerId, message);
+        return;
       case "room:selectGame":
         this.selectGame(playerId, message.gameId, message.options ?? {});
         return;
@@ -280,6 +284,32 @@ export class PartyRoomCore {
       this.touch();
       this.broadcastEverything();
     }
+  }
+
+  private updateProfile(
+    playerId: string,
+    input: { nickname?: string; avatarKey?: string; themeId?: string },
+  ): void {
+    const player = this.roomState.players[playerId];
+    if (!player) {
+      return;
+    }
+    if (input.nickname !== undefined) {
+      const nickname = this.parseNickname(input.nickname);
+      if (nickname) {
+        player.nickname = nickname;
+      }
+    }
+    const avatarKey = this.parseAvatarKey(input.avatarKey);
+    if (avatarKey) {
+      player.avatarKey = avatarKey;
+    }
+    if (input.themeId !== undefined) {
+      player.themeId = this.parseThemeId(input.themeId);
+    }
+    player.lastSeenAt = this.now();
+    this.touch();
+    this.broadcastEverything();
   }
 
   private selectGame(playerId: string, gameId: GameId, options: Record<string, unknown>): void {
@@ -467,6 +497,22 @@ export class PartyRoomCore {
   private createAvatarKey(playerId: string): string {
     const index = Array.from(playerId).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 8;
     return `shot-${index + 1}`;
+  }
+
+  private parseAvatarKey(avatarKey: unknown): string | null {
+    if (typeof avatarKey !== "string") {
+      return null;
+    }
+    const trimmed = avatarKey.trim().slice(0, 40);
+    return /^[a-z0-9-]+$/i.test(trimmed) ? trimmed : null;
+  }
+
+  private parseThemeId(themeId: unknown): string {
+    if (typeof themeId !== "string") {
+      return "cyber";
+    }
+    const trimmed = themeId.trim().slice(0, 24);
+    return /^[a-z0-9-]+$/i.test(trimmed) ? trimmed : "cyber";
   }
 
   private findCatalogItem(gameId: GameId): GameCatalogItem | null {

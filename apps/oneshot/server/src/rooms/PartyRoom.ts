@@ -13,6 +13,8 @@ type PartyRoomCreateOptions = {
 type PartyRoomJoinOptions = {
   roomCode?: string;
   nickname?: string;
+  avatarKey?: string;
+  themeId?: string;
   reconnectToken?: string;
 };
 
@@ -84,7 +86,11 @@ export class PartyRoom extends Room {
 
     const outcome = options.reconnectToken
       ? this.core.reconnect({ reconnectToken: options.reconnectToken })
-      : this.core.join({ nickname: options.nickname });
+      : this.core.join({
+          nickname: options.nickname,
+          avatarKey: options.avatarKey,
+          themeId: options.themeId,
+        });
 
     if (!outcome.ok) {
       this.sendErrorToClient(client, outcome.code, outcome.message);

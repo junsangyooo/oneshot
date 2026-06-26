@@ -9,6 +9,7 @@ export type PublicPlayerState = {
   id: PlayerId;
   nickname: string;
   avatarKey: string;
+  themeId: string;
   seatIndex: number;
   isHost: boolean;
   connectionStatus: ConnectionStatus;

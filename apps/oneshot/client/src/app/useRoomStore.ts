@@ -3,6 +3,7 @@ import type {
   ClientToServerMessage,
   JoinResult,
   PartyRoomState,
+  PlayerProfileInput,
   ServerEvent,
 } from "@oneshot/shared";
 import { ColyseusRoomTransport } from "../transport/ColyseusRoomTransport";
@@ -17,8 +18,8 @@ type RoomStore = {
   privateGameState: unknown;
   toast: string | null;
   screenError: { message: string; retryable: boolean } | null;
-  createRoom: (nickname: string) => Promise<void>;
-  joinRoom: (roomCode: string, nickname: string) => Promise<void>;
+  createRoom: (nickname: string, profile?: PlayerProfileInput) => Promise<void>;
+  joinRoom: (roomCode: string, nickname: string, profile?: PlayerProfileInput) => Promise<void>;
   reconnect: () => Promise<void>;
   send: (message: ClientToServerMessage) => void;
   leave: () => Promise<void>;
@@ -42,13 +43,13 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   toast: null,
   screenError: null,
 
-  async createRoom(nickname: string) {
+  async createRoom(nickname: string, profile?: PlayerProfileInput) {
     storage.setNickname(nickname);
     set({ connectionState: "connecting", toast: null, screenError: null });
     try {
       transport = new ColyseusRoomTransport();
       bindTransport((event) => handleServerEvent(event, set));
-      const result = await transport.createRoom({ nickname });
+      const result = await transport.createRoom({ nickname, ...profile });
       storage.setReconnectToken(result.reconnectToken);
       set({ connectionState: "connected", joinResult: result });
     } catch (error) {
@@ -59,13 +60,13 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     }
   },
 
-  async joinRoom(roomCode: string, nickname: string) {
+  async joinRoom(roomCode: string, nickname: string, profile?: PlayerProfileInput) {
     storage.setNickname(nickname);
     set({ connectionState: "connecting", toast: null, screenError: null });
     try {
       transport = new ColyseusRoomTransport();
       bindTransport((event) => handleServerEvent(event, set));
-      const result = await transport.joinByCode({ roomCode, nickname });
+      const result = await transport.joinByCode({ roomCode, nickname, ...profile });
       storage.setReconnectToken(result.reconnectToken);
       set({ connectionState: "connected", joinResult: result });
     } catch (error) {
@@ -103,7 +104,13 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   },
 
   async leave() {
-    await transport.leave();
+    unsubscribeTransport?.();
+    unsubscribeTransport = null;
+    try {
+      await transport.leave();
+    } catch (error) {
+      console.error("leave failed", error);
+    }
     storage.clearReconnectToken();
     set({
       connectionState: "idle",

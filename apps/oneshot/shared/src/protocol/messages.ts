@@ -9,6 +9,7 @@ export type GameAction = {
 
 export type ClientToServerMessage =
   | { type: "room:updateNickname"; nickname: string }
+  | { type: "room:updateProfile"; nickname?: string; avatarKey?: string; themeId?: string }
   | { type: "room:selectGame"; gameId: GameId; options?: Record<string, unknown> }
   | { type: "room:startGame" }
   | { type: "room:returnToLobby" }
@@ -34,10 +35,12 @@ export const MESSAGE_CHANNEL = {
   event: "event",
 } as const;
 
+export type PlayerProfileInput = { avatarKey?: string; themeId?: string };
+
 export type RoomTransport = {
-  createRoom(input: { nickname: string }): Promise<JoinResult>;
-  joinByCode(input: { roomCode: string; nickname: string }): Promise<JoinResult>;
-  joinByLink(input: { roomCode: string; nickname?: string }): Promise<JoinResult>;
+  createRoom(input: { nickname: string } & PlayerProfileInput): Promise<JoinResult>;
+  joinByCode(input: { roomCode: string; nickname: string } & PlayerProfileInput): Promise<JoinResult>;
+  joinByLink(input: { roomCode: string; nickname?: string } & PlayerProfileInput): Promise<JoinResult>;
   reconnect(input: { reconnectToken: string }): Promise<JoinResult>;
   send(message: ClientToServerMessage): void;
   onEvent(handler: (event: ServerEvent) => void): () => void;
