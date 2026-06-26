@@ -1,0 +1,10 @@
+services:
+  oneshot:
+    build:
+      context: ..
+      dockerfile: ops/Dockerfile
+    env_file:
+      - ../.env
+    ports:
+      - "2567:2567"
+    restart: unless-stopped

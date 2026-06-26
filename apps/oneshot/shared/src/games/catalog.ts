@@ -1,0 +1,55 @@
+import type { GameCatalogItem } from "../schema/domain";
+import { defaultKingGameOptions } from "./kinggame";
+
+export const gameCatalog: GameCatalogItem[] = [
+  {
+    id: "kinggame",
+    title: "왕게임",
+    minPlayers: 2,
+    maxPlayers: 12,
+    complexity: 1,
+    supportsJoinInProgress: false,
+    defaultOptions: defaultKingGameOptions,
+    status: "available",
+  },
+  {
+    id: "upstage",
+    title: "업스테이지",
+    minPlayers: 3,
+    maxPlayers: 10,
+    complexity: 3,
+    supportsJoinInProgress: false,
+    defaultOptions: {},
+    status: "coming_soon",
+  },
+  {
+    id: "liar",
+    title: "라이어",
+    minPlayers: 3,
+    maxPlayers: 12,
+    complexity: 2,
+    supportsJoinInProgress: false,
+    defaultOptions: {},
+    status: "coming_soon",
+  },
+  {
+    id: "fool-liar",
+    title: "바보 라이어",
+    minPlayers: 3,
+    maxPlayers: 12,
+    complexity: 1,
+    supportsJoinInProgress: false,
+    defaultOptions: {},
+    status: "coming_soon",
+  },
+  {
+    id: "arithmetic",
+    title: "사칙연산",
+    minPlayers: 2,
+    maxPlayers: 8,
+    complexity: 2,
+    supportsJoinInProgress: false,
+    defaultOptions: {},
+    status: "coming_soon",
+  },
+];
