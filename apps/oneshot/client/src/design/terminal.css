@@ -556,3 +556,23 @@ body {
 [data-theme="cozy"] .scr--liar .liar-card__face { background: var(--bg-1); }
 [data-theme="cozy"] .scr--liar .liar-card__word { text-shadow: none; }
 [data-theme="cozy"] .scr--liar .liar-card:active { transform: translateY(2px); box-shadow: 0 6px 0 rgb(0 0 0 / 0.06); }
+
+/* ============================ UPSTAGE (cozy overrides) ============================
+   Cyber base lives in app/app.css under .scr--upstage. Cozy = rounded corners,
+   soft 3D shadows, no telemetry/scanlines, warm card faces. */
+[data-theme="cozy"] .scr--upstage .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--upstage .up-panel { border: 0; background: var(--bg-1); border-radius: 22px; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--upstage .up-card { border: 0; background: var(--bg-1); border-radius: 12px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.08); }
+[data-theme="cozy"] .scr--upstage .up-card--star { box-shadow: 0 4px 0 rgb(245 195 68 / 0.4); }
+[data-theme="cozy"] .scr--upstage .up-card.is-selected { box-shadow: 0 10px 0 rgb(130 196 232 / 0.45); }
+[data-theme="cozy"] .scr--upstage .up-seg { border: 0; border-radius: 14px; overflow: hidden; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--upstage .up-seg__btn.is-on { background: var(--accent); }
+[data-theme="cozy"] .scr--upstage .up-seat { border: 0; background: var(--bg-1); border-radius: 16px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--upstage .up-seat.is-turn { box-shadow: 0 4px 0 rgb(130 196 232 / 0.5); }
+[data-theme="cozy"] .scr--upstage .up-seat.is-lead { box-shadow: 0 4px 0 rgb(245 195 68 / 0.5); }
+[data-theme="cozy"] .scr--upstage .up-pile { border-radius: 18px; border-color: var(--line-bright); }
+[data-theme="cozy"] .scr--upstage .up-chip { border: 0; background: var(--bg-1); border-radius: 12px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--upstage .up-table__row { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.04); }
+[data-theme="cozy"] .scr--upstage .up-card__v,
+[data-theme="cozy"] .scr--upstage .up-round .val,
+[data-theme="cozy"] .scr--upstage .up-h { text-shadow: none; }
