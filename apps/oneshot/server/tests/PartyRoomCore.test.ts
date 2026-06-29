@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { PartyRoomCore } from "../src/rooms/PartyRoomCore";
 
-const createCore = (maxPlayers = 4): PartyRoomCore => {
+const createCore = (): PartyRoomCore => {
   let clock = 0;
   return new PartyRoomCore({
     roomId: "room-core-test",
     roomCode: "ABCDE",
     sessionSecret: "test-secret-value",
-    maxPlayers,
     now: () => {
       clock += 1;
       return clock;
@@ -36,13 +35,14 @@ describe("PartyRoomCore", () => {
     expect(state.players[guest.playerId]?.seatIndex).toBe(1);
   });
 
-  it("rejects over-capacity joins", () => {
-    const core = createCore(2);
-    joinOrThrow(core, "a");
-    joinOrThrow(core, "b");
+  it("accepts joins without a product-level capacity cap", () => {
+    const core = createCore();
 
-    const full = core.join({ nickname: "c" });
-    expect(full).toMatchObject({ ok: false, code: "ROOM_FULL" });
+    for (let index = 0; index < 20; index += 1) {
+      joinOrThrow(core, `p${index}`);
+    }
+
+    expect(Object.keys(core.toState().players)).toHaveLength(20);
   });
 
   it("promotes a temporary host and restores the original host on reconnect", () => {
@@ -75,6 +75,26 @@ describe("PartyRoomCore", () => {
 
     expect(errors).toContain("HOST_ONLY");
     expect(core.toState().phase).toBe("lobby");
+  });
+
+  it("keeps room close host-only and calls the close callback", () => {
+    const core = createCore();
+    const host = joinOrThrow(core, "host");
+    const guest = joinOrThrow(core, "guest");
+    const errors: string[] = [];
+    let closeCount = 0;
+    core.setCallbacks({
+      sendError: (_playerId, code) => errors.push(code),
+      closeRoom: () => {
+        closeCount += 1;
+      },
+    });
+
+    core.handleMessage(guest.playerId, { type: "room:close" });
+    core.handleMessage(host.playerId, { type: "room:close" });
+
+    expect(errors).toContain("HOST_ONLY");
+    expect(closeCount).toBe(1);
   });
 
   it("survives a kick during a game without breaking room state", () => {

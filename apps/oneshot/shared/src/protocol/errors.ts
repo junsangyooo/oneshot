@@ -2,6 +2,7 @@ export type ErrorCode =
   | "ROOM_NOT_FOUND"
   | "ROOM_FULL"
   | "ROOM_EXPIRED"
+  | "ROOM_CLOSED"
   | "INVALID_NICKNAME"
   | "HOST_ONLY"
   | "GAME_NOT_FOUND"
@@ -10,6 +11,7 @@ export type ErrorCode =
   | "INVALID_ACTION"
   | "NOT_YOUR_TURN"
   | "RECONNECT_FAILED"
+  | "KICKED"
   | "SERVER_ERROR";
 
 export type ProtocolError = {
@@ -22,6 +24,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   ROOM_NOT_FOUND: "방을 찾을 수 없어요.",
   ROOM_FULL: "방이 가득 찼어요.",
   ROOM_EXPIRED: "만료된 방이에요.",
+  ROOM_CLOSED: "방장이 방을 닫았어요.",
   INVALID_NICKNAME: "닉네임을 확인해주세요.",
   HOST_ONLY: "방장만 할 수 있어요.",
   GAME_NOT_FOUND: "게임을 찾을 수 없어요.",
@@ -30,6 +33,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   INVALID_ACTION: "지금은 할 수 없는 동작이에요.",
   NOT_YOUR_TURN: "당신 차례가 아니에요.",
   RECONNECT_FAILED: "다시 연결하지 못했어요.",
+  KICKED: "방장이 내보냈어요.",
   SERVER_ERROR: "잠시 후 다시 시도해주세요.",
 };
 

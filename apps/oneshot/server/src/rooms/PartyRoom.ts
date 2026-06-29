@@ -6,6 +6,9 @@ import { getServerConfig } from "../config/env";
 import { PartyRoomCore } from "./PartyRoomCore";
 import { roomRegistry, type RoomSummary } from "./RoomRegistry";
 
+const KICK_CLOSE_CODE = 4006;
+const ROOM_CLOSE_CODE = 4007;
+
 type PartyRoomCreateOptions = {
   roomCode?: string;
 };
@@ -28,7 +31,7 @@ export const getRoomSummaryByCode = (roomCode: string): RoomSummary | null =>
   roomRegistry().summary(roomCode);
 
 export class PartyRoom extends Room {
-  override maxClients = 12;
+  override maxClients = Number.MAX_SAFE_INTEGER;
   override autoDispose = false;
 
   private core!: PartyRoomCore;
@@ -37,6 +40,7 @@ export class PartyRoom extends Room {
   private readonly sessionIdByPlayerId = new Map<string, string>();
   private readonly pendingJoinBySessionId = new Map<string, JoinResult>();
   private emptyRoomTimer: NodeJS.Timeout | null = null;
+  private closing = false;
 
   override async onCreate(options: PartyRoomCreateOptions): Promise<void> {
     this.roomCode = options.roomCode?.toUpperCase() ?? reserveAvailableRoomCode();
@@ -44,7 +48,6 @@ export class PartyRoom extends Room {
       roomId: this.roomId,
       roomCode: this.roomCode,
       sessionSecret: getServerConfig().SESSION_SECRET,
-      maxPlayers: this.maxClients,
     });
     this.core.setCallbacks({
       broadcastRoomState: (state) => {
@@ -60,9 +63,12 @@ export class PartyRoom extends Room {
       kickPlayer: (playerId) => {
         const client = this.clientForPlayer(playerId);
         if (client) {
-          void client.leave(4006);
+          void client.leave(KICK_CLOSE_CODE);
         }
         this.unbindPlayer(playerId);
+      },
+      closeRoom: () => {
+        this.closeRoom();
       },
     });
 
@@ -107,6 +113,11 @@ export class PartyRoom extends Room {
     this.playerIdBySessionId.delete(client.sessionId);
     this.pendingJoinBySessionId.delete(client.sessionId);
     if (!playerId) {
+      return;
+    }
+
+    if (this.closing) {
+      this.sessionIdByPlayerId.delete(playerId);
       return;
     }
 
@@ -188,6 +199,21 @@ export class PartyRoom extends Room {
       message: ERROR_MESSAGES[code] ?? devMessage,
       retryable: RETRYABLE_ERRORS.has(code),
     } satisfies ServerEvent);
+  }
+
+  private closeRoom(): void {
+    this.closing = true;
+    this.cancelEmptyRoomTimer();
+    this.broadcast(MESSAGE_CHANNEL.event, {
+      type: "error",
+      code: "ROOM_CLOSED",
+      message: ERROR_MESSAGES.ROOM_CLOSED,
+      retryable: RETRYABLE_ERRORS.has("ROOM_CLOSED"),
+    } satisfies ServerEvent);
+    for (const client of this.clients) {
+      void client.leave(ROOM_CLOSE_CODE);
+    }
+    void this.disconnect();
   }
 
   private scheduleEmptyRoomCleanup(): void {

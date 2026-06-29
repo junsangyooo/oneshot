@@ -26,7 +26,6 @@ export class KingGameModule
 {
   readonly id = "kinggame" as const;
   readonly minPlayers = 2;
-  readonly maxPlayers = 12;
 
   private players: PublicPlayerState[] = [];
   private assignments = new Map<string, Assignment>();
@@ -42,8 +41,8 @@ export class KingGameModule
     options: KingGameOptions;
     randomSeed: string;
   }): void {
-    if (input.players.length < this.minPlayers || input.players.length > this.maxPlayers) {
-      throw new Error(`KingGame requires ${this.minPlayers}-${this.maxPlayers} players`);
+    if (input.players.length < this.minPlayers) {
+      throw new Error(`KingGame requires at least ${this.minPlayers} players`);
     }
 
     this.players = [...input.players].sort((left, right) => left.seatIndex - right.seatIndex);

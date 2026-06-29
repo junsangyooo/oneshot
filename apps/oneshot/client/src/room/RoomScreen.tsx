@@ -33,7 +33,6 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
   const t = useT();
   const lang = useLangStore((s) => s.lang);
   const send = useRoomStore((state) => state.send);
-  const leave = useRoomStore((state) => state.leave);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ejectOpen, setEjectOpen] = useState(false);
 
@@ -52,9 +51,15 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
     offline: t("status.offline"),
   };
   const statusDot: Record<string, string> = { online: "dot--ok", reconnecting: "dot--warn", offline: "dot--off" };
+  const playerRange = (min: number, max: number | null) =>
+    max === null ? `${min}${t("lobby.players_or_more_suffix")}` : `${min}-${max}${t("lobby.players_count")}`;
 
   const selectGame = (gameId: GameId) => send({ type: "room:selectGame", gameId });
   const copyLink = () => void navigator.clipboard.writeText(joinUrl);
+  const closeRoom = () => {
+    setEjectOpen(false);
+    send({ type: "room:close" });
+  };
 
   return (
     <main className="scr scr--lobby">
@@ -131,13 +136,10 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
               <div className="sel">{t("lobby.currentlySelected")}</div>
               <div className="title">{gameTitle(lang, selectedGame.id, selectedGame.title)}</div>
               <div className="desc">{gameTagline(lang, selectedGame.id)}</div>
-              <div className="meta">
-                <span>
-                  ⧉ {selectedGame.minPlayers}-{selectedGame.maxPlayers}
-                  {t("lobby.players_count")}
-                </span>
-                <span>◷ LV.{selectedGame.complexity}</span>
-              </div>
+	              <div className="meta">
+	                <span>⧉ {playerRange(selectedGame.minPlayers, selectedGame.maxPlayers)}</span>
+	                <span>◷ LV.{selectedGame.complexity}</span>
+	              </div>
             </div>
           ) : null}
 
@@ -166,13 +168,10 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
                       <div className="nm">{gameTitle(lang, game.id, game.title)}</div>
                       <div className="dsc">{gameTagline(lang, game.id)}</div>
                     </div>
-                    <div className="mt">
-                      <span>
-                        {game.minPlayers}-{game.maxPlayers}
-                        {t("lobby.players_count")}
-                      </span>
-                      <span>LV.{game.complexity}</span>
-                    </div>
+	                    <div className="mt">
+	                      <span>{playerRange(game.minPlayers, game.maxPlayers)}</span>
+	                      <span>LV.{game.complexity}</span>
+	                    </div>
                   </button>
                 );
               })}
@@ -196,9 +195,14 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
               <button className="btn btn--sm" type="button" onClick={() => setSettingsOpen(true)}>
                 <span>⚙ {t("lobby.settings")}</span>
               </button>
-              <button className="btn btn--sm btn--danger" type="button" onClick={() => setEjectOpen(true)}>
-                <span>⏻ {t("lobby.closeRoom")}</span>
-              </button>
+	              <button
+	                className="btn btn--sm btn--danger"
+	                type="button"
+	                disabled={!isHost}
+	                onClick={() => setEjectOpen(true)}
+	              >
+	                <span>⏻ {t("lobby.closeRoom")}</span>
+	              </button>
             </div>
           </div>
         </section>
@@ -251,11 +255,8 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
                 );
               })}
               {Array.from({
-                length: Math.min(
-                  Math.max((selectedGame?.maxPlayers ?? 8) - players.length, 0),
-                  players.length < 2 ? 3 : 1,
-                ),
-              }).map((_, i) => (
+	                length: Math.max((selectedGame?.minPlayers ?? 2) - players.length, players.length < 2 ? 3 : 1),
+	              }).map((_, i) => (
                 <div className="op is-empty" key={`empty-${i}`}>
                   <span className="glyph glyph--empty">+</span>
                   <span className="nm">{t("lobby.waitingFriend")}</span>
@@ -294,9 +295,9 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
               <button className="btn btn--sm" type="button" onClick={() => setEjectOpen(false)}>
                 <span>{t("eject.abort")}</span>
               </button>
-              <button className="btn btn--sm btn--danger" type="button" onClick={() => void leave()}>
-                <span>● {t("eject.confirm")}</span>
-              </button>
+	              <button className="btn btn--sm btn--danger" type="button" onClick={closeRoom}>
+	                <span>● {t("eject.confirm")}</span>
+	              </button>
             </div>
           </div>
         </div>

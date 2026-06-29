@@ -21,7 +21,7 @@ export type GameCatalogItem = {
   id: GameId;
   title: string;
   minPlayers: number;
-  maxPlayers: number;
+  maxPlayers: number | null;
   complexity: 1 | 2 | 3;
   supportsJoinInProgress: boolean;
   defaultOptions: Record<string, unknown>;

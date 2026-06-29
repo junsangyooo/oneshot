@@ -13,6 +13,7 @@ export type ClientToServerMessage =
   | { type: "room:selectGame"; gameId: GameId; options?: Record<string, unknown> }
   | { type: "room:startGame" }
   | { type: "room:returnToLobby" }
+  | { type: "room:close" }
   | { type: "room:kickPlayer"; playerId: string }
   | { type: "game:action"; action: GameAction };
 

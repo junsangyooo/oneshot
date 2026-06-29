@@ -1,6 +1,7 @@
 import { Client } from "colyseus.js";
 import type { Room } from "colyseus.js";
 import type {
+  ErrorCode,
   ClientToServerMessage,
   JoinResult,
   RoomTransport,
@@ -10,6 +11,9 @@ import { MESSAGE_CHANNEL, readRoomCodeFromReconnectToken } from "@oneshot/shared
 import { clientConfig } from "../config/env";
 
 type EventHandler = (event: ServerEvent) => void;
+
+const KICK_CLOSE_CODE = 4006;
+const ROOM_CLOSE_CODE = 4007;
 
 export class ColyseusRoomTransport implements RoomTransport {
   private readonly client = new Client(clientConfig.wsUrl);
@@ -105,13 +109,7 @@ export class ColyseusRoomTransport implements RoomTransport {
       // 1000 = normal close (our own consented leave); we unsubscribe before
       // leaving, so only involuntary leaves (kick / server drop) reach here.
       if (code === 1000) return;
-      const isKick = code === 4006;
-      const event = {
-        type: "error",
-        code: isKick ? "KICKED" : "SERVER_ERROR",
-        message: isKick ? "방장이 내보냈어요." : "서버와의 연결이 끊겼어요.",
-        retryable: !isKick,
-      } as unknown as ServerEvent;
+      const event = leaveEventForCode(code);
       for (const handler of this.handlers) {
         handler(event);
       }
@@ -128,3 +126,19 @@ export class ColyseusRoomTransport implements RoomTransport {
     });
   }
 }
+
+const leaveEventForCode = (code: number): ServerEvent => {
+  const mapped: { code: ErrorCode; message: string; retryable: boolean } =
+    code === KICK_CLOSE_CODE
+      ? { code: "KICKED", message: "방장이 내보냈어요.", retryable: false }
+      : code === ROOM_CLOSE_CODE
+        ? { code: "ROOM_CLOSED", message: "방장이 방을 닫았어요.", retryable: false }
+        : { code: "SERVER_ERROR", message: "서버와의 연결이 끊겼어요.", retryable: true };
+
+  return {
+    type: "error",
+    code: mapped.code,
+    message: mapped.message,
+    retryable: mapped.retryable,
+  };
+};

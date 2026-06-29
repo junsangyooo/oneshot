@@ -51,6 +51,7 @@ const ko: Dict = {
   "lobby.waitingHost": "방장 대기 중",
   "lobby.needPlayers": "인원 대기",
   "lobby.players_count": "명",
+  "lobby.players_or_more_suffix": "명 이상",
   "lobby.minutes": "분",
 
   "role.commander": "방장",
@@ -95,6 +96,8 @@ const ko: Dict = {
   "state.roomFull.msg": "이 방은 이미 친구들로 가득해요. 다른 방을 찾아보세요.",
   "state.roomExpired.title": "만료된 방이에요",
   "state.roomExpired.msg": "오래 비어 있어서 방이 닫혔어요.",
+  "state.roomClosed.title": "방이 닫혔어요",
+  "state.roomClosed.msg": "방장이 이 방을 종료했어요. 새 방을 만들거나 다른 방에 입장해 주세요.",
   "state.gameRunning.title": "게임 진행 중",
   "state.gameRunning.msg": "이미 게임이 시작되어 지금은 참여할 수 없어요.",
   "state.reconnectFailed.title": "재접속 실패",
@@ -160,6 +163,7 @@ const en: Dict = {
   "lobby.waitingHost": "AWAITING COMMANDER",
   "lobby.needPlayers": "AWAITING PLAYERS",
   "lobby.players_count": " PLAYERS",
+  "lobby.players_or_more_suffix": "+ PLAYERS",
   "lobby.minutes": " MIN",
 
   "role.commander": "COMMANDER",
@@ -204,6 +208,8 @@ const en: Dict = {
   "state.roomFull.msg": "This room is already packed with friends. Try another one.",
   "state.roomExpired.title": "SECTOR EXPIRED",
   "state.roomExpired.msg": "The room was closed after sitting empty for too long.",
+  "state.roomClosed.title": "SECTOR CLOSED",
+  "state.roomClosed.msg": "The host closed this room. Create a new room or join another one.",
   "state.gameRunning.title": "GAME IN PROGRESS",
   "state.gameRunning.msg": "A game has already started, so you can't join right now.",
   "state.reconnectFailed.title": "RECONNECT FAILED",

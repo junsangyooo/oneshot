@@ -15,6 +15,7 @@ export type StateKind =
   | "roomNotFound"
   | "roomFull"
   | "roomExpired"
+  | "roomClosed"
   | "gameRunning"
   | "reconnectFailed"
   | "serverError"
@@ -43,6 +44,7 @@ const PRESETS: Record<StateKind, Preset> = {
   roomNotFound: { code: "SECTOR // ERR", accent: "red", icon: "✕", glitch: true, titleKey: "state.roomNotFound.title", msgKey: "state.roomNotFound.msg", actions: [HOME] },
   roomFull: { code: "SECTOR // FULL", accent: "warn", icon: "▦", titleKey: "state.roomFull.title", msgKey: "state.roomFull.msg", actions: [{ labelKey: "action.findRoom", primary: true, act: "home" }] },
   roomExpired: { code: "SECTOR // EXPIRED", accent: "red", icon: "⊘", titleKey: "state.roomExpired.title", msgKey: "state.roomExpired.msg", actions: [HOME] },
+  roomClosed: { code: "SECTOR // CLOSED", accent: "red", icon: "⏻", titleKey: "state.roomClosed.title", msgKey: "state.roomClosed.msg", actions: [HOME] },
   gameRunning: { code: "SECTOR // LOCKED", accent: "cyan", icon: "▶", titleKey: "state.gameRunning.title", msgKey: "state.gameRunning.msg", actions: [HOME] },
   reconnectFailed: { code: "LINK // ERR", accent: "red", icon: "⚠", glitch: true, titleKey: "state.reconnectFailed.title", msgKey: "state.reconnectFailed.msg", actions: [RETRY, { labelKey: "action.home", act: "home" }] },
   serverError: { code: "SYS // ERR", accent: "red", icon: "⚠", glitch: true, titleKey: "state.serverError.title", msgKey: "state.serverError.msg", actions: [RETRY, { labelKey: "action.home", act: "home" }] },
@@ -58,6 +60,7 @@ export const kindForCode = (code: string | undefined): StateKind => {
     case "ROOM_NOT_FOUND": return "roomNotFound";
     case "ROOM_FULL": return "roomFull";
     case "ROOM_EXPIRED": return "roomExpired";
+    case "ROOM_CLOSED": return "roomClosed";
     case "GAME_ALREADY_RUNNING": return "gameRunning";
     case "RECONNECT_FAILED": return "reconnectFailed";
     case "SERVER_ERROR": return "serverError";

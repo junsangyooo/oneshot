@@ -30,6 +30,8 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
     [roomCode],
   );
   const host = clientConfig.publicOrigin.replace(/^https?:\/\//, "");
+  const playerRange = (min: number, max: number | null) =>
+    max === null ? `${min}${t("lobby.players_or_more_suffix")}` : `${min}-${max}${t("lobby.players_count")}`;
 
   const profile = { avatarKey: identity.avatarId, themeId: theme };
 
@@ -71,15 +73,10 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
               <div className={`game-row ${i === 0 ? "is-active" : ""}`} key={id}>
                 <span className={`glyph glyph--${meta.accent}`}>{meta.glyph}</span>
                 <span>
-                  <div className="nm">{gameTitle(lang, id, id)}</div>
-                  <div className="mt">
-                    {meta.min}-{meta.max}
-                    {t("lobby.players_count")}
-                  </div>
-                </span>
-                <span className="pl">
-                  {meta.min}-{meta.max}
-                </span>
+	                  <div className="nm">{gameTitle(lang, id, id)}</div>
+	                  <div className="mt">{playerRange(meta.min, meta.max)}</div>
+	                </span>
+	                <span className="pl">{meta.max === null ? `${meta.min}+` : `${meta.min}-${meta.max}`}</span>
               </div>
             );
           })}

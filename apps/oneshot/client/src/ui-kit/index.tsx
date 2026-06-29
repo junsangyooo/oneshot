@@ -224,9 +224,12 @@ export const GameCatalog = ({
           onClick={() => onSelect(game.id)}
         >
           <span className="game-card__title">{game.title}</span>
-          <span className="game-card__meta">
-            {game.minPlayers}-{game.maxPlayers}명 · 난이도 {game.complexity}
-          </span>
+	          <span className="game-card__meta">
+	            {game.maxPlayers === null
+	              ? `${game.minPlayers}명 이상`
+	              : `${game.minPlayers}-${game.maxPlayers}명`}{" "}
+	            · 난이도 {game.complexity}
+	          </span>
           <span className={`game-card__status ${available ? "is-ready" : ""}`}>
             {available ? (enoughPlayers ? "시작 가능" : "인원 대기") : "준비 중"}
           </span>

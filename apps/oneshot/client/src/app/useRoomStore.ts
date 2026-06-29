@@ -149,7 +149,19 @@ const handleServerEvent = (
     return;
   }
   if (event.type === "error") {
+    const terminal = event.code === "KICKED" || event.code === "ROOM_CLOSED";
+    if (terminal) {
+      storage.clearReconnectToken();
+    }
     set({
+      ...(terminal
+        ? {
+            connectionState: "failed" as const,
+            joinResult: null,
+            roomState: null,
+            privateGameState: null,
+          }
+        : {}),
       toast: event.message,
       screenError: { code: event.code, message: event.message, retryable: event.retryable },
     });

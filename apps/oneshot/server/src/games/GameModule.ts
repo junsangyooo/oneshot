@@ -18,7 +18,6 @@ export type GameEvent = {
 export interface GameModule<TOptions, TPublicState, TPrivateState> {
   readonly id: GameId;
   readonly minPlayers: number;
-  readonly maxPlayers: number;
 
   start(input: {
     players: PublicPlayerState[];

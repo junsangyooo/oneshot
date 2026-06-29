@@ -14,7 +14,6 @@ export const ResultsScreen = ({ roomState, currentPlayerId }: ResultsScreenProps
   const t = useT();
   const lang = useLangStore((s) => s.lang);
   const send = useRoomStore((state) => state.send);
-  const leave = useRoomStore((state) => state.leave);
   const currentPlayer = currentPlayerId ? roomState.players[currentPlayerId] : null;
   const isHost = currentPlayer?.isHost ?? false;
   const result = roomState.activeGame?.result;
@@ -105,9 +104,14 @@ export const ResultsScreen = ({ roomState, currentPlayerId }: ResultsScreenProps
           >
             <span>{t("results.next")} →</span>
           </button>
-          <button className="btn btn--danger" type="button" onClick={() => void leave()}>
-            <span>⏻ {t("results.close")}</span>
-          </button>
+	          <button
+	            className="btn btn--danger"
+	            type="button"
+	            disabled={!isHost}
+	            onClick={() => send({ type: "room:close" })}
+	          >
+	            <span>⏻ {t("results.close")}</span>
+	          </button>
         </div>
       </main>
 

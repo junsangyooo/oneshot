@@ -32,6 +32,7 @@ export type PartyRoomCoreCallbacks = {
   sendPrivateState(playerId: string, state: unknown): void;
   sendError(playerId: string, code: ErrorCode, devMessage: string): void;
   kickPlayer(playerId: string): void;
+  closeRoom(): void;
 };
 
 export type JoinFailure = {
@@ -50,7 +51,6 @@ type PartyRoomCoreOptions = {
   roomId: string;
   roomCode: string;
   sessionSecret: string;
-  maxPlayers: number;
   now?: () => number;
 };
 
@@ -59,11 +59,11 @@ const noopCallbacks: PartyRoomCoreCallbacks = {
   sendPrivateState: () => {},
   sendError: () => {},
   kickPlayer: () => {},
+  closeRoom: () => {},
 };
 
 export class PartyRoomCore {
   private readonly sessionSecret: string;
-  private readonly maxPlayers: number;
   private readonly now: () => number;
   private readonly roomState: PartyRoomState;
   private selectedGameOptions: Record<string, unknown> = {};
@@ -74,7 +74,6 @@ export class PartyRoomCore {
   constructor(options: PartyRoomCoreOptions) {
     const now = options.now?.() ?? Date.now();
     this.sessionSecret = options.sessionSecret;
-    this.maxPlayers = options.maxPlayers;
     this.now = options.now ?? Date.now;
     this.roomState = {
       roomId: options.roomId,
@@ -107,10 +106,6 @@ export class PartyRoomCore {
     const nickname = this.parseNickname(input.nickname);
     if (!nickname) {
       return { ok: false, code: "INVALID_NICKNAME", message: "닉네임을 입력해주세요." };
-    }
-
-    if (this.getPlayers().length >= this.maxPlayers) {
-      return { ok: false, code: "ROOM_FULL", message: "방이 가득 찼습니다." };
     }
 
     const playerId = crypto.randomUUID();
@@ -238,6 +233,9 @@ export class PartyRoomCore {
       case "room:returnToLobby":
         this.returnToLobby(playerId);
         return;
+      case "room:close":
+        this.closeRoom(playerId);
+        return;
       case "room:kickPlayer":
         this.kickPlayer(playerId, message.playerId);
         return;
@@ -357,7 +355,12 @@ export class PartyRoomCore {
     }
 
     const options = { ...selectedGame.defaultOptions, ...this.selectedGameOptions };
-    module.start({ players, options, randomSeed: createRandomSeed() });
+    try {
+      module.start({ players, options, randomSeed: createRandomSeed() });
+    } catch {
+      this.callbacks.sendError(playerId, "INVALID_ACTION", "게임을 시작할 수 없습니다.");
+      return;
+    }
     this.activeGame = module;
     this.roomState.phase = "game";
     this.roomState.activeGame = {
@@ -408,6 +411,13 @@ export class PartyRoomCore {
     this.roomState.activeGame = null;
     this.touch();
     this.broadcastEverything();
+  }
+
+  private closeRoom(playerId: string): void {
+    if (!this.requireHost(playerId)) {
+      return;
+    }
+    this.callbacks.closeRoom();
   }
 
   private kickPlayer(playerId: string, targetPlayerId: string): void {
