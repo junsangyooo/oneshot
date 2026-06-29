@@ -495,3 +495,37 @@ body {
   [data-theme="cozy"] .scr--home .brand { font-size: clamp(48px, 17vw, 72px); }
   [data-theme="cozy"] .scr--home .center { padding-top: 26px; }
 }
+
+/* =========================================================
+   KING GAME — COZY overrides (soft pastel, rounded, 3D).
+   Cyber base lives in app/app.css under .scr--king.
+   ========================================================= */
+[data-theme="cozy"] .scr--king .topbar .readout,
+[data-theme="cozy"] .scr--king .botbar { display: none; }
+[data-theme="cozy"] .scr--king .king-card,
+[data-theme="cozy"] .scr--king .king-mode,
+[data-theme="cozy"] .scr--king .king-pool__item,
+[data-theme="cozy"] .scr--king .king-custom__add input,
+[data-theme="cozy"] .scr--king .king-num,
+[data-theme="cozy"] .scr--king .king-chip,
+[data-theme="cozy"] .scr--king .king-seg,
+[data-theme="cozy"] .scr--king .king-drag-ghost { border-radius: 16px; }
+[data-theme="cozy"] .scr--king .king-seg { overflow: hidden; }
+
+[data-theme="cozy"] .scr--king .king-card { border: 0; background: var(--bg-1); box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--king .king-card--king { box-shadow: 0 8px 0 rgb(245 195 68 / 0.45); animation: kingfloat 3s ease-in-out infinite; }
+[data-theme="cozy"] .scr--king .king-card__crown,
+[data-theme="cozy"] .scr--king .king-card__num,
+[data-theme="cozy"] .scr--king .king-reveal__mission,
+[data-theme="cozy"] .scr--king .king-prelude__num { text-shadow: none; }
+
+[data-theme="cozy"] .scr--king .king-mode { border: 0; background: var(--bg-1); box-shadow: 0 5px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--king .king-mode.is-selected { background: var(--bg-1); box-shadow: 0 5px 0 var(--accent-soft); }
+[data-theme="cozy"] .scr--king .king-custom { border-top-color: var(--line-bright); }
+
+[data-theme="cozy"] .scr--king .king-num { border: 0; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--king .king-num:active { transform: translateY(2px); box-shadow: 0 2px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--king .king-slot { border-radius: 10px 10px 0 0; }
+[data-theme="cozy"] .scr--king .king-slot.is-hover { background: rgb(130 196 232 / 0.18); }
+[data-theme="cozy"] .scr--king .king-drag-ghost { box-shadow: 0 8px 18px rgb(0 0 0 / 0.18); }
+[data-theme="cozy"] .scr--king .king-chip.is-on { background: rgb(130 196 232 / 0.18); }

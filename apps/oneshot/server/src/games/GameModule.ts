@@ -25,11 +25,13 @@ export interface GameModule<TOptions, TPublicState, TPrivateState> {
     randomSeed: string;
   }): void;
 
-  handleAction(input: { playerId: string; action: GameAction }): ActionResult;
+  handleAction(input: { playerId: string; action: GameAction; isHost: boolean }): ActionResult;
   getPublicState(): TPublicState;
   getStateFor(playerId: string): TPrivateState;
   onPlayerLeave(playerId: string): void;
   onPlayerReturn(playerId: string): void;
+  /** A player was permanently removed (kicked). Drop them from the roster. */
+  onPlayerRemoved(playerId: string): void;
   isOver(): GameResult | null;
 }
 

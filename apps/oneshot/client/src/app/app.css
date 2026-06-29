@@ -253,3 +253,123 @@ button { font: inherit; }
 .scr--conn .st-msg { font-size: 13px; color: var(--ink-dim); letter-spacing: 0.03em; line-height: 1.8; max-width: 46ch; justify-self: center; }
 .scr--conn .st-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 .scr--conn .st-actions .btn { min-width: 180px; justify-content: center; }
+
+/* =========================================================
+   KING GAME (왕게임) — CYBER base. Cozy overrides live in
+   design/terminal.css under [data-theme="cozy"] .scr--king.
+   ========================================================= */
+.scr--king { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-rows: auto 1fr auto; gap: 16px; }
+.scr--king .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+.scr--king .readout--r { text-align: right; }
+.scr--king .king-round { text-align: center; }
+.scr--king .king-round .lbl { display: block; font-size: 11px; letter-spacing: var(--track-mid); color: var(--ink-dim); text-transform: uppercase; }
+.scr--king .king-round .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 3vw, 30px); color: var(--ink); }
+.scr--king .king-toolbar { display: flex; gap: 8px; justify-content: flex-end; align-items: start; }
+.scr--king .botbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; }
+.scr--king .botbar .mid { text-align: center; font-size: 11px; color: var(--ink-faint); letter-spacing: 0.1em; }
+.scr--king .botbar .readout--r { text-align: right; }
+
+.scr--king .king-stage { min-height: 0; overflow-y: auto; display: grid; align-content: center; justify-items: center; gap: clamp(16px, 3vh, 30px); }
+.scr--king .king-loading { display: grid; place-items: center; height: 100svh; color: var(--ink-dim); position: relative; z-index: 2; }
+.scr--king .btn--init { font-size: 15px; padding: 18px; justify-content: center; gap: 12px; min-width: 220px; }
+.scr--king .king-hint { font-size: 13px; color: var(--ink-dim); letter-spacing: 0.04em; text-align: center; }
+.scr--king .king-hint--dim { color: var(--ink-faint); font-size: 11px; }
+
+/* waiting / loading blocks */
+.scr--king .king-wait { display: grid; gap: 18px; justify-items: center; text-align: center; color: var(--ink-dim); }
+.scr--king .king-wait__pulse { font-size: clamp(48px, 12vw, 90px); color: var(--gold); animation: kingfloat 2.4s ease-in-out infinite; }
+
+/* the player's own card */
+.scr--king .king-card { width: min(420px, 90vw); border: 1px solid var(--line-bright); padding: clamp(24px, 4vh, 44px); display: grid; gap: 12px; justify-items: center; text-align: center; background: rgb(255 255 255 / 0.02); }
+.scr--king .king-card--king { border-color: var(--gold); box-shadow: 0 0 60px rgb(var(--glow-red) / 0.15), inset 0 0 40px rgb(244 185 66 / 0.06); animation: kingpulse 2.6s ease-in-out infinite; }
+.scr--king .king-card__crown { font-size: clamp(64px, 16vw, 120px); color: var(--gold); line-height: 1; text-shadow: 0 0 30px rgb(244 185 66 / 0.5); animation: kingfloat 3s ease-in-out infinite; }
+.scr--king .king-card__title { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 5vw, 40px); letter-spacing: var(--track-mid); color: var(--gold); }
+.scr--king .king-card__eyebrow { font-size: 11px; letter-spacing: var(--track-mid); color: var(--ink-dim); text-transform: uppercase; }
+.scr--king .king-card__num { font-family: var(--font-display); font-weight: 700; font-size: clamp(72px, 20vw, 140px); line-height: 1; color: var(--ink); text-shadow: 0 0 40px rgb(var(--glow-red) / 0.25); }
+.scr--king .king-card__hint { font-size: 12px; color: var(--ink-dim); letter-spacing: 0.05em; }
+
+/* setup */
+.scr--king .king-setup { width: min(760px, 94vw); display: grid; gap: clamp(16px, 2.5vh, 24px); align-content: start; }
+.scr--king .king-setup__head { display: grid; gap: 6px; text-align: center; }
+.scr--king .king-setup__head h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 4.5vw, 38px); margin: 0; color: var(--ink); letter-spacing: var(--track-mid); }
+.scr--king .king-mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.scr--king .king-mode { display: grid; gap: 6px; text-align: left; padding: 16px 18px; border: 1px solid var(--line); background: rgb(255 255 255 / 0.02); color: var(--ink); cursor: pointer; transition: border-color 0.18s, background 0.18s; }
+.scr--king .king-mode:hover { border-color: var(--line-bright); }
+.scr--king .king-mode.is-selected { border-color: rgb(var(--glow-red) / 0.6); background: rgb(var(--glow-red) / 0.08); }
+.scr--king .king-mode.is-spicy .king-mode__name { color: var(--accent); }
+.scr--king .king-mode__name { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: 0.06em; }
+.scr--king .king-mode__desc { font-size: 11px; color: var(--ink-dim); line-height: 1.6; }
+
+/* custom builder */
+.scr--king .king-custom { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+.scr--king .king-custom__col { display: grid; gap: 8px; align-content: start; min-height: 0; }
+.scr--king .king-chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 150px; overflow-y: auto; }
+.scr--king .king-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 7px 10px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim); font-size: 11px; cursor: pointer; text-align: left; }
+.scr--king .king-chip:hover { border-color: var(--line-bright); color: var(--ink); }
+.scr--king .king-chip.is-on { border-color: var(--cyan); color: var(--ink); background: rgb(43 214 255 / 0.08); }
+.scr--king .king-chip > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr--king .king-chip__slots { color: var(--gold); font-size: 12px; flex: none; }
+.scr--king .king-custom__add { display: grid; gap: 8px; }
+.scr--king .king-custom__add input { width: 100%; padding: 12px 14px; background: rgb(255 255 255 / 0.03); border: 1px solid var(--line-bright); color: var(--ink); font-family: var(--font-mono); font-size: 13px; }
+.scr--king .king-custom__add input:focus { outline: none; border-color: var(--cyan); }
+.scr--king .king-custom__row { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.scr--king .king-seg { display: inline-flex; border: 1px solid var(--line); }
+.scr--king .king-seg button { padding: 9px 13px; background: transparent; color: var(--ink-dim); border: 0; font-size: 11px; cursor: pointer; }
+.scr--king .king-seg button.on { background: rgb(var(--glow-red) / 0.12); color: var(--ink); }
+.scr--king .king-pool { display: grid; gap: 6px; max-height: 150px; overflow-y: auto; }
+.scr--king .king-pool__empty { font-size: 11px; color: var(--ink-faint); }
+.scr--king .king-pool__item { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); }
+.scr--king .king-pool__text { font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr--king .king-pool__x { background: none; border: 0; color: var(--ink-faint); cursor: pointer; font-size: 13px; }
+.scr--king .king-pool__x:hover { color: var(--accent); }
+
+/* command / mission composer */
+.scr--king .king-command { display: grid; gap: 20px; justify-items: center; }
+.scr--king .king-composer { width: min(640px, 94vw); display: grid; gap: 16px; justify-items: center; }
+.scr--king .king-composer__head { display: flex; align-items: center; gap: 10px; }
+.scr--king .king-mission { font-family: var(--font-display); font-size: clamp(20px, 4vw, 30px); line-height: 1.6; text-align: center; color: var(--ink); }
+.scr--king .king-mission__raw { display: block; margin-bottom: 12px; }
+.scr--king .king-mission__targets { display: inline-flex; gap: 10px; justify-content: center; }
+.scr--king .king-slot { display: inline-flex; align-items: center; justify-content: center; min-width: 70px; padding: 2px 12px; margin: 0 4px; border-bottom: 2px dashed var(--line-bright); color: var(--ink-faint); cursor: pointer; vertical-align: middle; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.scr--king .king-slot.is-active { border-color: var(--cyan); color: var(--cyan); }
+.scr--king .king-slot.is-hover { background: rgb(43 214 255 / 0.14); border-color: var(--cyan); }
+.scr--king .king-slot.is-filled { border-bottom-style: solid; border-color: var(--gold); color: var(--gold); }
+.scr--king .king-numbers { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.scr--king .king-num { width: 56px; height: 56px; display: grid; place-items: center; border: 1px solid var(--line-bright); background: rgb(255 255 255 / 0.03); color: var(--ink); font-family: var(--font-display); font-weight: 700; font-size: 18px; cursor: grab; touch-action: none; user-select: none; transition: transform 0.12s, border-color 0.12s; }
+.scr--king .king-num:hover { border-color: var(--cyan); }
+.scr--king .king-num.is-used { opacity: 0.3; pointer-events: none; }
+.scr--king .king-num.is-dragging { opacity: 0.4; }
+.scr--king .king-drag-ghost { position: fixed; transform: translate(-50%, -50%); z-index: 50; width: 56px; height: 56px; display: grid; place-items: center; border: 1px solid var(--gold); background: var(--bg-1); color: var(--gold); font-family: var(--font-display); font-weight: 700; font-size: 18px; pointer-events: none; box-shadow: 0 0 20px rgb(var(--glow-red) / 0.3); }
+
+/* reveal */
+.scr--king .king-prelude { display: grid; gap: 18px; justify-items: center; text-align: center; }
+.scr--king .king-prelude.is-target { animation: kingflash 0.85s ease-in-out infinite alternate; }
+.scr--king .king-prelude__badge { font-size: 12px; letter-spacing: var(--track-mid); color: var(--accent); text-transform: uppercase; }
+.scr--king .king-prelude__num { font-family: var(--font-display); font-weight: 700; font-size: clamp(80px, 22vw, 160px); line-height: 1; color: var(--accent); text-shadow: 0 0 50px rgb(var(--glow-red) / 0.5); }
+.scr--king .king-prelude__prompt { font-family: var(--font-display); font-size: clamp(20px, 4vw, 30px); color: var(--ink); }
+.scr--king .king-prelude__prompt--dim { color: var(--ink-faint); }
+.scr--king .king-prelude__dots { font-size: clamp(48px, 12vw, 90px); color: var(--ink-faint); letter-spacing: 0.2em; animation: kingdots 1.2s steps(4, end) infinite; }
+.scr--king .king-reveal { width: min(640px, 94vw); display: grid; gap: 18px; justify-items: center; text-align: center; }
+.scr--king .king-reveal__targets { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+.scr--king .king-reveal__target { display: grid; justify-items: center; gap: 6px; }
+.scr--king .king-reveal__target .glyph { width: 64px; height: 64px; font-size: 22px; }
+.scr--king .king-reveal__num { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--gold); }
+.scr--king .king-reveal__name { font-size: 12px; color: var(--ink-dim); }
+.scr--king .king-reveal__mission { font-family: var(--font-display); font-size: clamp(24px, 5vw, 38px); line-height: 1.5; color: var(--ink); text-shadow: 0 0 30px rgb(var(--glow-red) / 0.2); }
+
+@keyframes kingpulse {
+  0%, 100% { box-shadow: 0 0 50px rgb(var(--glow-red) / 0.12), inset 0 0 40px rgb(244 185 66 / 0.05); }
+  50% { box-shadow: 0 0 80px rgb(var(--glow-red) / 0.22), inset 0 0 50px rgb(244 185 66 / 0.1); }
+}
+@keyframes kingfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes kingflash { from { opacity: 0.78; } to { opacity: 1; } }
+@keyframes kingdots { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+
+@media (max-width: 720px) {
+  .scr--king { height: auto; min-height: 100svh; overflow: visible; }
+  .scr--king .king-custom { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .scr--king .king-mode-grid { grid-template-columns: 1fr; }
+  .scr--king .king-num { width: 48px; height: 48px; font-size: 16px; }
+}

@@ -55,7 +55,13 @@ export const App = () => {
   } else if (roomState?.phase === "lobby") {
     screen = <RoomScreen roomState={roomState} currentPlayerId={joinResult?.playerId ?? null} />;
   } else if (roomState?.phase === "game" && roomState.activeGame?.gameId === "kinggame") {
-    screen = <KingGameScreen roomState={roomState} privateState={privateGameState} />;
+    screen = (
+      <KingGameScreen
+        roomState={roomState}
+        privateState={privateGameState}
+        currentPlayerId={joinResult?.playerId ?? null}
+      />
+    );
   } else if (roomState?.phase === "results") {
     screen = <ResultsScreen roomState={roomState} currentPlayerId={joinResult?.playerId ?? null} />;
   }

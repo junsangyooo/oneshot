@@ -379,7 +379,8 @@ export class PartyRoomCore {
       return;
     }
 
-    const result = this.activeGame.handleAction({ playerId, action });
+    const isHost = playerId === this.effectiveHostPlayerId();
+    const result = this.activeGame.handleAction({ playerId, action, isHost });
     if (!result.ok) {
       this.callbacks.sendError(playerId, result.code, result.message);
       return;
@@ -435,7 +436,9 @@ export class PartyRoomCore {
 
     delete this.roomState.players[targetPlayerId];
     this.sessionsByPlayerId.delete(targetPlayerId);
-    this.activeGame?.onPlayerLeave(targetPlayerId);
+    // A kick is permanent (vs. a temporary disconnect → onPlayerLeave), so the
+    // game must drop the player from its roster, not just pause them.
+    this.activeGame?.onPlayerRemoved(targetPlayerId);
     this.callbacks.kickPlayer(targetPlayerId);
 
     if (this.roomState.hostPlayerId === targetPlayerId) {
