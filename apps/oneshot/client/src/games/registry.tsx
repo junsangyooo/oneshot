@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { GameId, PartyRoomState } from "@oneshot/shared";
 import { KingGameScreen } from "./kinggame/KingGameScreen";
+import { LiarGameScreen } from "./liar/LiarGameScreen";
 
 /* Common props every in-game screen receives. Keep this in sync with the
    individual *GameScreen components. */
@@ -15,4 +16,6 @@ export type GameScreenProps = {
    it, so no routing edits are needed. */
 export const GAME_SCREENS: Partial<Record<GameId, ComponentType<GameScreenProps>>> = {
   kinggame: KingGameScreen,
+  liar: LiarGameScreen,
+  "fool-liar": LiarGameScreen,
 };

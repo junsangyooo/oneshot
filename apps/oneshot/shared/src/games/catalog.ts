@@ -30,7 +30,7 @@ export const gameCatalog: GameCatalogItem[] = [
     complexity: 2,
     supportsJoinInProgress: false,
     defaultOptions: {},
-    status: "coming_soon",
+    status: "available",
   },
   {
     id: "fool-liar",
@@ -40,7 +40,7 @@ export const gameCatalog: GameCatalogItem[] = [
     complexity: 1,
     supportsJoinInProgress: false,
     defaultOptions: {},
-    status: "coming_soon",
+    status: "available",
   },
   {
     id: "arithmetic",

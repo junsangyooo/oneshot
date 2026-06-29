@@ -529,3 +529,30 @@ body {
 [data-theme="cozy"] .scr--king .king-slot.is-hover { background: rgb(130 196 232 / 0.18); }
 [data-theme="cozy"] .scr--king .king-drag-ghost { box-shadow: 0 8px 18px rgb(0 0 0 / 0.18); }
 [data-theme="cozy"] .scr--king .king-chip.is-on { background: rgb(130 196 232 / 0.18); }
+
+/* =========================================================
+   LIAR GAMES — COZY overrides. Cyber base lives in
+   app/app.css under .scr--liar.
+   ========================================================= */
+[data-theme="cozy"] .scr--liar .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--liar .liar-cat,
+[data-theme="cozy"] .scr--liar .liar-count-seg,
+[data-theme="cozy"] .scr--liar .liar-card { border-radius: 16px; }
+[data-theme="cozy"] .scr--liar .liar-count-seg { overflow: hidden; }
+
+[data-theme="cozy"] .scr--liar .liar-cat { border: 0; background: var(--bg-1); box-shadow: 0 5px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--liar .liar-cat.is-selected { background: var(--bg-1); box-shadow: 0 5px 0 var(--accent-soft); }
+[data-theme="cozy"] .scr--liar .liar-count-seg { border: 0; box-shadow: 0 4px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--liar .liar-count-seg button.on { background: rgb(130 196 232 / 0.18); }
+
+/* cozy card: a soft flipped card-back instead of a glitch block */
+[data-theme="cozy"] .scr--liar .liar-card { border: 0; box-shadow: 0 8px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--liar .liar-card__cover {
+  background-color: var(--accent-soft);
+  background-image: radial-gradient(circle at 1px 1px, rgb(0 0 0 / 0.06) 1px, transparent 0);
+  background-size: 14px 14px;
+}
+[data-theme="cozy"] .scr--liar .liar-card__cover-glyph { color: var(--accent); opacity: 0.55; }
+[data-theme="cozy"] .scr--liar .liar-card__face { background: var(--bg-1); }
+[data-theme="cozy"] .scr--liar .liar-card__word { text-shadow: none; }
+[data-theme="cozy"] .scr--liar .liar-card:active { transform: translateY(2px); box-shadow: 0 6px 0 rgb(0 0 0 / 0.06); }
