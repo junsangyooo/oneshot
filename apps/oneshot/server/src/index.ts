@@ -6,9 +6,12 @@ import { fileURLToPath } from "node:url";
 import { Server, matchMaker } from "@colyseus/core";
 import { monitor } from "@colyseus/monitor";
 import { WebSocketTransport } from "@colyseus/ws-transport";
+import compression from "compression";
 import cors from "cors";
 import type { CorsOptions } from "cors";
 import express from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import { getServerConfig } from "./config/env";
 import {
   getRoomSummaryByCode,
@@ -40,14 +43,27 @@ const corsOrigin: CorsOptions["origin"] = (origin, callback) => {
   callback(null, false);
 };
 
+// Security + transport headers. CSP is left off because the SPA loads Google
+// Fonts and opens same-origin WebSockets; tighten with a tailored policy later.
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
+
+// Throttle room creation so a single client can't spin up unlimited rooms.
+const createRoomLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: "RATE_LIMITED", message: "잠시 후 다시 시도해 주세요." },
+});
 
 app.get("/healthz", (_request, response) => {
   response.json({ ok: true, service: "oneshot", time: new Date().toISOString() });
 });
 
-app.post("/api/rooms", async (_request, response, next) => {
+app.post("/api/rooms", createRoomLimiter, async (_request, response, next) => {
   let roomCode: string | null = null;
   try {
     roomCode = reserveAvailableRoomCode();
@@ -75,12 +91,28 @@ app.get("/api/rooms/:roomCode/summary", (request, response) => {
   response.json(summary);
 });
 
-app.use("/colyseus", monitor());
+// The Colyseus monitor exposes room internals; only mount it outside production.
+// To use it in production, put it behind auth/an allowlist before re-enabling.
+if (config.NODE_ENV !== "production") {
+  app.use("/colyseus", monitor());
+}
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFile);
 const clientDistPath = path.resolve(currentDir, "../../client/dist");
-app.use(express.static(clientDistPath));
+app.use(
+  express.static(clientDistPath, {
+    maxAge: "1y",
+    immutable: true,
+    setHeaders: (response, filePath) => {
+      // Vite hashes asset filenames, so they're safe to cache long-term, but the
+      // HTML entrypoint must always revalidate to pick up new builds.
+      if (filePath.endsWith("index.html")) {
+        response.setHeader("Cache-Control", "no-cache");
+      }
+    },
+  }),
+);
 app.get(["/", "/r/:roomCode"], (_request, response) => {
   response.sendFile(path.join(clientDistPath, "index.html"), (error) => {
     if (error) {

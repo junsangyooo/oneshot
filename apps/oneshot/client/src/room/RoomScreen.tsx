@@ -146,7 +146,9 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
           <div className="avail">
             <div className="panel-label">{t("lobby.available")}</div>
             <div className="mod-grid">
-              {roomState.catalog.map((game) => {
+              {roomState.catalog
+                .filter((game) => game.status === "available")
+                .map((game) => {
                 const available = game.status === "available";
                 const selected = game.id === roomState.selectedGameId;
                 const meta = gameMeta(game.id);

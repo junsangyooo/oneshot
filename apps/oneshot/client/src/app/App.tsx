@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { HomeScreen } from "../lobby/HomeScreen";
 import { RoomScreen } from "../room/RoomScreen";
 import { ResultsScreen } from "../room/ResultsScreen";
-import { KingGameScreen } from "../games/kinggame/KingGameScreen";
+import { GAME_SCREENS } from "../games/registry";
 import { Toast } from "../ui-kit";
 import { StateScreen, StatesGallery, kindForCode } from "../ui/states";
 import { useRoomStore } from "./useRoomStore";
@@ -54,14 +54,17 @@ export const App = () => {
     screen = <StateScreen kind="notFound" onHome={goHome} onRetry={goHome} />;
   } else if (roomState?.phase === "lobby") {
     screen = <RoomScreen roomState={roomState} currentPlayerId={joinResult?.playerId ?? null} />;
-  } else if (roomState?.phase === "game" && roomState.activeGame?.gameId === "kinggame") {
-    screen = (
-      <KingGameScreen
-        roomState={roomState}
-        privateState={privateGameState}
-        currentPlayerId={joinResult?.playerId ?? null}
-      />
-    );
+  } else if (roomState?.phase === "game" && roomState.activeGame) {
+    const GameScreen = GAME_SCREENS[roomState.activeGame.gameId];
+    if (GameScreen) {
+      screen = (
+        <GameScreen
+          roomState={roomState}
+          privateState={privateGameState}
+          currentPlayerId={joinResult?.playerId ?? null}
+        />
+      );
+    }
   } else if (roomState?.phase === "results") {
     screen = <ResultsScreen roomState={roomState} currentPlayerId={joinResult?.playerId ?? null} />;
   }

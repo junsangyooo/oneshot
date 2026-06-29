@@ -304,6 +304,26 @@ describe("KingGameModule — kick / removal", () => {
     const king = module.getPublicState().kingPlayerId!;
     expect(module.getStateFor(king).pendingMission!.slots).toBe(1);
   });
+
+  it("drops a kicked subject's number so a mid-turn reveal never targets an empty seat", () => {
+    const { module, players, host } = startGame(4, "kick-mid");
+    configure(module, host, "mild");
+    const king = module.getPublicState().kingPlayerId!;
+    const victim = players.find((p) => p.id !== king)!;
+    const victimNumber = module.getStateFor(victim.id).number;
+    expect(victimNumber).not.toBeNull();
+
+    module.onPlayerRemoved(victim.id);
+
+    const numbers = module.getPublicState().availableNumbers;
+    expect(numbers).not.toContain(victimNumber);
+
+    const slots = module.getStateFor(king).pendingMission!.slots;
+    const targetNumbers = numbers.slice(0, slots);
+    expect(act(module, king, KING_ACTIONS.reveal, { targetNumbers })).toMatchObject({ ok: true });
+    const targets = module.getPublicState().command!.targets;
+    expect(targets.every((target) => target.playerId !== "")).toBe(true);
+  });
 });
 
 describe("KingGameModule — bot marathon", () => {

@@ -24,8 +24,10 @@ corepack pnpm --filter @oneshot/server test
 ```
 
 - pnpm은 `corepack pnpm`으로 호출한다(전역 pnpm 없을 수 있음).
+- **pnpm 명령은 `apps/oneshot/` 안에서 실행한다.** workspace 루트가 여기다(리포 루트 아님). 리포 루트에서 돌리면 `vitest: command not found`로 실패한다.
 - `.env`는 git-ignored다. `setup.sh`가 `*/.env.example`에서 생성한다.
 - **모든 상태/에러 페이지는 `/_states` 라우트에서 한눈에 미리볼 수 있다.**
+- 배포·환경변수·아키텍처 개요는 루트 [`README.md`](./README.md)에 있다.
 
 ---
 
@@ -38,12 +40,14 @@ corepack pnpm --filter @oneshot/server test
 | 테마 시스템 | `client/src/theme/index.ts` (`THEMES`, `useTheme`) |
 | 다국어 | `client/src/i18n/index.ts` (`useT`, `gameTitle`, `gameTagline`) |
 | 아바타 | `client/src/design/avatars.ts` + `public/themes/<theme>/avatars/` |
-| 게임 표시 메타 | `client/src/design/games.ts` (`GAME_META`, `GAME_ORDER`) |
+| 게임 표시 메타 | `client/src/design/games.ts` (`GAME_META`, `GAME_ORDER`, `gameThumb`) |
+| **게임 화면 레지스트리** | `client/src/games/registry.tsx` (`GAME_SCREENS`, `GameScreenProps`) — 새 게임 화면은 여기 한 줄만 추가 |
 | 공용 React 컴포넌트 | `client/src/ui/terminal.tsx` (`Backdrop`, `AvatarImg`, `SettingsModal`, `LangToggle`) |
 | 상태/에러 페이지 | `client/src/ui/states.tsx` (`StateScreen`, `StateKind`) |
-| 화면 라우팅 | `client/src/app/App.tsx` |
-| 서버 게임 규칙 | `server/src/games/<id>/`, 등록은 `server/src/games/registry.ts` |
-| 게임 카탈로그 / 타입 | `shared/src/games/catalog.ts`, `shared/src/schema/domain.ts` (`GameId`) |
+| 화면 라우팅 | `client/src/app/App.tsx` (게임 phase면 `GAME_SCREENS`에서 조회해 자동 렌더) |
+| 서버 게임 규칙 | `server/src/games/<id>/`, 계약은 `server/src/games/GameModule.ts`, 등록은 `server/src/games/registry.ts` |
+| 서버 진입점·보안 | `server/src/index.ts` (helmet·compression·rate-limit·CORS·정적 서빙), env는 `server/src/config/env.ts` |
+| 게임 카탈로그 / 타입 | `shared/src/games/catalog.ts` (`gameCatalog`), `shared/src/schema/domain.ts` (`GameId`) |
 
 **테마는 최상위 개념이다.** 토큰은 `terminal.css`의 `:root`(= **CYBER** 기본) 와
 `[data-theme="cozy"]` 블록(= **COZY** 오버라이드)으로 정의된다. `<html data-theme="...">` 한 줄로 전체가 바뀐다.
@@ -85,20 +89,60 @@ corepack pnpm --filter @oneshot/server test
 
 ---
 
-## 4. 새 게임 추가 레시피 (복붙용 스캐폴드)
+## 4. 새 게임 추가 — 완전 레시피 (자동 실행용)
 
-게임 하나를 붙이는 표준 절차. **프레젠테이션은 위 §3 규칙을 그대로 따른다.**
+> **새 세션에서 "○○게임 추가해줘" 요청을 받으면 이 절차를 처음부터 끝까지 따른다.**
+> (0)에서 스펙을 먼저 확정하고, (A)~(E) 파일을 빠짐없이 채우고, (F) 보안을 검증하고, (G)로 자산을 만든다.
+> 빠짐없이 하면 typecheck/test 통과 + 2 테마 × 2 언어 동작까지 완성된다. 모호하면 추측하지 말고 (0)에서 질문한다.
+
+### (0) 먼저 확정할 게임 스펙 (코딩 전)
+
+아래를 모두 정한다. 사용자가 안 준 항목은 **합리적 기본값을 제안하고 컨펌받은 뒤** 진행한다.
+
+| 항목 | 설명 | 들어가는 곳 |
+|---|---|---|
+| `id` | kebab-case 식별자 (예: `"liar"`) | `domain.ts` `GameId`, 전체 |
+| 이름 ko / en | 표시 이름 | i18n `game.<id>` (ko·en) + catalog `title`(ko fallback) |
+| 태그라인 ko / en | 한 줄 설명 | i18n `gametag.<id>` (ko·en) |
+| `glyph` | 유니코드 1자 아이콘 (예: `♔`) | `GAME_META` |
+| `accent` | `"red"｜"cyan"｜"gold"｜"gray"` | `GAME_META` |
+| `minPlayers` / `maxPlayers` | 인원(무제한이면 `null`) | catalog (+ `GAME_META` min/max는 홈 fallback) |
+| `complexity` | `1｜2｜3` | catalog |
+| `supportsJoinInProgress` | 진행 중 입장 허용? | catalog |
+| `defaultOptions` | 게임 옵션 기본값(없으면 `{}`) | catalog (+ 필요 시 shared 타입) |
+| `status` | `"available"｜"coming_soon"` | catalog. **`available`일 때만 홈/로비에 노출** |
+| 썸네일(선택) | 테마별 1장씩 | (G) 참고 |
+| 규칙 설계 | phase / 액션 / 비밀정보 / 종료조건 | 서버 모듈 (B) |
 
 ### (A) 공유 타입 / 카탈로그
 1. `shared/src/schema/domain.ts` — `GameId` 유니온에 `"foo"` 추가.
 2. `shared/src/games/catalog.ts` — 카탈로그 항목 추가:
    `{ id: "foo", title: "푸게임", minPlayers, maxPlayers, complexity: 1|2|3, supportsJoinInProgress, defaultOptions, status: "available" | "coming_soon" }`
+   - `status`가 `"available"`일 때만 홈/로비 게임 목록에 노출된다(`coming_soon`은 자동 숨김). 출시 준비가 되면 이 값만 바꾼다.
+2b. (게임 전용 공유 타입 파일을 만들었다면) `shared/src/index.ts`에 `export * from "./games/foo";` 추가.
 
 ### (B) 서버 게임 규칙 (권위 서버)
-3. `server/src/games/foo/FooModule.ts` — `GameModule` 인터페이스 구현(`start`/`handleAction`/`getPublicState`/`getStateFor`/`isOver` 등).
-   - 규칙·검증·랜덤은 **서버만**. 비밀정보는 `getStateFor(playerId)`로만 내려보낸다(다른 플레이어 패/역할 노출 금지).
-4. `server/src/games/registry.ts` — 모듈 등록.
-5. 가능하면 `server/tests/`에 봇 테스트 추가.
+3. `server/src/games/foo/FooModule.ts` — `GameModule<TOptions, TPublicState, TPrivateState>` 구현. 실제 계약(`GameModule.ts`):
+```ts
+interface GameModule<TOptions, TPublicState, TPrivateState> {
+  readonly id: GameId;
+  readonly minPlayers: number;
+  start(input: { players: PublicPlayerState[]; options: TOptions; randomSeed: string }): void;
+  handleAction(input: { playerId: string; action: GameAction; isHost: boolean }): ActionResult;
+  getPublicState(): TPublicState;          // 전원 브로드캐스트 — 비밀 절대 금지
+  getStateFor(playerId: string): TPrivateState;  // 그 플레이어에게만
+  onPlayerLeave(playerId: string): void;   // 임시 끊김(재접속 가능) — 보통 no-op
+  onPlayerReturn(playerId: string): void;  // 복귀
+  onPlayerRemoved(playerId: string): void; // 영구 추방 — 상태에서 깔끔히 제거
+  isOver(): GameResult | null;
+}
+```
+   - 규칙·검증·랜덤은 **서버만**. 랜덤은 주입된 seed 기반 `Randomizer`만 쓴다(테스트 재현성).
+   - 비밀정보는 `getStateFor(playerId)`로만. `getPublicState()`에 역할/패/정답/진행 중 미션을 넣지 않는다.
+   - 호스트 전용 액션은 `isHost`로, 턴 전용은 `playerId`로 게이팅한다(`isHost`는 임시 방장도 반영됨).
+   - 재사용 가능한 공통 모듈: `SecretDealer`(비밀 배정), `Randomizer`(seed 랜덤) 등 — `server/src/games/`·`core` 참고.
+4. `server/src/games/registry.ts` — 모듈 등록(Map에 `["foo", () => new FooModule()]` + import).
+5. `server/tests/`에 봇 테스트 추가(2~10명이 한 판을 끝까지 도는지). 추방/재접속 엣지 포함.
 
 ### (C) 클라이언트 표시 메타 + 다국어
 6. `client/src/design/games.ts` — `GAME_META`에 `foo: { glyph, accent, min, max }` + `GAME_ORDER`에 추가.
@@ -107,17 +151,15 @@ corepack pnpm --filter @oneshot/server test
 ### (D) 게임 화면 (테마-세이프)
 8. `client/src/games/foo/FooGameScreen.tsx`:
 ```tsx
-import type { PartyRoomState } from "@oneshot/shared";
 import { useT } from "../../i18n";
 import { Backdrop, AvatarImg } from "../../ui/terminal";
+import type { GameScreenProps } from "../registry";
 
 export const FooGameScreen = ({
   roomState,
   privateState,
-}: {
-  roomState: PartyRoomState;
-  privateState: unknown;
-}) => {
+  currentPlayerId,
+}: GameScreenProps) => {
   const t = useT();
   const players = Object.values(roomState.players).sort((a, b) => a.seatIndex - b.seatIndex);
   return (
@@ -146,16 +188,55 @@ export const FooGameScreen = ({
 ```css
 [data-theme="cozy"] .scr--foo .foo-board { border-radius: 18px; box-shadow: 0 6px 0 rgb(0 0 0 / 0.04); }
 ```
-11. `client/src/app/App.tsx` — 라우팅 분기 추가:
+11. `client/src/games/registry.tsx` — `GAME_SCREENS` 맵에 한 줄 추가. (App.tsx는 이 맵을 보고 자동 렌더하므로 라우팅 분기를 직접 손대지 않는다.)
 ```tsx
-} else if (roomState?.phase === "game" && roomState.activeGame?.gameId === "foo") {
-  screen = <FooGameScreen roomState={roomState} privateState={privateGameState} />;
-}
+export const GAME_SCREENS: Partial<Record<GameId, ComponentType<GameScreenProps>>> = {
+  kinggame: KingGameScreen,
+  foo: FooGameScreen, // ← import 후 한 줄 추가
+};
 ```
 
+### (F) 보안·권위 서버 체크리스트 (필수 — 매 게임 검증)
+
+- [ ] 규칙·검증·승패·랜덤이 **서버 모듈에만** 있다. 클라이언트는 UI/입력만.
+- [ ] 비밀정보(역할/패/정답/진행 중 미션)는 `getStateFor()`로만. `getPublicState()`에 새지 않는다.
+- [ ] 모든 액션 `payload`를 서버에서 **parse + 검증**(타입·범위·소유권). 클라가 보낸 값을 신뢰하지 않는다.
+- [ ] 권한 게이팅: 호스트 전용은 `isHost`, 턴 전용은 `playerId === 현재 턴` 확인.
+- [ ] `onPlayerRemoved`에서 추방된 플레이어의 흔적(번호·좌석·타깃)이 public state에 **유령으로 남지 않는다**.
+- [ ] 새 HTTP 엔드포인트를 추가했다면 rate-limit를 검토한다(`server/src/index.ts`의 `createRoomLimiter` 패턴). 게임 액션은 HTTP가 아니라 WS로.
+- [ ] 사용자 입력 텍스트(커스텀 콘텐츠 등)는 길이 제한을 두고, 콘텐츠 정책은 UX로 안내한다.
+
+### (G) 테마별 자산(썸네일) — 규격 + 생성 프롬프트
+
+게임 썸네일은 **선택**이다(현재 로비는 `GAME_META.glyph` 아이콘을 쓴다). 쓰려면 두 테마 모두 만든다.
+
+- **경로**: `client/public/themes/cyber/games/<id>.png` · `client/public/themes/cozy/games/<id>.png`
+- **규격**: **512×512 PNG, 풀블리드 정사각**(투명 아님), 중앙 단순·고대비 실루엣(32px로 줄여도 식별). 헬퍼 `gameThumb(id, theme)`가 경로를 만든다.
+- **생성**: `visual-image-create` 스킬을 **게임당 2회**(테마별) 호출. 아래 템플릿의 `{GAME_CONCEPT}`만 그 게임을 상징하는 오브젝트로 바꾼다. **두 장은 같은 피사체·같은 구도로, 스타일만 다르게**(favicon에서 검증된 톤). 생성 후 512×512로 리사이즈해 위 경로에 저장.
+
+`{GAME_CONCEPT}` 예: 왕게임=`a crown`, 라이어=`a theatrical mask`, 사칙연산=`plus minus multiply divide symbols`.
+
+**CYBER 프롬프트**
+```
+A single square game thumbnail icon, 1024x1024, full-bleed background (not transparent), no text.
+Subject: {GAME_CONCEPT}. CYBERPUNK style: dark near-black deep-purple background (#0a0710),
+glowing neon cyan and magenta rim light, angular HUD/glitch accents, sharp electric edges.
+Bold simple high-contrast centered silhouette that stays recognizable at 32px. Flat iconographic vector app-icon style.
+```
+
+**COZY 프롬프트**
+```
+A single square game thumbnail icon, 1024x1024, full-bleed background (not transparent), no text.
+Subject: {GAME_CONCEPT}. COZY style: warm cream/beige background, soft amber and orange tones,
+rounded hand-drawn storybook texture, gentle warm shadow.
+Bold simple high-contrast centered silhouette that stays recognizable at 32px. Flat iconographic vector app-icon style.
+```
+
+> 같은 톤 규칙이 favicon/OG에도 적용된다: **cyber = 다크+네온 시안/마젠타+HUD, cozy = 크림+앰버+손그림**. 새 브랜드 이미지를 만들 땐 이 대비를 유지한다.
+
 ### (E) 검증
-12. `corepack pnpm -r typecheck` + 서버 테스트.
-13. 실제로 한 판 돌려 **cyber·cozy × ko·en** 4조합 확인. 깨지는 곳은 §3 규칙 위반이다.
+12. `corepack pnpm -r typecheck` + 서버 테스트 (`apps/oneshot` 안에서).
+13. 실제로 한 판 돌려 **cyber·cozy × ko·en** 4조합 + `/_states` 확인. 깨지는 곳은 §3 규칙 위반이다.
 
 ---
 
@@ -167,6 +248,8 @@ export const FooGameScreen = ({
 - [ ] 사용자 텍스트가 i18n(ko·en) 양쪽에 있는가?
 - [ ] 플레이어 아이콘에 `AvatarImg`(themeId 전달)를 썼는가?
 - [ ] 새 에러/상태가 필요하면 `states.tsx`에 kind로 추가했는가?
-- [ ] 게임 규칙/검증/비밀정보가 서버에만 있는가?
+- [ ] 게임 규칙/검증/비밀정보가 서버에만 있는가? (§4-F 보안 체크리스트 통과?)
+- [ ] 게임 화면을 `GAME_SCREENS`(registry.tsx)에 등록했는가? (App.tsx 직접 분기 X)
+- [ ] `coming_soon`/`available` status를 의도대로 설정했는가? (available만 노출)
 - [ ] typecheck + 서버 테스트 통과?
 - [ ] **2 테마 × 2 언어 + `/_states`** 확인?

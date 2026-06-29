@@ -3,9 +3,17 @@ import type { FormEvent } from "react";
 import { clientConfig } from "../config/env";
 import { useRoomStore } from "../app/useRoomStore";
 import { useIdentity } from "../app/identity";
+import { gameCatalog } from "@oneshot/shared";
 import { useT, useLangStore, gameTitle } from "../i18n";
 import { useTheme } from "../theme";
 import { GAME_ORDER, gameMeta } from "../design/games";
+
+/* The home library mirrors the catalog: only games marked "available" on the
+   server are shown. Flipping a game's status to "available" surfaces it here
+   automatically — no edits to this screen needed. */
+const AVAILABLE_GAMES = GAME_ORDER.filter(
+  (id) => gameCatalog.find((game) => game.id === id)?.status === "available",
+);
 import { Backdrop, SettingsModal } from "../ui/terminal";
 
 type HomeScreenProps = {
@@ -63,11 +71,11 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
         <div className="rail-head">
           <span>{t("home.library")}</span>
           <span className="n">
-            {String(GAME_ORDER.length).padStart(2, "0")} {t("home.modules")}
+            {String(AVAILABLE_GAMES.length).padStart(2, "0")} {t("home.modules")}
           </span>
         </div>
         <div>
-          {GAME_ORDER.map((id, i) => {
+          {AVAILABLE_GAMES.map((id, i) => {
             const meta = gameMeta(id);
             return (
               <div className={`game-row ${i === 0 ? "is-active" : ""}`} key={id}>

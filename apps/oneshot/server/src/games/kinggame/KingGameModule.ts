@@ -133,7 +133,14 @@ export class KingGameModule
     // (and the 2-player number-count guarantee) reflect the live room. The
     // current turn is recovered by the host pressing "next turn".
     this.players = this.players.filter((player) => player.id !== playerId);
+    const removed = this.assignments.get(playerId);
     this.assignments.delete(playerId);
+    // Drop the kicked subject's number from the live deal so the king can't
+    // reveal against a seat that no longer maps to anyone (which would otherwise
+    // store an empty playerId and render a "—" target on the current turn).
+    if (removed?.number != null) {
+      this.availableNumbers = this.availableNumbers.filter((number) => number !== removed.number);
+    }
     if (this.kingPlayerId === playerId) {
       this.kingPlayerId = null;
     }
