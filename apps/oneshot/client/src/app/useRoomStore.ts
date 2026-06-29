@@ -17,7 +17,7 @@ type RoomStore = {
   roomState: PartyRoomState | null;
   privateGameState: unknown;
   toast: string | null;
-  screenError: { message: string; retryable: boolean } | null;
+  screenError: { code?: string; message: string; retryable: boolean } | null;
   createRoom: (nickname: string, profile?: PlayerProfileInput) => Promise<void>;
   joinRoom: (roomCode: string, nickname: string, profile?: PlayerProfileInput) => Promise<void>;
   reconnect: () => Promise<void>;
@@ -149,7 +149,10 @@ const handleServerEvent = (
     return;
   }
   if (event.type === "error") {
-    set({ toast: event.message, screenError: { message: event.message, retryable: event.retryable } });
+    set({
+      toast: event.message,
+      screenError: { code: event.code, message: event.message, retryable: event.retryable },
+    });
   }
 };
 

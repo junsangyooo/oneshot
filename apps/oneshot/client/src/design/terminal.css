@@ -426,10 +426,17 @@ body {
 /* =========== STATES (cozy) =========== */
 [data-theme="cozy"] .scr--conn .topbar,
 [data-theme="cozy"] .scr--conn .botbar { display: none; }
-[data-theme="cozy"] .scr--conn .st-title { font-family: var(--font-display); color: var(--ink); }
+[data-theme="cozy"] .scr--conn .st-title,
+[data-theme="cozy"] .scr--conn .st-title.glitch { font-family: var(--font-display); color: var(--ink); }
 [data-theme="cozy"] .scr--conn .st-title.glitch { animation: none; }
-[data-theme="cozy"] .scr--conn .emblem.is-red .ico { color: #fff; background: var(--accent); border-radius: 50%; width: 64px; height: 64px; display: grid; place-items: center; }
+[data-theme="cozy"] .scr--conn .emblem .ico {
+  color: #fff; border-radius: 50%; width: 64px; height: 64px; display: grid; place-items: center;
+}
+[data-theme="cozy"] .scr--conn .emblem.is-red .ico { background: var(--accent); }
+[data-theme="cozy"] .scr--conn .emblem.is-warn .ico { background: var(--warn); }
+[data-theme="cozy"] .scr--conn .emblem.is-cyan .ico { background: var(--cyan); }
 [data-theme="cozy"] .scr--conn .ring { border-top-color: var(--accent); }
+[data-theme="cozy"] .scr--conn .st-title { text-shadow: none; }
 
 /* brand casing: cyber = ONESHOT (uppercase), cozy = OneShot (handwritten) */
 .brand { text-transform: uppercase; }

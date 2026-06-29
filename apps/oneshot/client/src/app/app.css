@@ -235,11 +235,14 @@ button { font: inherit; }
 .scr--conn .emblem .ico { font-size: 38px; }
 .scr--conn .emblem.is-cyan .ico { color: var(--cyan); }
 .scr--conn .emblem.is-red .ico { color: var(--accent); }
+.scr--conn .emblem.is-warn .ico { color: var(--warn); }
 .scr--conn .emblem.is-red .ring { border-top-color: var(--accent); animation: none; opacity: 0.4; }
+.scr--conn .emblem.is-warn .ring { border-top-color: var(--warn); animation: none; opacity: 0.4; }
 .scr--conn .emblem.no-ring .ring { display: none; }
 .scr--conn .st-code { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; }
 .scr--conn .st-code.c-cyan { color: var(--cyan); }
 .scr--conn .st-code.c-red { color: var(--accent); }
+.scr--conn .st-code.c-warn { color: var(--warn); }
 .scr--conn .st-title { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.05em; font-size: clamp(28px, 5vw, 52px); line-height: 0.95; color: #d6d3df; margin: 0; }
 .scr--conn .st-title.glitch { animation: glitch-txt 1.4s steps(2) infinite; color: #fff; }
 @keyframes glitch-txt {

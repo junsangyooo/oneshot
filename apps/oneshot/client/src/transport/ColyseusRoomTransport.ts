@@ -101,6 +101,22 @@ export class ColyseusRoomTransport implements RoomTransport {
         handler(event);
       }
     });
+    room.onLeave((code: number) => {
+      // 1000 = normal close (our own consented leave); we unsubscribe before
+      // leaving, so only involuntary leaves (kick / server drop) reach here.
+      if (code === 1000) return;
+      const isKick = code === 4006;
+      const event = {
+        type: "error",
+        code: isKick ? "KICKED" : "SERVER_ERROR",
+        message: isKick ? "방장이 내보냈어요." : "서버와의 연결이 끊겼어요.",
+        retryable: !isKick,
+      } as unknown as ServerEvent;
+      for (const handler of this.handlers) {
+        handler(event);
+      }
+    });
+
     room.send(MESSAGE_CHANNEL.hello);
 
     return new Promise<JoinResult>((resolve) => {

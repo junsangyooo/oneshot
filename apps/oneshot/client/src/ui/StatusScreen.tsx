@@ -4,7 +4,7 @@ export type StatusAction = { label: string; primary?: boolean; onClick: () => vo
 
 type StatusScreenProps = {
   code: string;
-  accent: "cyan" | "red";
+  accent: "cyan" | "red" | "warn";
   icon: string;
   title: string;
   message: string;
