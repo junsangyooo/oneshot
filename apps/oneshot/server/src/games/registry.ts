@@ -3,11 +3,13 @@ import type { GameModuleFactory } from "./GameModule";
 import { FoolLiarModule } from "./fool-liar/FoolLiarModule";
 import { KingGameModule } from "./kinggame/KingGameModule";
 import { LiarModule } from "./liar/LiarModule";
+import { UpstageModule } from "./upstage/UpstageModule";
 
 const registry = new Map<GameId, GameModuleFactory>([
   ["kinggame", () => new KingGameModule()],
   ["liar", () => new LiarModule()],
   ["fool-liar", () => new FoolLiarModule()],
+  ["upstage", () => new UpstageModule()],
 ]);
 
 export const getGameModule = (gameId: GameId) => registry.get(gameId)?.();

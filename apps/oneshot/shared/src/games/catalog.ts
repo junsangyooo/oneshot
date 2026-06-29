@@ -1,5 +1,6 @@
 import type { GameCatalogItem } from "../schema/domain";
 import { defaultKingGameOptions } from "./kinggame";
+import { defaultUpstageOptions } from "./upstage";
 
 export const gameCatalog: GameCatalogItem[] = [
   {
@@ -19,8 +20,8 @@ export const gameCatalog: GameCatalogItem[] = [
     maxPlayers: null,
     complexity: 3,
     supportsJoinInProgress: false,
-    defaultOptions: {},
-    status: "coming_soon",
+    defaultOptions: defaultUpstageOptions,
+    status: "available",
   },
   {
     id: "liar",

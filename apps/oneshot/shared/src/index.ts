@@ -7,6 +7,7 @@ export * from "./games/kinggame";
 export * from "./games/kingMissions";
 export * from "./games/liar";
 export * from "./games/liarCategories";
+export * from "./games/upstage";
 
 export const NICKNAME_MIN = 1;
 export const NICKNAME_MAX = 16;
