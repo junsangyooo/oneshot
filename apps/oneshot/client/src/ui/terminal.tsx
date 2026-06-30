@@ -186,6 +186,47 @@ export const SettingsModal = ({
   );
 };
 
+/* reusable rules / how-to-play modal. Each game passes its own localized title +
+   paragraphs; reuses the shared .modal chrome (so it scrolls + themes for free). */
+export const RulesModal = ({
+  open,
+  onClose,
+  title,
+  paragraphs,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  paragraphs: string[];
+}) => {
+  const t = useT();
+  if (!open) return null;
+  return (
+    <div className="modal-backdrop open" role="presentation" onMouseDown={onClose}>
+      <div className="modal modal--rules" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>{title}</h3>
+          <button type="button" className="x" onClick={onClose} aria-label={t("rules.close")}>
+            ✕
+          </button>
+        </div>
+        <div className="modal-body">
+          <div className="rules-body">
+            {paragraphs.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        </div>
+        <div className="modal-foot modal-foot--single">
+          <button type="button" className="btn btn--sm btn--primary" onClick={onClose}>
+            <span>{t("rules.close")}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* small readout block helper */
 export const Readout = ({ lines, align }: { lines: ReactNode[]; align?: "right" }) => (
   <div className={`readout ${align === "right" ? "readout--r" : ""}`}>

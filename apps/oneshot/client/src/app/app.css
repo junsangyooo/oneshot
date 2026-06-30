@@ -13,7 +13,7 @@ button { font: inherit; }
 /* toast (terminal) */
 .toast {
   position: fixed; right: var(--frame-pad); bottom: var(--frame-pad); z-index: 40;
-  max-width: 360px; border: 1px solid var(--accent); background: rgb(20 13 26 / 0.95);
+  max-width: min(360px, calc(100vw - 32px)); border: 1px solid var(--accent); background: rgb(20 13 26 / 0.95);
   color: var(--ink); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
   padding: 14px 16px; cursor: pointer; box-shadow: 0 12px 30px -12px rgb(var(--glow-red) / 0.8);
 }
@@ -32,7 +32,7 @@ button { font: inherit; }
   z-index: 9; display: flex; gap: 8px; align-items: center;
 }
 .lang-dot {
-  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
   border: 1px solid var(--line-bright); background: rgb(10 7 16 / 0.5);
   color: var(--ink-dim); font-family: var(--font-mono); font-size: 11px; font-weight: 700;
   letter-spacing: 0.04em; cursor: pointer; transition: all 0.18s;
@@ -67,6 +67,10 @@ button { font: inherit; }
 
 @media (max-width: 1080px) { .scr--home .rail { display: none; } }
 @media (max-width: 560px) { .scr--home .actions { grid-template-columns: 1fr; } }
+/* short viewports / keyboard open: the centered block can exceed 1fr — allow scroll */
+@media (max-width: 560px), (max-height: 680px) {
+  .scr--home { height: auto; min-height: 100svh; overflow: visible; }
+}
 
 /* =========================================================
    LOBBY
@@ -76,7 +80,7 @@ button { font: inherit; }
 .scr--lobby .sector { text-align: center; }
 .scr--lobby .sector .lbl { font-size: 11px; letter-spacing: 0.3em; color: var(--ink-dim); }
 .scr--lobby .sector .code { font-family: var(--font-mono); font-weight: 700; font-size: clamp(26px, 4vw, 44px); letter-spacing: 0.14em; color: var(--ink); display: inline-flex; align-items: center; gap: 14px; text-shadow: 0 0 30px rgb(var(--glow-red) / 0.25); }
-.scr--lobby .sector .copy { font-size: 17px; color: var(--ink-dim); cursor: pointer; border: 0; background: none; transition: color 0.2s; }
+.scr--lobby .sector .copy { font-size: 17px; color: var(--ink-dim); cursor: pointer; border: 0; background: none; transition: color 0.2s; width: 44px; height: 44px; display: inline-grid; place-items: center; }
 .scr--lobby .sector .copy:hover { color: var(--cyan); }
 .scr--lobby .readout--r { text-align: right; }
 
@@ -140,11 +144,11 @@ button { font: inherit; }
 .scr--lobby .op .ip { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.04em; margin-top: 3px; }
 .scr--lobby .op .st { text-align: right; font-size: 11px; letter-spacing: 0.06em; white-space: nowrap; }
 .scr--lobby .op .st .meta { display: block; font-size: 10px; color: var(--ink-faint); margin-top: 2px; }
-.scr--lobby .op .kick { margin-left: 4px; border: 1px solid rgb(var(--glow-red) / 0.4); background: none; color: var(--accent); width: 26px; height: 26px; display: grid; place-items: center; cursor: pointer; }
+.scr--lobby .op .kick { margin-left: 4px; border: 1px solid rgb(var(--glow-red) / 0.4); background: none; color: var(--accent); width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; }
 .scr--lobby .op .kick:hover { background: rgb(var(--glow-red) / 0.12); }
 .scr--lobby .op.is-empty .nm { color: var(--ink-dim); }
 .scr--lobby .glyph--empty { color: var(--ink-dim); border-style: dashed; }
-.scr--lobby .role { font-size: 9px; letter-spacing: 0.1em; padding: 2px 6px; border: 1px solid; white-space: nowrap; }
+.scr--lobby .role { font-size: 10px; letter-spacing: 0.1em; padding: 2px 6px; border: 1px solid; white-space: nowrap; }
 .scr--lobby .role--cmd { color: var(--accent); border-color: rgb(var(--glow-red) / 0.5); background: rgb(var(--glow-red) / 0.1); }
 .scr--lobby .role--temp { color: var(--cyan); border-color: rgb(43 214 255 / 0.4); background: rgb(43 214 255 / 0.08); }
 
@@ -455,7 +459,7 @@ button { font: inherit; }
 .scr--upstage .up-field { display: flex; align-items: center; gap: 16px; }
 .scr--upstage .up-field__label { font-size: 13px; color: var(--ink-dim); letter-spacing: var(--track-mid); text-transform: uppercase; }
 .scr--upstage .up-seg { display: inline-flex; border: 1px solid var(--line-bright); }
-.scr--upstage .up-seg__btn { padding: 8px 18px; background: transparent; color: var(--ink-dim); font-family: var(--font-mono); cursor: pointer; border: 0; }
+.scr--upstage .up-seg__btn { padding: 12px 18px; min-height: 44px; background: transparent; color: var(--ink-dim); font-family: var(--font-mono); cursor: pointer; border: 0; }
 .scr--upstage .up-seg__btn.is-on { background: var(--accent); color: #fff; }
 .scr--upstage .up-stepper { display: inline-flex; align-items: center; gap: 14px; }
 .scr--upstage .up-stepper__v { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--ink); min-width: 28px; text-align: center; }
@@ -482,8 +486,9 @@ button { font: inherit; }
 .scr--upstage .up-card.is-selected { transform: translateY(-10px); border-color: var(--cyan); box-shadow: 0 0 14px rgb(43 214 255 / 0.4); }
 .scr--upstage .up-card:disabled { cursor: default; }
 
-/* play layout */
-.scr--upstage .up-play { display: grid; grid-template-rows: auto 1fr auto auto auto; gap: 12px; height: 100%; min-height: 0; }
+/* play layout — the HAND is the flexible scroll row so Play/Pass stay pinned. */
+.scr--upstage .up-play { display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 12px; height: 100%; min-height: 0; }
+.scr--upstage .up-play .up-hand { min-height: 0; overflow-y: auto; align-content: start; }
 .scr--upstage .up-seats { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .scr--upstage .up-seat { display: grid; justify-items: center; gap: 3px; padding: 8px 10px; border: 1px solid var(--line); min-width: 64px; }
 .scr--upstage .up-seat.is-turn { border-color: var(--cyan); box-shadow: 0 0 12px rgb(43 214 255 / 0.3); }
@@ -491,7 +496,7 @@ button { font: inherit; }
 .scr--upstage .up-seat.is-out { opacity: 0.45; }
 .scr--upstage .up-seat__name { font-size: 11px; color: var(--ink-dim); max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr--upstage .up-seat__count { font-family: var(--font-display); font-weight: 700; color: var(--ink); font-size: 15px; }
-.scr--upstage .up-seat__badge { font-size: 9px; color: var(--warn); letter-spacing: var(--track-mid); }
+.scr--upstage .up-seat__badge { font-size: 10px; color: var(--warn); letter-spacing: var(--track-mid); }
 
 .scr--upstage .up-pile { display: grid; justify-items: center; align-content: center; gap: 8px; border: 1px dashed var(--line-bright); padding: 16px; min-height: 96px; }
 .scr--upstage .up-pile__label { font-size: 10px; color: var(--ink-faint); letter-spacing: var(--track-mid); text-transform: uppercase; }
@@ -517,4 +522,22 @@ button { font: inherit; }
 
 @media (max-width: 720px) {
   .scr--upstage { height: auto; min-height: 100svh; overflow: visible; }
+  /* page scrolls now, so cap the hand and keep Play/Pass within easy reach */
+  .scr--upstage .up-play { height: auto; }
+  .scr--upstage .up-play .up-hand { max-height: 38vh; }
+}
+
+/* Game topbars are a fixed 3-column grid (readout · title · toolbar). On narrow
+   phones the side columns can't shrink past their content and overflow, so we
+   stack them (mirrors the lobby topbar collapse at 620px). */
+@media (max-width: 560px) {
+  .scr--upstage .topbar, .scr--king .topbar, .scr--liar .topbar {
+    grid-template-columns: 1fr; gap: 10px; justify-items: center;
+  }
+  .scr--upstage .up-toolbar, .scr--king .king-toolbar, .scr--liar .liar-toolbar {
+    justify-content: center; flex-wrap: wrap;
+  }
+  .scr--upstage .topbar .readout, .scr--king .topbar .readout, .scr--liar .topbar .readout {
+    text-align: center;
+  }
 }

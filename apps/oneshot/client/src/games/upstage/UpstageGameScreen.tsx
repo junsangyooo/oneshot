@@ -13,7 +13,7 @@ import {
 } from "@oneshot/shared";
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
-import { Backdrop, AvatarImg, SettingsModal, LangToggle } from "../../ui/terminal";
+import { Backdrop, AvatarImg, SettingsModal, RulesModal } from "../../ui/terminal";
 
 type Props = {
   roomState: PartyRoomState;
@@ -50,6 +50,7 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
   const t = useT();
   const send = useRoomStore((s) => s.send);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
 
   // setup controls (host)
@@ -106,8 +107,10 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
           </span>
         </div>
         <div className="up-toolbar">
-          <LangToggle />
-          <button className="btn btn--sm" type="button" onClick={() => setSettingsOpen(true)}>
+          <button className="btn btn--sm" type="button" aria-label={t("rules.help")} onClick={() => setRulesOpen(true)}>
+            <span>?</span>
+          </button>
+          <button className="btn btn--sm" type="button" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
             <span>⚙</span>
           </button>
           {isHost && pub.phase !== "setup" && pub.phase !== "ended" && !voteOpen ? (
@@ -209,6 +212,7 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
             {pub.declarePlayerId === currentPlayerId ? (
               <>
                 <h2 className="up-h">{t("upstage.declare.title")}</h2>
+                <p className="up-hint">{t("upstage.declare.hint")}</p>
                 <div className="up-declare__actions">
                   <button type="button" className="btn btn--primary" onClick={() => sendAction(UPSTAGE_ACTIONS.declare, { revolt: true })}>
                     {pub.declarePlayerId === pub.order[pub.order.length - 1]
@@ -289,6 +293,19 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
       ) : null}
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <RulesModal
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        title={t("upstage.rules.title")}
+        paragraphs={[
+          t("upstage.rules.p1"),
+          t("upstage.rules.p2"),
+          t("upstage.rules.p3"),
+          t("upstage.rules.p4"),
+          t("upstage.rules.p5"),
+          t("upstage.rules.p6"),
+        ]}
+      />
     </main>
   );
 };

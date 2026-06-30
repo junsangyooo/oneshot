@@ -50,6 +50,14 @@ export class UpstageCore {
   // declare / tax
   private declarePlayerId: string | null = null;
   private taxReturnCount = new Map<string, number>(); // receiver -> cards still to return
+  // Snapshot of the giver↔receiver pairs taken at beginTax. We must NOT recompute
+  // these from `this.order` later: a mid-tax removal mutates `order` and would
+  // corrupt the mapping (orphaning a receiver's debt and hanging the hand).
+  private taxPairsSnapshot: Array<{ giver: string; receiver: string; count: number }> = [];
+
+  // Temporarily disconnected (reconnectable) players. They stay seated but cannot
+  // vote, so the early-end vote is resolved against the CONNECTED base only.
+  private disconnected = new Set<string>();
 
   // early end
   private endVote: { proposedBy: string; votes: Map<string, boolean> } | null = null;
@@ -74,6 +82,8 @@ export class UpstageCore {
     this.resetPlayState();
     this.declarePlayerId = null;
     this.taxReturnCount.clear();
+    this.taxPairsSnapshot = [];
+    this.disconnected.clear();
     this.endVote = null;
     this.lastHandRanking = null;
     this.result = null;
@@ -163,7 +173,7 @@ export class UpstageCore {
     );
     this.hands.set(giverId, sortHand([...(this.hands.get(giverId) ?? []), ...chosen], this.maxRank));
     this.taxReturnCount.delete(playerId);
-    if (this.taxReturnCount.size === 0) this.beginPlay();
+    this.settleTaxIfReady();
     return ok();
   }
 
@@ -243,6 +253,17 @@ export class UpstageCore {
   }
 
   // ---- lifecycle hooks ----
+  // Temporary disconnect (reconnectable). Hands persist; only the early-end vote
+  // base changes, so re-resolve any open vote against the now-smaller connected set.
+  onPlayerLeave(playerId: string): void {
+    this.disconnected.add(playerId);
+    if (this.endVote) this.resolveEndVote();
+  }
+
+  onPlayerReturn(playerId: string): void {
+    this.disconnected.delete(playerId);
+  }
+
   onPlayerRemoved(playerId: string): void {
     this.players = this.players.filter((p) => p.id !== playerId);
     this.hands.delete(playerId);
@@ -251,7 +272,22 @@ export class UpstageCore {
     this.order = this.order.filter((id) => id !== playerId);
     this.finished = this.finished.filter((id) => id !== playerId);
     this.passed.delete(playerId);
+    this.disconnected.delete(playerId);
     if (this.drawnCards) this.drawnCards.delete(playerId);
+
+    // tax: a removed giver OR receiver dissolves their pending exchange so the
+    // remaining receivers can still settle (otherwise the hand hangs in `tax`).
+    if (this.phase === "tax") {
+      for (const pair of this.taxPairsSnapshot) {
+        if (pair.giver === playerId || pair.receiver === playerId) {
+          this.taxReturnCount.delete(pair.receiver);
+        }
+      }
+      this.taxPairsSnapshot = this.taxPairsSnapshot.filter(
+        (p) => p.giver !== playerId && p.receiver !== playerId,
+      );
+    }
+
     if (this.declarePlayerId === playerId) {
       this.declarePlayerId = null;
       if (this.phase === "declare") this.penalty ? this.beginTax() : this.beginPlay();
@@ -260,10 +296,23 @@ export class UpstageCore {
       this.endVote.votes.delete(playerId);
       this.resolveEndVote();
     }
-    if (this.phase === "play" && this.currentTurnId === playerId) {
-      this.advanceTurn(playerId);
+
+    if (this.phase === "play") {
+      if (this.leadId === playerId) {
+        // The standing lead/pile belonged to the removed player — dissolve the
+        // trick (no ghost currentPlay/leadId) and let the next active seat lead.
+        this.currentPlay = null;
+        this.passed.clear();
+        const next = this.nextActiveAfter(playerId);
+        this.leadId = next;
+        this.currentTurnId = next;
+      } else if (this.currentTurnId === playerId) {
+        this.advanceTurn(playerId);
+      }
+      this.checkHandOver();
     }
-    if (this.phase === "play") this.checkHandOver();
+
+    this.settleTaxIfReady();
   }
 
   isOver(): GameResult | null {
@@ -393,12 +442,20 @@ export class UpstageCore {
   }
 
   private taxGiverFor(receiver: string): string | null {
-    return this.taxPairs().find((p) => p.receiver === receiver)?.giver ?? null;
+    // Read the snapshot taken at beginTax — never recompute from `this.order`.
+    return this.taxPairsSnapshot.find((p) => p.receiver === receiver)?.giver ?? null;
+  }
+
+  // Tax only leaves via this check, so every path that settles a receiver's debt
+  // (a normal return OR a mid-tax removal) must funnel through here.
+  private settleTaxIfReady(): void {
+    if (this.phase === "tax" && this.taxReturnCount.size === 0) this.beginPlay();
   }
 
   private beginTax(): void {
     this.taxReturnCount.clear();
-    for (const { giver, receiver, count } of this.taxPairs()) {
+    this.taxPairsSnapshot = this.taxPairs();
+    for (const { giver, receiver, count } of this.taxPairsSnapshot) {
       const giverHand = sortHand(this.hands.get(giver) ?? [], this.maxRank);
       const best = giverHand.slice(0, count); // strongest cards
       this.hands.set(
@@ -507,16 +564,26 @@ export class UpstageCore {
 
   private resolveEndVote(): void {
     if (!this.endVote) return;
-    const total = this.players.length;
-    const agrees = [...this.endVote.votes.values()].filter((v) => v).length;
-    const rejects = [...this.endVote.votes.values()].filter((v) => !v).length;
+    // Base = CONNECTED players only (spec §7). Disconnected players can't vote,
+    // so counting them would let a single dropout deadlock the vote forever.
+    const connected = this.players.filter((p) => !this.disconnected.has(p.id));
+    const total = connected.length;
+    if (total === 0) {
+      this.endVote = null;
+      return;
+    }
+    const cast = [...this.endVote.votes.entries()].filter(([id]) =>
+      connected.some((p) => p.id === id),
+    );
+    const agrees = cast.filter(([, v]) => v).length;
+    const rejects = cast.filter(([, v]) => !v).length;
     if (agrees * 2 > total) {
       this.endVote = null;
       this.finish("투표로 게임을 종료했어요.");
       return;
     }
-    // Can no longer pass even if all remaining vote yes? -> fail the vote.
-    const undecided = total - this.endVote.votes.size;
+    // Can no longer pass even if all remaining connected players vote yes? -> fail.
+    const undecided = total - cast.length;
     if ((agrees + undecided) * 2 <= total || rejects * 2 >= total) {
       this.endVote = null;
     }

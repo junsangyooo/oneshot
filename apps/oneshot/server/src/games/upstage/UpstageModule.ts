@@ -57,12 +57,14 @@ export class UpstageModule
     return this.core.getStateFor(playerId);
   }
 
-  onPlayerLeave(_playerId: string): void {
-    // Hands live in memory and survive reconnects — no-op.
+  onPlayerLeave(playerId: string): void {
+    // Hands live in memory and survive reconnects. We only flag the disconnect so
+    // an open early-end vote resolves against the connected base.
+    this.core.onPlayerLeave(playerId);
   }
 
-  onPlayerReturn(_playerId: string): void {
-    // No-op — the returning player's hand is still in memory.
+  onPlayerReturn(playerId: string): void {
+    this.core.onPlayerReturn(playerId);
   }
 
   onPlayerRemoved(playerId: string): void {

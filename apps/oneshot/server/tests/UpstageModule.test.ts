@@ -318,4 +318,70 @@ describe("UpstageModule — removal", () => {
     expect(pub.order).not.toContain(victim.id);
     expect(pub.players.find((p) => p.playerId === victim.id)).toBeUndefined();
   });
+
+  // Regression: kicking a pending tax receiver used to delete its debt WITHOUT
+  // re-checking "all settled?", stranding the hand in `tax` forever.
+  const reachTax = (count: number, seed: string) => {
+    const { module, host, players } = startGame(count, seed);
+    act(module, host.id, UPSTAGE_ACTIONS.configure, { penalty: true, totalHands: 1 }, true);
+    act(module, host.id, UPSTAGE_ACTIONS.startHand, undefined, true);
+    if (module.getPublicState().phase === "declare") {
+      act(module, module.getPublicState().declarePlayerId!, UPSTAGE_ACTIONS.declare, { revolt: false });
+    }
+    return { module, host, players };
+  };
+
+  it("kicking the only pending tax receiver advances to play (no hang)", () => {
+    const { module } = reachTax(5, "tax-kick");
+    expect(module.getPublicState().phase).toBe("tax");
+    const receiver = module.getPublicState().pendingTaxReceivers[0]!;
+    module.onPlayerRemoved(receiver);
+    expect(module.getPublicState().phase).toBe("play");
+  });
+
+  it("kicking a middle player mid-tax (6p) lets remaining receivers still settle", () => {
+    const { module, players } = reachTax(6, "tax-kick-6");
+    const pub = module.getPublicState();
+    expect(pub.phase).toBe("tax");
+    expect(pub.pendingTaxReceivers).toHaveLength(2);
+    // remove a player who is neither receiver nor giver of one pair
+    const involved = new Set([...pub.pendingTaxReceivers, pub.order[pub.order.length - 1]]);
+    const middle = players.find((p) => !involved.has(p.id))!;
+    module.onPlayerRemoved(middle.id);
+    // drive remaining receivers to completion — must not get stuck
+    let guard = 0;
+    while (module.getPublicState().phase === "tax" && guard++ < 10) {
+      const cur = module.getPublicState();
+      const r = cur.pendingTaxReceivers[0]!;
+      const owed = r === cur.order[0] ? 2 : 1;
+      const priv = module.getStateFor(r) as UpstagePrivateState;
+      const res = act(module, r, UPSTAGE_ACTIONS.taxReturn, { cards: priv.hand.slice(-owed).map((c) => c.id) });
+      expect(res).toMatchObject({ ok: true });
+    }
+    expect(module.getPublicState().phase).toBe("play");
+  });
+});
+
+describe("UpstageModule — early-end vote with disconnects", () => {
+  it("resolves against the CONNECTED base (a disconnect can't deadlock it)", () => {
+    const { module, host, players } = startGame(4, "vote-dc");
+    act(module, host.id, UPSTAGE_ACTIONS.configure, { penalty: false, totalHands: 5 }, true);
+    act(module, host.id, UPSTAGE_ACTIONS.startHand, undefined, true);
+    act(module, host.id, UPSTAGE_ACTIONS.proposeEnd, undefined, true); // host auto-yes
+    module.onPlayerLeave(players[3]!.id); // one drops -> connected base = 3
+    act(module, players[1]!.id, UPSTAGE_ACTIONS.voteEnd, { agree: true }); // 2/3 connected
+    expect(module.isOver()).not.toBeNull();
+  });
+
+  it("a connected-majority reject clears the vote (no hang)", () => {
+    const { module, host, players } = startGame(4, "vote-dc2");
+    act(module, host.id, UPSTAGE_ACTIONS.configure, { penalty: false, totalHands: 5 }, true);
+    act(module, host.id, UPSTAGE_ACTIONS.startHand, undefined, true);
+    act(module, host.id, UPSTAGE_ACTIONS.proposeEnd, undefined, true);
+    module.onPlayerLeave(players[3]!.id);
+    act(module, players[1]!.id, UPSTAGE_ACTIONS.voteEnd, { agree: false });
+    act(module, players[2]!.id, UPSTAGE_ACTIONS.voteEnd, { agree: false });
+    expect(module.getPublicState().endVote).toBeNull();
+    expect(module.isOver()).toBeNull();
+  });
 });

@@ -9,7 +9,7 @@ import type {
 import { FOOL_LIAR_ACTIONS, LIAR_ACTIONS, LIAR_CATEGORY_IDS } from "@oneshot/shared";
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
-import { Backdrop, SettingsModal } from "../../ui/terminal";
+import { Backdrop, SettingsModal, RulesModal } from "../../ui/terminal";
 import type { GameScreenProps } from "../registry";
 import { LiarCard } from "./LiarCard";
 import { LiarSetup } from "./LiarSetup";
@@ -20,6 +20,7 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
   const t = useT();
   const send = useRoomStore((state) => state.send);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const gameId = roomState.activeGame?.gameId;
   const actions = gameId === "fool-liar" ? FOOL_LIAR_ACTIONS : LIAR_ACTIONS;
@@ -54,7 +55,10 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
         </div>
         <div className="liar-title">{t(`game.${gameId ?? "liar"}`)}</div>
         <div className="liar-toolbar">
-          <button className="btn btn--sm" type="button" onClick={() => setSettingsOpen(true)}>
+          <button className="btn btn--sm" type="button" aria-label={t("rules.help")} onClick={() => setRulesOpen(true)}>
+            <span>?</span>
+          </button>
+          <button className="btn btn--sm" type="button" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
             <span>⚙</span>
           </button>
           {isHost && pub.phase !== "setup" ? (
@@ -82,6 +86,12 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
       </section>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <RulesModal
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        title={t("liar.rules.title")}
+        paragraphs={[t("liar.rules.p1"), t("liar.rules.p2"), t("liar.rules.p3"), t("liar.rules.p4")]}
+      />
     </main>
   );
 };

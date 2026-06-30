@@ -33,6 +33,9 @@
 *::before,
 *::after { box-sizing: border-box; }
 
+/* Kill the grey/blue tap flash on our custom buttons & cards on touch devices. */
+button, a, .btn, [role="button"] { -webkit-tap-highlight-color: transparent; }
+
 html, body { margin: 0; min-height: 100%; }
 
 body {
@@ -145,7 +148,7 @@ body {
 .btn--primary:hover { background-color: #fff; }
 .btn--danger { border-color: rgb(var(--glow-red) / 0.5); color: var(--accent); }
 .btn--danger:hover { background: rgb(var(--glow-red) / 0.12); border-color: var(--accent); }
-.btn--sm { padding: 12px 16px; font-size: 12px; }
+.btn--sm { padding: 10px 16px; font-size: 12px; min-height: 44px; justify-content: center; }
 .btn .enter { color: var(--ink-dim); font-weight: 400; }
 .btn--primary .enter { color: var(--accent); }
 
@@ -233,24 +236,27 @@ body {
 .config-pill:hover { color: var(--cyan); border-color: var(--line-bright); }
 
 .modal-backdrop {
-  position: fixed; inset: 0; z-index: 30; display: none; place-items: center;
+  position: fixed; inset: 0; z-index: 30; display: none; place-items: start center;
   background: rgb(5 3 8 / 0.72); backdrop-filter: blur(3px);
+  overflow-y: auto; padding: max(env(safe-area-inset-top), 4svh) 0 max(env(safe-area-inset-bottom), 4svh);
 }
 .modal-backdrop.open { display: grid; }
 .modal {
   width: min(460px, 92vw); border: 1px solid var(--line-bright);
   background: linear-gradient(160deg, #140d1a, #0c0812); position: relative;
   animation: modal-in 0.25s ease-out;
+  /* never taller than the viewport — body scrolls, head/foot stay reachable */
+  max-height: 92svh; display: flex; flex-direction: column; margin: auto;
 }
 .modal::before, .modal::after { content: ""; position: absolute; width: 18px; height: 18px; border-color: var(--accent); }
 .modal::before { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
 .modal::after { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; }
 @keyframes modal-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.modal-head { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--line); }
 .modal-head h3 { margin: 0; font-size: 14px; letter-spacing: 0.14em; color: var(--ink); font-weight: 700; }
-.modal-head .x { background: none; border: 0; color: var(--ink-dim); font-size: 16px; cursor: pointer; }
+.modal-head .x { background: none; border: 0; color: var(--ink-dim); font-size: 16px; cursor: pointer; width: 44px; height: 44px; display: grid; place-items: center; margin: -12px -12px -12px 0; }
 .modal-head .x:hover { color: var(--accent); }
-.modal-body { padding: 20px; display: grid; gap: 22px; }
+.modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px; display: grid; gap: 22px; align-content: start; }
 .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .avatar-opt {
   position: relative; aspect-ratio: 1; padding: 0; overflow: hidden;
@@ -269,7 +275,14 @@ body {
 .avatar-opt.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 20px -10px rgb(var(--glow-red) / 0.9); }
 .avatar-opt.sel img { filter: saturate(1.05) brightness(1); }
 .avatar-opt.sel .av-name { opacity: 1; color: var(--accent); }
-.modal-foot { padding: 16px 20px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-foot { flex: 0 0 auto; padding: 16px 20px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-foot--single { grid-template-columns: 1fr; }
+
+/* rules / how-to-play body */
+.rules-body { display: grid; gap: 14px; }
+.rules-body p { margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: var(--ink-dim); letter-spacing: 0.01em; }
+.rules-body p strong, .rules-body b { color: var(--ink); font-weight: 700; }
+[data-theme="cozy"] .rules-body p { font-family: var(--font-ko), sans-serif; }
 
 /* =========================================================
    THEME: COZY  — soft, rounded, friendly pastel ("다정한")
@@ -419,6 +432,9 @@ body {
 }
 [data-theme="cozy"] .scr--results .r .pos, [data-theme="cozy"] .scr--results .champ .rolelbl { color: var(--gold); font-style: italic; }
 [data-theme="cozy"] .scr--results .actions { grid-template-columns: 1fr 1fr; }
+@media (max-width: 720px) {
+  [data-theme="cozy"] .scr--results .actions { grid-template-columns: 1fr; }
+}
 [data-theme="cozy"] .scr--results .actions .btn:not(.btn--danger):first-child {
   background: var(--cyan); color: #fff; border: 0; box-shadow: 0 5px 0 #6cb2d8;
 }
@@ -483,7 +499,7 @@ body {
 
 /* cozy language/theme dots: light bg + dark label (base style is for the dark cyber HUD) */
 [data-theme="cozy"] .lang-dot {
-  background: #fff; border: 1px solid var(--line-bright); color: var(--ink); width: 38px; height: 38px;
+  background: #fff; border: 1px solid var(--line-bright); color: var(--ink); width: 44px; height: 44px;
 }
 [data-theme="cozy"] .lang-dot.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
