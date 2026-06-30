@@ -160,7 +160,7 @@ export class AlloutCore {
     }
     const hand = this.hands.get(playerId) ?? [];
     const chosen: AlloutCard[] = [];
-    for (const id of ids as string[]) {
+    for (const id of ids) {
       const card = hand.find((c) => c.id === id && !chosen.includes(c));
       if (!card) return fail("INVALID_ACTION", "보유하지 않은 카드입니다.");
       chosen.push(card);
@@ -203,15 +203,18 @@ export class AlloutCore {
       playerId,
       hand.filter((c) => !chosen.includes(c)),
     );
-    const last = chosen[chosen.length - 1]!;
     for (const c of chosen) this.discardPile.push(c);
     this.activeColor = parsed.lastColor ?? chosenColor ?? this.activeColor;
 
     this.applyEffect(playerId, parsed, target);
 
-    if ((this.hands.get(playerId) ?? []).length === 0) this.markFinished(playerId, false);
-    if (target) this.checkBankrupt(target);
-    if (this.isActive(playerId)) this.checkBankrupt(playerId);
+    // Empty hand = finished (rank); else check bankruptcy. Exchange can empty the
+    // TARGET too (they received the player's now-empty hand), so check both seats.
+    const affected = target ? [playerId, target] : [playerId];
+    for (const id of affected) {
+      if ((this.hands.get(id) ?? []).length === 0) this.markFinished(id, false);
+      else this.checkBankrupt(id);
+    }
     this.drawnPending = null;
 
     this.advanceAfterEffect(playerId, parsed);

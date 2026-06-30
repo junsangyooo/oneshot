@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type {
   PublicPlayerState,
   UpstageCard,
-  UpstagePrivateState,
   UpstagePublicState,
 } from "@oneshot/shared";
 import { UPSTAGE_ACTIONS } from "@oneshot/shared";
@@ -39,15 +38,15 @@ const effValue = (cards: UpstageCard[], maxRank: number): number => {
 // A simple legal-move bot. Returns true if it acted (play/pass), false if no move.
 const botTurn = (module: UpstageModule, pub: UpstagePublicState): void => {
   const me = pub.currentTurnPlayerId!;
-  const priv = module.getStateFor(me) as UpstagePrivateState;
+  const priv = module.getStateFor(me);
   const hand = priv.hand;
   const stars = hand.filter((c) => c.value === "star");
   const byValue = new Map<number, UpstageCard[]>();
   for (const c of hand) {
     if (c.value === "star") continue;
-    const arr = byValue.get(c.value as number) ?? [];
+    const arr = byValue.get(c.value) ?? [];
     arr.push(c);
-    byValue.set(c.value as number, arr);
+    byValue.set(c.value, arr);
   }
 
   if (!pub.currentPlay) {
@@ -97,7 +96,7 @@ const driveToEnd = (module: UpstageModule, players: PublicPlayerState[], penalty
         break;
       case "tax": {
         const receiver = pub.pendingTaxReceivers[0]!;
-        const priv = module.getStateFor(receiver) as UpstagePrivateState;
+        const priv = module.getStateFor(receiver);
         // return the weakest cards (end of strongest-first sort)
         const owed = receiver === pub.order[0] ? 2 : 1;
         const give = priv.hand.slice(-owed).map((c) => c.id);
@@ -148,7 +147,7 @@ describe("UpstageModule — deck & draw", () => {
     const { module, host, players } = startGame(5);
     act(module, host.id, UPSTAGE_ACTIONS.configure, { penalty: false, totalHands: 1 }, true);
     act(module, host.id, UPSTAGE_ACTIONS.startHand, undefined, true);
-    const total = players.reduce((sum, p) => sum + (module.getStateFor(p.id) as UpstagePrivateState).hand.length, 0);
+    const total = players.reduce((sum, p) => sum + (module.getStateFor(p.id)).hand.length, 0);
     expect(total).toBe(80);
   });
 
@@ -160,7 +159,7 @@ describe("UpstageModule — deck & draw", () => {
     const order = pub.order;
     const strength = (id: string) => {
       const c = pub.drawnCards![id]!;
-      return c.value === "star" ? pub.maxRank + 1 : (c.value as number);
+      return c.value === "star" ? pub.maxRank + 1 : (c.value);
     };
     for (let i = 1; i < order.length; i += 1) {
       expect(strength(order[i - 1]!)).toBeLessThanOrEqual(strength(order[i]!));
@@ -180,7 +179,7 @@ describe("UpstageModule — play validation", () => {
     const { module, players } = setup(4);
     const pub = module.getPublicState();
     const notTurn = players.find((p) => p.id !== pub.currentTurnPlayerId)!;
-    const hand = (module.getStateFor(notTurn.id) as UpstagePrivateState).hand;
+    const hand = (module.getStateFor(notTurn.id)).hand;
     expect(act(module, notTurn.id, UPSTAGE_ACTIONS.play, { cards: [hand[0]!.id] })).toMatchObject({
       ok: false,
       code: "NOT_YOUR_TURN",
@@ -191,7 +190,7 @@ describe("UpstageModule — play validation", () => {
     const { module } = setup(4);
     const pub = module.getPublicState();
     const me = pub.currentTurnPlayerId!;
-    const hand = (module.getStateFor(me) as UpstagePrivateState).hand.filter((c) => c.value !== "star");
+    const hand = (module.getStateFor(me)).hand.filter((c) => c.value !== "star");
     const a = hand.find((c) => c.value !== hand[0]!.value);
     if (a) {
       expect(act(module, me, UPSTAGE_ACTIONS.play, { cards: [hand[0]!.id, a.id] })).toMatchObject({ ok: false });
@@ -202,13 +201,13 @@ describe("UpstageModule — play validation", () => {
     const { module } = setup(4);
     const pub = module.getPublicState();
     const leader = pub.currentTurnPlayerId!;
-    const leadHand = (module.getStateFor(leader) as UpstagePrivateState).hand.filter((c) => c.value !== "star");
+    const leadHand = (module.getStateFor(leader)).hand.filter((c) => c.value !== "star");
     // lead a single weakest number
     const lead = leadHand[leadHand.length - 1]!;
     act(module, leader, UPSTAGE_ACTIONS.play, { cards: [lead.id] });
     const pub2 = module.getPublicState();
     const follower = pub2.currentTurnPlayerId!;
-    const fhand = (module.getStateFor(follower) as UpstagePrivateState).hand.filter((c) => c.value !== "star");
+    const fhand = (module.getStateFor(follower)).hand.filter((c) => c.value !== "star");
     // a card with value >= lead value must be rejected
     const weaker = fhand.find((c) => (c.value as number) >= pub2.currentPlay!.value);
     if (weaker) {
@@ -256,10 +255,10 @@ describe("UpstageModule — penalty exchange preserves hand sizes", () => {
       const cur = module.getPublicState();
       const receiver = cur.pendingTaxReceivers[0]!;
       const owed = receiver === cur.order[0] ? 2 : 1;
-      const priv = module.getStateFor(receiver) as UpstagePrivateState;
+      const priv = module.getStateFor(receiver);
       act(module, receiver, UPSTAGE_ACTIONS.taxReturn, { cards: priv.hand.slice(-owed).map((c) => c.id) });
     }
-    const after = players.map((p) => (module.getStateFor(p.id) as UpstagePrivateState).hand.length);
+    const after = players.map((p) => (module.getStateFor(p.id)).hand.length);
     expect(after.reduce((s, n) => s + n, 0)).toBe(80);
     expect([...after].sort((a, b) => a - b)).toEqual([13, 13, 13, 13, 14, 14]);
     expect(module.getPublicState().phase).toBe("play");
@@ -354,7 +353,7 @@ describe("UpstageModule — removal", () => {
       const cur = module.getPublicState();
       const r = cur.pendingTaxReceivers[0]!;
       const owed = r === cur.order[0] ? 2 : 1;
-      const priv = module.getStateFor(r) as UpstagePrivateState;
+      const priv = module.getStateFor(r);
       const res = act(module, r, UPSTAGE_ACTIONS.taxReturn, { cards: priv.hand.slice(-owed).map((c) => c.id) });
       expect(res).toMatchObject({ ok: true });
     }

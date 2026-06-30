@@ -159,7 +159,7 @@ export class UpstageCore {
     }
     const hand = this.hands.get(playerId) ?? [];
     const chosen: UpstageCard[] = [];
-    for (const id of ids as string[]) {
+    for (const id of ids) {
       const card = hand.find((c) => c.id === id && !chosen.includes(c));
       if (!card) return fail("INVALID_ACTION", "보유하지 않은 카드입니다.");
       chosen.push(card);
@@ -188,7 +188,7 @@ export class UpstageCore {
     }
     const hand = this.hands.get(playerId) ?? [];
     const chosen: UpstageCard[] = [];
-    for (const id of ids as string[]) {
+    for (const id of ids) {
       const card = hand.find((c) => c.id === id && !chosen.includes(c));
       if (!card) return fail("INVALID_ACTION", "보유하지 않은 카드입니다.");
       chosen.push(card);
@@ -290,7 +290,10 @@ export class UpstageCore {
 
     if (this.declarePlayerId === playerId) {
       this.declarePlayerId = null;
-      if (this.phase === "declare") this.penalty ? this.beginTax() : this.beginPlay();
+      if (this.phase === "declare") {
+        if (this.penalty) this.beginTax();
+        else this.beginPlay();
+      }
     }
     if (this.endVote) {
       this.endVote.votes.delete(playerId);

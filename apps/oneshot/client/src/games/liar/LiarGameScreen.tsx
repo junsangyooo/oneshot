@@ -4,7 +4,6 @@ import type {
   LiarConfigurePayload,
   LiarPrivateState,
   LiarPublicState,
-  PartyRoomState,
 } from "@oneshot/shared";
 import { FOOL_LIAR_ACTIONS, LIAR_ACTIONS, LIAR_CATEGORY_IDS } from "@oneshot/shared";
 import { useRoomStore } from "../../app/useRoomStore";
@@ -98,7 +97,7 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
 
 const RevealView = ({ pub, me }: { pub: LiarPublicState; me: LiarPrivateState | null }) => {
   const t = useT();
-  const categoryId = (me?.categoryId ?? pub.categoryId) as LiarCategoryId | null;
+  const categoryId = (me?.categoryId ?? pub.categoryId);
 
   return (
     <div className="liar-reveal">

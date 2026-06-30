@@ -209,6 +209,80 @@ describe("allout exchange & bankruptcy", () => {
   });
 });
 
+describe("allout edge cases (regression)", () => {
+  it("a play after drawing must include the drawn card", () => {
+    const core = setupCore(2);
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [N("r5", "red", 5), N("keep", "red", 9)]); // r5 legal on red
+    core.draw("p0"); // not under attack -> draw 1, sets drawnPending
+    expect(core.getStateFor("p0").drawnCardId).not.toBeNull();
+    // r5 is otherwise legal, but the play omits the drawn card -> rejected
+    expect(core.play("p0", { cards: ["r5"] }).ok).toBe(false);
+  });
+
+  it("exchange that hands over an empty hand finishes the target (rank 1)", () => {
+    const core = setupCore(2, { totalRounds: 1 });
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [XC("xc")]); // only the exchange
+    core.forTest_setHand("p1", [N("a", "blue", 1), N("b", "blue", 2)]);
+    expect(core.play("p0", { cards: ["xc"], chosenColor: "blue", exchangeTargetId: "p1" }).ok).toBe(true);
+    const pub = core.getPublicState();
+    expect(pub.players.find((p) => p.playerId === "p1")!.finished).toBe(true);
+    expect(pub.lastRoundRanking?.[0]).toBe("p1"); // emptied first -> rank 1
+  });
+
+  it("exchange can bankrupt the player who receives a large hand", () => {
+    const core = setupCore(2, { totalRounds: 1, bankruptcyOn: true, bankruptcyLimit: 8 });
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [XC("xc"), N("k", "red", 9)]);
+    core.forTest_setHand("p1", Array.from({ length: 10 }, (_, i) => N(`b${i}`, "blue", (i % 13) + 1)));
+    expect(core.play("p0", { cards: ["xc"], chosenColor: "blue", exchangeTargetId: "p1" }).ok).toBe(true);
+    expect(core.getPublicState().players.find((p) => p.playerId === "p0")!.bankrupt).toBe(true);
+  });
+
+  it("two reverses (even count) return the turn to self with 3 players", () => {
+    const core = setupCore(3);
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [RV("r1", "red"), RV("r2", "red"), N("k", "red", 2)]);
+    expect(core.play("p0", { cards: ["r1", "r2"] }).ok).toBe(true);
+    const pub = core.getPublicState();
+    expect(pub.currentTurnPlayerId).toBe("p0");
+    expect(pub.direction).toBe(1); // even -> direction unchanged
+  });
+
+  it("reflect bounces to the previous attacker who then takes the pile", () => {
+    const core = setupCore(3);
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setPending(4, "p0");
+    core.forTest_setTurn("p1");
+    core.forTest_setHand("p1", [RF("rf"), N("k", "red", 2)]);
+    expect(core.play("p1", { cards: ["rf"], chosenColor: "red" }).ok).toBe(true);
+    let pub = core.getPublicState();
+    expect(pub.currentTurnPlayerId).toBe("p0");
+    expect(pub.pendingAttack).toBe(4);
+    expect(pub.direction).toBe(-1);
+    core.forTest_setHand("p0", [N("x", "blue", 9)]);
+    expect(core.draw("p0").ok).toBe(true);
+    pub = core.getPublicState();
+    expect(pub.pendingAttack).toBe(0);
+    expect(pub.players.find((p) => p.playerId === "p0")!.handCount).toBe(5);
+  });
+
+  it("multi +2 of mixed colors stacks the full amount", () => {
+    const core = setupCore(2);
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [P2("a", "red"), P2("b", "blue"), N("k", "red", 1)]);
+    expect(core.play("p0", { cards: ["a", "b"] }).ok).toBe(true); // red+2 legal opener, blue+2 grouped
+    expect(core.getPublicState().pendingAttack).toBe(4);
+    expect(core.getPublicState().top?.color).toBe("blue"); // last card sets color
+  });
+});
+
 // ------- bot full-game driver -------
 const botMove = (core: AlloutCore, pub: AlloutPublicState): void => {
   const turn = pub.currentTurnPlayerId;
