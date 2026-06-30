@@ -1,4 +1,5 @@
 import type { GameCatalogItem } from "../schema/domain";
+import { defaultAlloutOptions } from "./allout";
 import { defaultKingGameOptions } from "./kinggame";
 import { defaultUpstageOptions } from "./upstage";
 
@@ -41,6 +42,16 @@ export const gameCatalog: GameCatalogItem[] = [
     complexity: 1,
     supportsJoinInProgress: false,
     defaultOptions: {},
+    status: "available",
+  },
+  {
+    id: "allout",
+    title: "올아웃",
+    minPlayers: 2,
+    maxPlayers: 16,
+    complexity: 3,
+    supportsJoinInProgress: false,
+    defaultOptions: defaultAlloutOptions,
     status: "available",
   },
   {
