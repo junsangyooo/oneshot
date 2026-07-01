@@ -3,8 +3,14 @@ services:
     build:
       context: ..
       dockerfile: ops/Dockerfile
+    container_name: oneshot
     env_file:
       - ../.env
     ports:
-      - "2567:2567"
+      - "127.0.0.1:2567:2567" # loopback only — reverse proxy (nginx/caddy) fronts this
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1g

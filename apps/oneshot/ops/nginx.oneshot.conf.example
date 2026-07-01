@@ -1,0 +1,39 @@
+# Reverse proxy for oneshot.jsyoo.dev → the Docker container (loopback :2567).
+# Copy to /etc/nginx/sites-available/oneshot on the host, symlink into
+# sites-enabled, then `nginx -t && systemctl reload nginx`.
+#
+# TLS here uses a Cloudflare Origin CA certificate (DNS record proxied through
+# Cloudflare, SSL/TLS mode = Full). Swap ssl_certificate/ssl_certificate_key
+# for your own cert paths if migrating away from that setup.
+
+server {
+    listen 80;
+    server_name oneshot.jsyoo.dev;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name oneshot.jsyoo.dev;
+
+    ssl_certificate     /etc/nginx/ssl/origin.pem;
+    ssl_certificate_key /etc/nginx/ssl/origin-key.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location / {
+        proxy_pass http://127.0.0.1:2567;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;   # WebSocket upgrade — required by Colyseus
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;   # long-lived game session websockets
+    }
+}
