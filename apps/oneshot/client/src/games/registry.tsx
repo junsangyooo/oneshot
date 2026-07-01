@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { GameId, PartyRoomState } from "@oneshot/shared";
+import { AlloutGameScreen } from "./allout/AlloutGameScreen";
 import { KingGameScreen } from "./kinggame/KingGameScreen";
 import { LiarGameScreen } from "./liar/LiarGameScreen";
 import { UpstageGameScreen } from "./upstage/UpstageGameScreen";
@@ -20,4 +21,5 @@ export const GAME_SCREENS: Partial<Record<GameId, ComponentType<GameScreenProps>
   liar: LiarGameScreen,
   "fool-liar": LiarGameScreen,
   upstage: UpstageGameScreen,
+  allout: AlloutGameScreen,
 };

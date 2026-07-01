@@ -20,6 +20,13 @@
   --warn: #f5b542;
   --gold: #f4b942;
 
+  /* ALL OUT card colors (cyber: neon on dark) */
+  --card-red: #ff4d57;
+  --card-yellow: #ffce3a;
+  --card-blue: #36b6ff;
+  --card-green: #3ddb8f;
+  --card-violet: #b07cff;
+
   --font-ko: "IBM Plex Sans KR";
   --font-display: "Zilla Slab", var(--font-ko), Georgia, serif;
   --font-mono: "JetBrains Mono", var(--font-ko), ui-monospace, "SFMono-Regular", monospace;
@@ -304,6 +311,12 @@ body {
   --teal: #8ed18e;
   --warn: #f7d154;
   --gold: #f5c344;
+  /* ALL OUT card colors (cozy: warm pastel) */
+  --card-red: #ef7d7d;
+  --card-yellow: #e6b34a;
+  --card-blue: #6aa9d8;
+  --card-green: #6cc79a;
+  --card-violet: #b79ae0;
   --font-display: "Jua", var(--font-ko), sans-serif;
   --font-mono: var(--font-ko), system-ui, -apple-system, sans-serif;
 }
@@ -592,3 +605,25 @@ body {
 [data-theme="cozy"] .scr--upstage .up-card__v,
 [data-theme="cozy"] .scr--upstage .up-round .val,
 [data-theme="cozy"] .scr--upstage .up-h { text-shadow: none; }
+
+/* ---- ALL OUT cozy overrides: rounded, soft 3D, white cards ---- */
+[data-theme="cozy"] .scr--allout .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--allout .ao-panel { border: 0; background: var(--bg-1); border-radius: 22px; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--allout .ao-seg { border: 0; border-radius: 14px; overflow: hidden; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--allout .ao-seg__btn.is-on { background: var(--accent); color: #fff; }
+[data-theme="cozy"] .scr--allout .ao-seat { border: 0; background: var(--bg-1); border-radius: 16px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--allout .ao-seat.is-turn { box-shadow: 0 4px 0 rgb(130 196 232 / 0.5); }
+[data-theme="cozy"] .scr--allout .ao-seat.is-attacker { box-shadow: 0 4px 0 rgb(255 139 139 / 0.5); }
+[data-theme="cozy"] .scr--allout .ao-pile { border-style: solid; border-radius: 18px; border-color: var(--line-bright); background: #fff; }
+[data-theme="cozy"] .scr--allout .ao-card { border-width: 2px; background: #fff; border-radius: 12px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.07); }
+[data-theme="cozy"] .scr--allout .ao-card.is-selected { box-shadow: 0 10px 0 rgb(130 196 232 / 0.45); }
+[data-theme="cozy"] .scr--allout .ao-card--wild,
+[data-theme="cozy"] .scr--allout .ao-card[data-color="wild"] { background: linear-gradient(135deg, rgb(239 125 125 / 0.18), rgb(106 169 216 / 0.18)); }
+[data-theme="cozy"] .scr--allout .ao-card--joker { color: #5a4636; border-color: #fff; }
+[data-theme="cozy"] .scr--allout .ao-card--fancy { color: #5a4636; border-color: var(--card-violet); }
+[data-theme="cozy"] .scr--allout .ao-wheel__seg { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--allout .ao-target { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--allout .ao-table__row { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.04); }
+[data-theme="cozy"] .scr--allout .ao-card__v,
+[data-theme="cozy"] .scr--allout .ao-round .val,
+[data-theme="cozy"] .scr--allout .ao-h { text-shadow: none; }
