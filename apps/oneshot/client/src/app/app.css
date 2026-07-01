@@ -439,8 +439,12 @@ button { font: inherit; }
 
 /* ============================ UPSTAGE (cyber base) ============================
    Cozy overrides live in design/terminal.css under [data-theme="cozy"] .scr--upstage. */
-.scr--upstage { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-rows: auto 1fr; gap: 14px; }
-.scr--upstage .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+.scr--upstage { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 14px; }
+/* during play, a left player rail joins the grid */
+.scr--upstage.has-rail { grid-template-columns: minmax(150px, 190px) 1fr; }
+.scr--upstage .topbar { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+.scr--upstage.has-rail .game-rail { grid-column: 1; grid-row: 2; }
+.scr--upstage.has-rail .up-stage { grid-column: 2; grid-row: 2; }
 .scr--upstage .up-round { text-align: center; }
 .scr--upstage .up-round .lbl { display: block; font-size: 11px; letter-spacing: var(--track-mid); color: var(--ink-dim); text-transform: uppercase; }
 .scr--upstage .up-round .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(18px, 2.6vw, 26px); color: var(--ink); }
@@ -486,17 +490,10 @@ button { font: inherit; }
 .scr--upstage .up-card.is-selected { transform: translateY(-10px); border-color: var(--cyan); box-shadow: 0 0 14px rgb(43 214 255 / 0.4); }
 .scr--upstage .up-card:disabled { cursor: default; }
 
-/* play layout — the HAND is the flexible scroll row so Play/Pass stay pinned. */
-.scr--upstage .up-play { display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 12px; height: 100%; min-height: 0; }
+/* play layout — the HAND is the flexible scroll row so Play/Pass stay pinned.
+   Players now live in the shared side rail (.game-rail), not here. */
+.scr--upstage .up-play { display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; height: 100%; min-height: 0; }
 .scr--upstage .up-play .up-hand { min-height: 0; overflow-y: auto; align-content: start; }
-.scr--upstage .up-seats { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.scr--upstage .up-seat { display: grid; justify-items: center; gap: 3px; padding: 8px 10px; border: 1px solid var(--line); min-width: 64px; }
-.scr--upstage .up-seat.is-turn { border-color: var(--cyan); box-shadow: 0 0 12px rgb(43 214 255 / 0.3); }
-.scr--upstage .up-seat.is-lead { border-color: var(--gold); }
-.scr--upstage .up-seat.is-out { opacity: 0.45; }
-.scr--upstage .up-seat__name { font-size: 11px; color: var(--ink-dim); max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scr--upstage .up-seat__count { font-family: var(--font-display); font-weight: 700; color: var(--ink); font-size: 15px; }
-.scr--upstage .up-seat__badge { font-size: 10px; color: var(--warn); letter-spacing: var(--track-mid); }
 
 .scr--upstage .up-pile { display: grid; justify-items: center; align-content: center; gap: 8px; border: 1px dashed var(--line-bright); padding: 16px; min-height: 96px; }
 .scr--upstage .up-pile__label { font-size: 10px; color: var(--ink-faint); letter-spacing: var(--track-mid); text-transform: uppercase; }
@@ -522,6 +519,10 @@ button { font: inherit; }
 
 @media (max-width: 720px) {
   .scr--upstage { height: auto; min-height: 100svh; overflow: visible; }
+  /* rail moves from a left column to a horizontal strip above the board */
+  .scr--upstage.has-rail { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+  .scr--upstage.has-rail .game-rail { grid-column: 1; grid-row: 2; }
+  .scr--upstage.has-rail .up-stage { grid-column: 1; grid-row: 3; }
   /* page scrolls now, so cap the hand and keep Play/Pass within easy reach */
   .scr--upstage .up-play { height: auto; }
   .scr--upstage .up-play .up-hand { max-height: 38vh; }
@@ -546,8 +547,12 @@ button { font: inherit; }
    ALL OUT (올아웃) — color-UNO. CYBER layout (default).
    Cozy overrides live in design/terminal.css under [data-theme="cozy"] .scr--allout.
    ========================================================= */
-.scr--allout { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-rows: auto 1fr; gap: 14px; }
-.scr--allout .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+.scr--allout { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 14px; }
+/* during play, a left player rail joins the grid (icons+nicknames on the side) */
+.scr--allout.has-rail { grid-template-columns: minmax(150px, 190px) 1fr; }
+.scr--allout .topbar { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+.scr--allout.has-rail .game-rail { grid-column: 1; grid-row: 2; }
+.scr--allout.has-rail .ao-stage { grid-column: 2; grid-row: 2; }
 .scr--allout .ao-round { text-align: center; }
 .scr--allout .ao-round .lbl { display: block; font-size: 11px; letter-spacing: var(--track-mid); color: var(--ink-dim); text-transform: uppercase; }
 .scr--allout .ao-round .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(18px, 2.6vw, 26px); color: var(--ink); }
@@ -571,18 +576,10 @@ button { font: inherit; }
 .scr--allout .ao-stepper { display: inline-flex; align-items: center; gap: 14px; }
 .scr--allout .ao-stepper__v { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--ink); min-width: 28px; text-align: center; }
 
-/* play layout — HAND is the flexible scroll row so actions stay pinned */
-.scr--allout .ao-play { display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 12px; height: 100%; min-height: 0; }
+/* play layout — HAND is the flexible scroll row so actions stay pinned.
+   Players now live in the shared side rail (.game-rail), not here. */
+.scr--allout .ao-play { display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; height: 100%; min-height: 0; }
 .scr--allout .ao-play .ao-hand { min-height: 0; overflow-y: auto; align-content: start; }
-.scr--allout .ao-seats { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.scr--allout .ao-seat { display: grid; justify-items: center; gap: 3px; padding: 8px 10px; border: 1px solid var(--line); min-width: 64px; position: relative; }
-.scr--allout .ao-seat.is-turn { border-color: var(--cyan); animation: aoPulse 1.4s ease-in-out infinite; }
-.scr--allout .ao-seat.is-attacker { border-color: var(--accent); }
-.scr--allout .ao-seat.is-out { opacity: 0.4; }
-.scr--allout .ao-seat__name { font-size: 11px; color: var(--ink-dim); max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scr--allout .ao-seat__count { font-family: var(--font-display); font-weight: 700; color: var(--ink); font-size: 15px; }
-.scr--allout .ao-seat__badge { font-size: 10px; color: var(--warn); letter-spacing: var(--track-mid); }
-@keyframes aoPulse { 0%, 100% { box-shadow: 0 0 8px rgb(43 214 255 / 0.25); } 50% { box-shadow: 0 0 18px rgb(43 214 255 / 0.55); } }
 
 /* center: direction · pile · attack stack */
 .scr--allout .ao-center { display: flex; align-items: center; justify-content: center; gap: 16px; }
@@ -644,6 +641,10 @@ button { font: inherit; }
 
 @media (max-width: 720px) {
   .scr--allout { height: auto; min-height: 100svh; overflow: visible; }
+  /* rail moves from a left column to a horizontal strip above the board */
+  .scr--allout.has-rail { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+  .scr--allout.has-rail .game-rail { grid-column: 1; grid-row: 2; }
+  .scr--allout.has-rail .ao-stage { grid-column: 1; grid-row: 3; }
   .scr--allout .ao-play { height: auto; }
   .scr--allout .ao-play .ao-hand { max-height: 40vh; }
 }

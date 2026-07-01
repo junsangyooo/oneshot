@@ -13,7 +13,8 @@ import {
 } from "@oneshot/shared";
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
-import { Backdrop, AvatarImg, SettingsModal, RulesModal } from "../../ui/terminal";
+import { Backdrop, AvatarImg, SettingsModal, RulesModal, GameRail } from "../../ui/terminal";
+import type { RailSeat } from "../../ui/terminal";
 
 type Props = {
   roomState: PartyRoomState;
@@ -88,8 +89,24 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
   const voteOpen = pub.endVote != null;
   const iVoted = voteOpen && currentPlayerId != null && currentPlayerId in (pub.endVote?.votes ?? {});
 
+  const railSeats: RailSeat[] =
+    pub.phase === "play"
+      ? pub.order.map((id) => {
+          const p = pub.players.find((x) => x.playerId === id);
+          const out = (p?.handCount ?? 0) === 0;
+          return {
+            id,
+            countLabel: out ? t("upstage.play.out") : String(p?.handCount ?? 0),
+            turn: pub.currentTurnPlayerId === id,
+            accent: pub.leadPlayerId === id ? "lead" : null,
+            badge: p?.passed ? t("upstage.play.passed") : null,
+            dim: out,
+          };
+        })
+      : [];
+
   return (
-    <main className="scr scr--upstage">
+    <main className={`scr scr--upstage${pub.phase === "play" ? " has-rail" : ""}`}>
       <Backdrop />
 
       <header className="topbar">
@@ -124,6 +141,8 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
           ) : null}
         </div>
       </header>
+
+      {pub.phase === "play" ? <GameRail seats={railSeats} players={roomState.players} nameOf={nameOf} /> : null}
 
       <section className="up-stage">
         {pub.phase === "setup" ? (
@@ -243,7 +262,6 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
           <PlayView
             pub={pub}
             me={me}
-            roomState={roomState}
             currentPlayerId={currentPlayerId}
             selected={selected}
             toggleCard={toggleCard}
@@ -373,7 +391,6 @@ const TaxView = ({
 const PlayView = ({
   pub,
   me,
-  roomState,
   currentPlayerId,
   selected,
   toggleCard,
@@ -384,7 +401,6 @@ const PlayView = ({
 }: {
   pub: UpstagePublicState;
   me: UpstagePrivateState | null;
-  roomState: PartyRoomState;
   currentPlayerId: string | null;
   selected: string[];
   toggleCard: (id: string) => void;
@@ -397,30 +413,6 @@ const PlayView = ({
   const turnName = pub.currentTurnPlayerId ? nameOf(pub.currentTurnPlayerId) : "—";
   return (
     <div className="up-play">
-      <div className="up-seats">
-        {pub.order.map((id) => {
-          const p = pub.players.find((x) => x.playerId === id);
-          const out = (p?.handCount ?? 0) === 0;
-          const classes = [
-            "up-seat",
-            pub.currentTurnPlayerId === id ? "is-turn" : "",
-            pub.leadPlayerId === id ? "is-lead" : "",
-            out ? "is-out" : "",
-            p?.passed ? "is-passed" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          return (
-            <div className={classes} key={id}>
-              <AvatarImg avatarKey={roomState.players[id]?.avatarKey} themeId={roomState.players[id]?.themeId} />
-              <span className="up-seat__name">{nameOf(id)}</span>
-              <span className="up-seat__count">{out ? t("upstage.play.out") : p?.handCount}</span>
-              {p?.passed ? <span className="up-seat__badge">{t("upstage.play.passed")}</span> : null}
-            </div>
-          );
-        })}
-      </div>
-
       <div className="up-pile">
         <span className="up-pile__label">{t("upstage.play.pile")}</span>
         {pub.currentPlay ? (

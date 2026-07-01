@@ -20,6 +20,55 @@ export const Backdrop = () => (
   </>
 );
 
+/* One entry in the shared player rail. Games map their own state onto this. */
+export type RailSeat = {
+  id: string;
+  countLabel: string; // hand size, "OUT", etc.
+  turn?: boolean; // whose turn it is now
+  accent?: "attacker" | "lead" | null; // extra emphasis (e.g. last attacker)
+  badge?: string | null; // small status word ("패스", "한 장!")
+  dim?: boolean; // finished / eliminated
+};
+
+/* Shared player rail. A scrollable list of every player (icon + nickname +
+   count + turn marker). It sits as a LEFT column on wide/landscape screens and
+   collapses to a horizontal scroll strip on narrow/portrait screens (see the
+   .game-rail rules in each screen's CSS). Keeping icon+nickname always visible
+   makes turn order and hand sizes legible even with many players. */
+export const GameRail = ({
+  seats,
+  players,
+  nameOf,
+}: {
+  seats: RailSeat[];
+  players: Record<string, { avatarKey: string; themeId: string } | undefined>;
+  nameOf: (id: string) => string;
+}) => (
+  <aside className="game-rail" aria-label="players">
+    {seats.map((s) => (
+      <div
+        key={s.id}
+        className={[
+          "rail-seat",
+          s.turn ? "is-turn" : "",
+          s.accent === "attacker" ? "is-attacker" : "",
+          s.accent === "lead" ? "is-lead" : "",
+          s.dim ? "is-out" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <AvatarImg avatarKey={players[s.id]?.avatarKey} themeId={players[s.id]?.themeId} />
+        <span className="rail-seat__body">
+          <span className="rail-seat__name">{nameOf(s.id)}</span>
+          {s.badge ? <span className="rail-seat__badge">{s.badge}</span> : null}
+        </span>
+        <span className="rail-seat__count">{s.countLabel}</span>
+      </div>
+    ))}
+  </aside>
+);
+
 /* KR / EN language toggle (extensible: driven by LANGS) */
 export const LangToggle = () => {
   const lang = useLangStore((s) => s.lang);
@@ -83,12 +132,20 @@ export const SettingsModal = ({
 
   if (!open) return null;
 
+  // Avatar (character icon) is locked once a game is running — see updateProfile.
+  const inGame = roomState?.phase === "game";
+
   const save = () => {
     identity.setNickname(nickname.trim());
-    identity.setAvatar(avatarId);
+    if (!inGame) identity.setAvatar(avatarId);
     // theme is applied live on click; broadcast my profile if I'm in a room
     if (roomState) {
-      send({ type: "room:updateProfile", nickname: nickname.trim(), avatarKey: avatarId, themeId: theme });
+      send({
+        type: "room:updateProfile",
+        nickname: nickname.trim(),
+        ...(inGame ? {} : { avatarKey: avatarId }),
+        themeId: theme,
+      });
     }
     onSaveNickname?.(nickname.trim());
     onClose();
@@ -155,22 +212,26 @@ export const SettingsModal = ({
             <div className="field-head" style={{ marginBottom: 10 }}>
               <span>{t("settings.avatar")}</span>
               <span className="opt">
-                {AVATARS.length} {t("settings.units")}
+                {inGame ? t("settings.locked") : `${AVATARS.length} ${t("settings.units")}`}
               </span>
             </div>
-            <div className="avatar-grid">
-              {AVATARS.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  className={`avatar-opt ${a.id === avatarId ? "sel" : ""}`}
-                  title={a.label}
-                  onClick={() => setAvatarId(a.id)}
-                >
-                  <img src={avatarSrc(a.id, theme)} alt={a.label} loading="lazy" />
-                </button>
-              ))}
-            </div>
+            {inGame ? (
+              <p className="settings-note">{t("settings.avatarLocked")}</p>
+            ) : (
+              <div className="avatar-grid">
+                {AVATARS.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    className={`avatar-opt ${a.id === avatarId ? "sel" : ""}`}
+                    title={a.label}
+                    onClick={() => setAvatarId(a.id)}
+                  >
+                    <img src={avatarSrc(a.id, theme)} alt={a.label} loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="modal-foot">

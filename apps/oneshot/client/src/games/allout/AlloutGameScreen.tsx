@@ -18,7 +18,8 @@ import {
 } from "@oneshot/shared";
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
-import { Backdrop, AvatarImg, SettingsModal, RulesModal } from "../../ui/terminal";
+import { Backdrop, AvatarImg, SettingsModal, RulesModal, GameRail } from "../../ui/terminal";
+import type { RailSeat } from "../../ui/terminal";
 import { AlloutCardFace } from "./AlloutCard";
 
 type Props = {
@@ -104,6 +105,25 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
   const voteOpen = pub.endVote != null;
   const iVoted = voteOpen && currentPlayerId != null && currentPlayerId in (pub.endVote?.votes ?? {});
 
+  const railSeats: RailSeat[] =
+    pub.phase === "play"
+      ? pub.order.map((id) => {
+          const p = pub.players.find((x) => x.playerId === id);
+          return {
+            id,
+            countLabel: p?.bankrupt
+              ? t("allout.play.bankruptOut")
+              : p?.finished
+                ? t("allout.play.out")
+                : String(p?.handCount ?? 0),
+            turn: pub.currentTurnPlayerId === id,
+            accent: pub.attackFromId === id ? "attacker" : null,
+            badge: p && !p.finished && p.handCount === 1 ? t("allout.play.lastCard") : null,
+            dim: p?.finished ?? false,
+          };
+        })
+      : [];
+
   const toggleCard = (card: TCard) => {
     setSelected((prev) => {
       if (prev.includes(card.id)) return prev.filter((x) => x !== card.id);
@@ -141,7 +161,7 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
   };
 
   return (
-    <main className="scr scr--allout">
+    <main className={`scr scr--allout${pub.phase === "play" ? " has-rail" : ""}`}>
       <Backdrop />
 
       <header className="topbar">
@@ -173,6 +193,8 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
         </div>
       </header>
 
+      {pub.phase === "play" ? <GameRail seats={railSeats} players={roomState.players} nameOf={nameOf} /> : null}
+
       <section className="ao-stage">
         {pub.phase === "setup" ? (
           <SetupView
@@ -192,7 +214,6 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
           <PlayView
             pub={pub}
             me={me}
-            roomState={roomState}
             currentPlayerId={currentPlayerId}
             selected={selected}
             firstSelected={firstSelected}
@@ -402,7 +423,6 @@ const SetupView = ({
 const PlayView = ({
   pub,
   me,
-  roomState,
   currentPlayerId,
   selected,
   firstSelected,
@@ -415,7 +435,6 @@ const PlayView = ({
 }: {
   pub: AlloutPublicState;
   me: AlloutPrivateState | null;
-  roomState: PartyRoomState;
   currentPlayerId: string | null;
   selected: string[];
   firstSelected: TCard | null;
@@ -451,33 +470,6 @@ const PlayView = ({
 
   return (
     <div className="ao-play">
-      <div className="ao-seats">
-        {pub.order.map((id) => {
-          const p = pub.players.find((x) => x.playerId === id);
-          const classes = [
-            "ao-seat",
-            pub.currentTurnPlayerId === id ? "is-turn" : "",
-            pub.attackFromId === id ? "is-attacker" : "",
-            p?.finished ? "is-out" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          const countLabel = p?.bankrupt
-            ? t("allout.play.bankruptOut")
-            : p?.finished
-              ? t("allout.play.out")
-              : String(p?.handCount ?? 0);
-          return (
-            <div className={classes} key={id}>
-              <AvatarImg avatarKey={roomState.players[id]?.avatarKey} themeId={roomState.players[id]?.themeId} />
-              <span className="ao-seat__name">{nameOf(id)}</span>
-              <span className="ao-seat__count">{countLabel}</span>
-              {p && !p.finished && p.handCount === 1 ? <span className="ao-seat__badge">{t("allout.play.lastCard")}</span> : null}
-            </div>
-          );
-        })}
-      </div>
-
       <div className="ao-center">
         <span className="ao-dir" aria-label={pub.direction === 1 ? t("allout.play.dirCW") : t("allout.play.dirCCW")}>
           {pub.direction === 1 ? "↻" : "↺"}
