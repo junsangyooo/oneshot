@@ -381,7 +381,9 @@ describe("allout robustness", () => {
     core.onPlayerLeave("p2"); // disconnected, cannot vote
     expect(core.proposeEnd(true, "p0").ok).toBe(true); // host auto-agrees
     core.voteEnd("p1", { agree: true }); // 2 of 2 connected agree -> end
-    expect(core.isOver()).not.toBeNull();
+    const res = core.isOver();
+    expect(res).not.toBeNull();
+    expect(res!.canceled).toBe(true); // vote-stop -> room returns to lobby
   });
 
   it("a temporarily disconnected player does not end the game by themselves", () => {

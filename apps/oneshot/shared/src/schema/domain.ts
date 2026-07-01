@@ -36,6 +36,10 @@ export type GameResult = {
   }>;
   winnerPlayerIds: PlayerId[];
   summary: string;
+  /** True when the game was stopped early by a vote (cancel) rather than
+   * finishing naturally. The room returns straight to the lobby (team kept)
+   * instead of showing the results/ranking screen. */
+  canceled?: boolean;
 };
 
 export type ActiveGameState = {

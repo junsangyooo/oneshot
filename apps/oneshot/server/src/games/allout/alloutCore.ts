@@ -637,7 +637,7 @@ export class AlloutCore {
     const rejects = cast.filter(([, v]) => !v).length;
     if (agrees * 2 > total) {
       this.endVote = null;
-      this.finish("투표로 게임을 종료했어요.");
+      this.finish("투표로 게임을 종료했어요.", true);
       return;
     }
     const undecided = total - cast.length;
@@ -646,14 +646,14 @@ export class AlloutCore {
     }
   }
 
-  private finish(summary: string): void {
+  private finish(summary: string, canceled = false): void {
     const ranking = this.players
       .map((p) => ({ playerId: p.id, score: this.cumulative.get(p.id) ?? 0 }))
       .sort((a, b) => a.score - b.score)
       .map((entry, index) => ({ playerId: entry.playerId, rank: index + 1, scoreDelta: entry.score }));
     const best = ranking.length > 0 ? ranking[0]!.scoreDelta : 0;
     const winners = ranking.filter((r) => r.scoreDelta === best).map((r) => r.playerId);
-    this.result = { ranking, winnerPlayerIds: winners, summary };
+    this.result = { ranking, winnerPlayerIds: winners, summary, canceled };
     this.phase = "ended";
     this.endVote = null;
   }

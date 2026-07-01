@@ -298,8 +298,10 @@ export class PartyRoomCore {
         player.nickname = nickname;
       }
     }
+    // Avatar (character icon) is locked once a game is in progress — a player
+    // changing their icon mid-game would swap how everyone sees them at the table.
     const avatarKey = this.parseAvatarKey(input.avatarKey);
-    if (avatarKey) {
+    if (avatarKey && this.roomState.phase !== "game") {
       player.avatarKey = avatarKey;
     }
     if (input.themeId !== undefined) {
@@ -387,6 +389,16 @@ export class PartyRoomCore {
     }
 
     const gameResult = this.activeGame.isOver();
+    if (gameResult?.canceled) {
+      // Stopped early by a vote — go straight back to the (team-preserving)
+      // lobby instead of the results screen.
+      this.activeGame = null;
+      this.roomState.phase = "lobby";
+      this.roomState.activeGame = null;
+      this.touch();
+      this.broadcastEverything();
+      return;
+    }
     this.roomState.activeGame = {
       ...this.roomState.activeGame,
       publicState: this.activeGame.getPublicState(),
