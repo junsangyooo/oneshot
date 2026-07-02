@@ -185,6 +185,56 @@ describe("PartyRoomCore", () => {
     expect(st.activeGame).toBeNull();
   });
 
+  it("returns to the lobby when an end vote passes via a reconnect hook (no room stall)", () => {
+    const core = createCore();
+    const host = joinOrThrow(core, "host");
+    const b = joinOrThrow(core, "b");
+    const c = joinOrThrow(core, "c");
+    const d = joinOrThrow(core, "d");
+    const e = joinOrThrow(core, "e");
+
+    core.handleMessage(host.playerId, { type: "room:selectGame", gameId: "dice" });
+    core.handleMessage(host.playerId, { type: "room:startGame" });
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:configure", payload: { totalRounds: 2 }, clientActionId: "c1" },
+    });
+    for (const p of [host, b, c, d, e]) {
+      core.handleMessage(p.playerId, {
+        type: "game:action",
+        action: { type: "dice:roll", clientActionId: `r-${p.playerId}` },
+      });
+    }
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:nextRound", clientActionId: "c2" },
+    });
+    // round 2: host + b vote yes (2/5 — open), then b drops (counted yes = 1 of 4)
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:proposeEnd", clientActionId: "c3" },
+    });
+    core.handleMessage(b.playerId, {
+      type: "game:action",
+      action: { type: "dice:voteEnd", payload: { agree: true }, clientActionId: "c4" },
+    });
+    core.markReconnecting(b.playerId);
+    core.handleMessage(c.playerId, {
+      type: "game:action",
+      action: { type: "dice:voteEnd", payload: { agree: true }, clientActionId: "c5" },
+    });
+    expect(core.toState().phase).toBe("game"); // 2 yes of 4 connected — still open
+
+    // b returns: standing yes votes host+b+c = 3 of 5 — the majority is enacted
+    // INSIDE onPlayerReturn, so the reconnect path itself must sweep isOver().
+    const back = core.reconnect({ reconnectToken: b.reconnectToken });
+    expect(back).toMatchObject({ ok: true });
+
+    const st = core.toState();
+    expect(st.phase).toBe("lobby");
+    expect(st.activeGame).toBeNull();
+  });
+
   it("returns to the lobby when an end vote passes via a kick hook (no room stall)", () => {
     const core = createCore();
     const host = joinOrThrow(core, "host");
