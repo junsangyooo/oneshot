@@ -69,27 +69,6 @@ export const GameRail = ({
   </aside>
 );
 
-/* KR / EN language toggle (extensible: driven by LANGS) */
-export const LangToggle = () => {
-  const lang = useLangStore((s) => s.lang);
-  const setLang = useLangStore((s) => s.setLang);
-  return (
-    <div className="lang-toggle">
-      {LANGS.map((l) => (
-        <button
-          key={l}
-          type="button"
-          className={`lang-dot ${l === lang ? "on" : ""}`}
-          aria-label={l}
-          onClick={() => setLang(l)}
-        >
-          {LANG_LABEL[l]}
-        </button>
-      ))}
-    </div>
-  );
-};
-
 /* image-filled avatar box. A player always renders in THEIR OWN theme,
    so pass that player's themeId; falls back to the viewer's theme. */
 export const AvatarImg = ({
@@ -281,6 +260,58 @@ export const RulesModal = ({
         <div className="modal-foot modal-foot--single">
           <button type="button" className="btn btn--sm btn--primary" onClick={onClose}>
             <span>{t("rules.close")}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* reusable confirm dialog for destructive actions (kick / end game / close).
+   Reuses the shared .modal chrome so it themes + scrolls for free. */
+export const ConfirmModal = ({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  body,
+  confirmLabel,
+  cancelLabel,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  cancelLabel: string;
+}) => {
+  if (!open) return null;
+  return (
+    <div className="modal-backdrop open" role="presentation" onMouseDown={onClose}>
+      <div className="modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>⚠ {title}</h3>
+          <button type="button" className="x" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className="modal-body">
+          <p className="settings-note" style={{ lineHeight: 1.8 }}>{body}</p>
+        </div>
+        <div className="modal-foot">
+          <button type="button" className="btn btn--sm" onClick={onClose}>
+            <span>{cancelLabel}</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn--sm btn--danger"
+            onClick={() => {
+              onClose();
+              onConfirm();
+            }}
+          >
+            <span>● {confirmLabel}</span>
           </button>
         </div>
       </div>

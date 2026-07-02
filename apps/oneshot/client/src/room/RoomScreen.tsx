@@ -6,7 +6,7 @@ import { useRoomStore } from "../app/useRoomStore";
 import { useT, useLangStore, gameTitle, gameTagline } from "../i18n";
 import { useTheme } from "../theme";
 import { gameMeta } from "../design/games";
-import { Backdrop, AvatarImg, SettingsModal } from "../ui/terminal";
+import { Backdrop, AvatarImg, SettingsModal, ConfirmModal } from "../ui/terminal";
 
 type RoomScreenProps = {
   roomState: PartyRoomState;
@@ -35,6 +35,7 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
   const send = useRoomStore((state) => state.send);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ejectOpen, setEjectOpen] = useState(false);
+  const [kickTarget, setKickTarget] = useState<{ id: string; nickname: string } | null>(null);
 
   const players = Object.values(roomState.players).sort((a, b) => a.seatIndex - b.seatIndex);
   const currentPlayer = currentPlayerId ? roomState.players[currentPlayerId] : null;
@@ -246,8 +247,9 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
                         <button
                           className="kick"
                           type="button"
-                          title="kick"
-                          onClick={() => send({ type: "room:kickPlayer", playerId: p.id })}
+                          title={t("kick.title")}
+                          aria-label={t("kick.title")}
+                          onClick={() => setKickTarget({ id: p.id, nickname: p.nickname })}
                         >
                           ✕
                         </button>
@@ -280,6 +282,18 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
       </footer>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      <ConfirmModal
+        open={kickTarget != null}
+        onClose={() => setKickTarget(null)}
+        onConfirm={() => {
+          if (kickTarget) send({ type: "room:kickPlayer", playerId: kickTarget.id });
+        }}
+        title={t("kick.title")}
+        body={t("kick.body").replace("{name}", kickTarget?.nickname ?? "")}
+        confirmLabel={t("kick.confirm")}
+        cancelLabel={t("kick.cancel")}
+      />
 
       {ejectOpen ? (
         <div className="modal-backdrop open" role="presentation" onMouseDown={() => setEjectOpen(false)}>

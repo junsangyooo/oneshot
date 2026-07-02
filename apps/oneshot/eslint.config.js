@@ -11,6 +11,8 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/test-results/**",
       "**/playwright-report/**",
+      // build-tool configs live outside each package's tsconfig project
+      "**/tsup.config.ts",
     ],
   },
   {

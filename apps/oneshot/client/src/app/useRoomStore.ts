@@ -55,7 +55,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     } catch (error) {
       set({
         connectionState: "failed",
-        screenError: { message: userMessage(error), retryable: true },
+        screenError: { code: joinErrorCode(error), message: userMessage(error), retryable: true },
       });
     }
   },
@@ -72,7 +72,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     } catch (error) {
       set({
         connectionState: "failed",
-        screenError: { message: userMessage(error), retryable: true },
+        screenError: { code: joinErrorCode(error), message: userMessage(error), retryable: true },
       });
     }
   },
@@ -173,4 +173,14 @@ const userMessage = (error: unknown): string => {
     return error.message;
   }
   return "연결에 실패했습니다.";
+};
+
+/* Colyseus matchmake failures arrive as plain Error messages (English,
+   internal wording). Map the known ones onto our ErrorCodes so the state
+   screen shows a proper localized page instead of the raw string. */
+const joinErrorCode = (error: unknown): string | undefined => {
+  const msg = error instanceof Error ? error.message : "";
+  if (/no rooms found/i.test(msg)) return "ROOM_NOT_FOUND";
+  if (/is full|locked|max.*clients/i.test(msg)) return "ROOM_FULL";
+  return undefined;
 };

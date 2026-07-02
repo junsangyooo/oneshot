@@ -1,6 +1,6 @@
 /* =========================================================
    Avatar units — the preset character icons a player can pick.
-   Files live in /public/assets/avatars/<id>.png
+   Files live in /public/themes/<theme>/avatars/<id>.png
    `avatarKey` from the server maps onto one of these ids.
    ========================================================= */
 export type AvatarAccent = "red" | "cyan" | "gold" | "gray";

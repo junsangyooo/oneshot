@@ -8,7 +8,7 @@ import type {
 import { FOOL_LIAR_ACTIONS, LIAR_ACTIONS, LIAR_CATEGORY_IDS } from "@oneshot/shared";
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
-import { Backdrop, SettingsModal, RulesModal } from "../../ui/terminal";
+import { Backdrop, SettingsModal, RulesModal, ConfirmModal } from "../../ui/terminal";
 import type { GameScreenProps } from "../registry";
 import { LiarCard } from "./LiarCard";
 import { LiarSetup } from "./LiarSetup";
@@ -20,6 +20,7 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
   const send = useRoomStore((state) => state.send);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
 
   const gameId = roomState.activeGame?.gameId;
   const actions = gameId === "fool-liar" ? FOOL_LIAR_ACTIONS : LIAR_ACTIONS;
@@ -64,7 +65,7 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
             <button
               className="btn btn--sm btn--danger"
               type="button"
-              onClick={() => sendAction(actions.endGame)}
+              onClick={() => setEndOpen(true)}
             >
               <span>⏻ {t("liar.endGame")}</span>
             </button>
@@ -77,6 +78,7 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
           <LiarSetup
             isHost={isHost}
             maxLiars={pub.maxLiars}
+            title={t(gameId === "fool-liar" ? "foolliar.setup.title" : "liar.setup.title")}
             onConfigure={(payload: LiarConfigurePayload) => sendAction(actions.configure, payload)}
           />
         ) : (
@@ -90,6 +92,15 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
         onClose={() => setRulesOpen(false)}
         title={t("liar.rules.title")}
         paragraphs={[t("liar.rules.p1"), t("liar.rules.p2"), t("liar.rules.p3"), t("liar.rules.p4")]}
+      />
+      <ConfirmModal
+        open={endOpen}
+        onClose={() => setEndOpen(false)}
+        onConfirm={() => sendAction(actions.endGame)}
+        title={t("endgame.title")}
+        body={t("endgame.body")}
+        confirmLabel={t("endgame.confirm")}
+        cancelLabel={t("endgame.cancel")}
       />
     </main>
   );

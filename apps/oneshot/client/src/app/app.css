@@ -26,11 +26,7 @@ button { font: inherit; }
   flex: 0 0 auto;
 }
 
-/* ---- language toggle (KR / EN circles — extensible) ---- */
-.lang-toggle {
-  position: fixed; top: var(--frame-pad); right: calc(var(--frame-pad) + 56px);
-  z-index: 9; display: flex; gap: 8px; align-items: center;
-}
+/* ---- language dots (KR / EN circles — used inside the settings modal) ---- */
 .lang-dot {
   width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
   border: 1px solid var(--line-bright); background: rgb(10 7 16 / 0.5);
@@ -67,6 +63,10 @@ button { font: inherit; }
 
 @media (max-width: 1080px) { .scr--home .rail { display: none; } }
 @media (max-width: 560px) { .scr--home .actions { grid-template-columns: 1fr; } }
+/* phones: the fixed settings pill sits where the corner telemetry lives — hide the flavor text */
+@media (max-width: 620px) {
+  .scr--home .topbar .readout, .scr--home .botbar .readout { visibility: hidden; }
+}
 /* short viewports / keyboard open: the centered block can exceed 1fr — allow scroll */
 @media (max-width: 560px), (max-height: 680px) {
   .scr--home { height: auto; min-height: 100svh; overflow: visible; }
@@ -98,7 +98,8 @@ button { font: inherit; }
 .scr--lobby .link-url { font-size: 12px; color: var(--ink-dim); letter-spacing: 0.04em; word-break: break-all; }
 .scr--lobby .qr-wrap { display: grid; gap: 10px; }
 .scr--lobby .qr-box { border: 1px solid var(--line); padding: 18px; display: grid; place-items: center; }
-.scr--lobby .qr-box img { width: 100%; height: auto; display: block; }
+/* cap the QR so single-column layouts (tablet/phone) don't blow it up full-bleed */
+.scr--lobby .qr-box img { width: 100%; max-width: 240px; height: auto; display: block; margin: 0 auto; }
 .scr--lobby .sub-note { font-size: 10px; letter-spacing: 0.18em; color: var(--ink-faint); text-align: center; text-transform: uppercase; }
 .scr--lobby .enc { display: grid; gap: 8px; }
 .scr--lobby .enc-row { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.12em; color: var(--ink-dim); text-transform: uppercase; }
@@ -144,7 +145,7 @@ button { font: inherit; }
 .scr--lobby .op .ip { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.04em; margin-top: 3px; }
 .scr--lobby .op .st { text-align: right; font-size: 11px; letter-spacing: 0.06em; white-space: nowrap; }
 .scr--lobby .op .st .meta { display: block; font-size: 10px; color: var(--ink-faint); margin-top: 2px; }
-.scr--lobby .op .kick { margin-left: 4px; border: 1px solid rgb(var(--glow-red) / 0.4); background: none; color: var(--accent); width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; }
+.scr--lobby .op .kick { margin-left: 4px; border: 1px solid rgb(var(--glow-red) / 0.4); background: none; color: var(--accent); width: 44px; height: 44px; display: grid; place-items: center; cursor: pointer; }
 .scr--lobby .op .kick:hover { background: rgb(var(--glow-red) / 0.12); }
 .scr--lobby .op.is-empty .nm { color: var(--ink-dim); }
 .scr--lobby .glyph--empty { color: var(--ink-dim); border-style: dashed; }
@@ -168,6 +169,14 @@ button { font: inherit; }
 @media (max-width: 1100px) {
   .scr--lobby { height: auto; overflow: visible; }
   .scr--lobby .cols { grid-template-columns: 1fr; }
+  .scr--lobby .col, .scr--lobby .col--center { overflow: visible; grid-template-rows: none; }
+  .scr--lobby .avail { grid-template-rows: none; }
+  .scr--lobby .avail .mod-grid { overflow: visible; }
+}
+/* short desktop windows: the fixed-height grid squeezes the module list into a
+   sliver — fall back to page scroll so game selection stays usable */
+@media (max-height: 880px) {
+  .scr--lobby { height: auto; overflow: visible; }
   .scr--lobby .col, .scr--lobby .col--center { overflow: visible; grid-template-rows: none; }
   .scr--lobby .avail { grid-template-rows: none; }
   .scr--lobby .avail .mod-grid { overflow: visible; }
@@ -257,6 +266,9 @@ button { font: inherit; }
 .scr--conn .st-msg { font-size: 13px; color: var(--ink-dim); letter-spacing: 0.03em; line-height: 1.8; max-width: 46ch; justify-self: center; }
 .scr--conn .st-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 .scr--conn .st-actions .btn { min-width: 180px; justify-content: center; }
+@media (max-width: 720px), (max-height: 620px) {
+  .scr--conn { height: auto; min-height: 100svh; overflow: visible; }
+}
 
 /* =========================================================
    KING GAME (왕게임) — CYBER base. Cozy overrides live in
@@ -308,7 +320,7 @@ button { font: inherit; }
 .scr--king .king-custom { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
 .scr--king .king-custom__col { display: grid; gap: 8px; align-content: start; min-height: 0; }
 .scr--king .king-chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 150px; overflow-y: auto; }
-.scr--king .king-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 7px 10px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim); font-size: 11px; cursor: pointer; text-align: left; }
+.scr--king .king-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 10px 12px; min-height: 44px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim); font-size: 12px; cursor: pointer; text-align: left; }
 .scr--king .king-chip:hover { border-color: var(--line-bright); color: var(--ink); }
 .scr--king .king-chip.is-on { border-color: var(--cyan); color: var(--ink); background: rgb(43 214 255 / 0.08); }
 .scr--king .king-chip > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -318,13 +330,13 @@ button { font: inherit; }
 .scr--king .king-custom__add input:focus { outline: none; border-color: var(--cyan); }
 .scr--king .king-custom__row { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
 .scr--king .king-seg { display: inline-flex; border: 1px solid var(--line); }
-.scr--king .king-seg button { padding: 9px 13px; background: transparent; color: var(--ink-dim); border: 0; font-size: 11px; cursor: pointer; }
+.scr--king .king-seg button { padding: 12px 16px; min-height: 44px; background: transparent; color: var(--ink-dim); border: 0; font-size: 12px; cursor: pointer; }
 .scr--king .king-seg button.on { background: rgb(var(--glow-red) / 0.12); color: var(--ink); }
 .scr--king .king-pool { display: grid; gap: 6px; max-height: 150px; overflow-y: auto; }
 .scr--king .king-pool__empty { font-size: 11px; color: var(--ink-faint); }
 .scr--king .king-pool__item { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); }
 .scr--king .king-pool__text { font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scr--king .king-pool__x { background: none; border: 0; color: var(--ink-faint); cursor: pointer; font-size: 13px; }
+.scr--king .king-pool__x { background: none; border: 0; color: var(--ink-faint); cursor: pointer; font-size: 14px; width: 44px; height: 44px; display: grid; place-items: center; margin: -10px -10px -10px 0; }
 .scr--king .king-pool__x:hover { color: var(--accent); }
 
 /* command / mission composer */
@@ -334,7 +346,7 @@ button { font: inherit; }
 .scr--king .king-mission { font-family: var(--font-display); font-size: clamp(20px, 4vw, 30px); line-height: 1.6; text-align: center; color: var(--ink); }
 .scr--king .king-mission__raw { display: block; margin-bottom: 12px; }
 .scr--king .king-mission__targets { display: inline-flex; gap: 10px; justify-content: center; }
-.scr--king .king-slot { display: inline-flex; align-items: center; justify-content: center; min-width: 70px; padding: 2px 12px; margin: 0 4px; border-bottom: 2px dashed var(--line-bright); color: var(--ink-faint); cursor: pointer; vertical-align: middle; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.scr--king .king-slot { display: inline-flex; align-items: center; justify-content: center; min-width: 70px; min-height: 44px; padding: 4px 12px; margin: 0 4px; border-bottom: 2px dashed var(--line-bright); color: var(--ink-faint); cursor: pointer; vertical-align: middle; transition: background 0.15s, border-color 0.15s, color 0.15s; }
 .scr--king .king-slot.is-active { border-color: var(--cyan); color: var(--cyan); }
 .scr--king .king-slot.is-hover { background: rgb(43 214 255 / 0.14); border-color: var(--cyan); }
 .scr--king .king-slot.is-filled { border-bottom-style: solid; border-color: var(--gold); color: var(--gold); }
@@ -483,7 +495,7 @@ button { font: inherit; }
 .scr--upstage .up-chip { border: 1px solid var(--line-bright); padding: 4px 12px; font-size: 12px; color: var(--ink); }
 
 /* a playing card */
-.scr--upstage .up-card { width: clamp(40px, 7vw, 54px); aspect-ratio: 2 / 3; border: 1px solid var(--line-bright); background: var(--bg-1); color: var(--ink); display: grid; place-content: center; cursor: pointer; padding: 0; transition: transform 0.1s, border-color 0.1s; }
+.scr--upstage .up-card { width: clamp(44px, 7vw, 54px); aspect-ratio: 2 / 3; border: 1px solid var(--line-bright); background: var(--bg-1); color: var(--ink); display: grid; place-content: center; cursor: pointer; padding: 0; transition: transform 0.1s, border-color 0.1s; }
 .scr--upstage .up-card--static { cursor: default; }
 .scr--upstage .up-card__v { font-family: var(--font-display); font-weight: 700; font-size: clamp(16px, 3vw, 22px); }
 .scr--upstage .up-card--star { color: var(--gold); border-color: var(--gold); }
@@ -601,22 +613,23 @@ button { font: inherit; }
 
 /* a playing card — color carried by data-color tokens */
 .scr--allout .ao-card { width: clamp(44px, 7.5vw, 58px); aspect-ratio: 2 / 3; border: 2px solid var(--line-bright); background: var(--bg-1); color: var(--ink); display: grid; place-content: center; cursor: pointer; padding: 0; transition: transform 0.1s, box-shadow 0.1s, opacity 0.1s; }
-.scr--allout .ao-card[data-color="red"] { border-color: var(--card-red); color: var(--card-red); }
-.scr--allout .ao-card[data-color="yellow"] { border-color: var(--card-yellow); color: var(--card-yellow); }
-.scr--allout .ao-card[data-color="blue"] { border-color: var(--card-blue); color: var(--card-blue); }
-.scr--allout .ao-card[data-color="green"] { border-color: var(--card-green); color: var(--card-green); }
-.scr--allout .ao-card[data-color="wild"] { border-color: var(--ink-dim); color: var(--ink); background: linear-gradient(135deg, rgb(255 77 87 / 0.18), rgb(54 182 255 / 0.18)); }
+/* each color also tints the card face so suits stay tellable even when dimmed */
+.scr--allout .ao-card[data-color="red"] { border-color: var(--card-red); color: var(--card-red); background: color-mix(in srgb, var(--card-red) 12%, var(--bg-1)); }
+.scr--allout .ao-card[data-color="yellow"] { border-color: var(--card-yellow); color: var(--card-yellow); background: color-mix(in srgb, var(--card-yellow) 12%, var(--bg-1)); }
+.scr--allout .ao-card[data-color="blue"] { border-color: var(--card-blue); color: var(--card-blue); background: color-mix(in srgb, var(--card-blue) 12%, var(--bg-1)); }
+.scr--allout .ao-card[data-color="green"] { border-color: var(--card-green); color: var(--card-green); background: color-mix(in srgb, var(--card-green) 12%, var(--bg-1)); }
+.scr--allout .ao-card[data-color="wild"] { border-color: var(--ink-dim); color: var(--ink); background: linear-gradient(135deg, color-mix(in srgb, var(--card-red) 18%, transparent), color-mix(in srgb, var(--card-blue) 18%, transparent)); }
 .scr--allout .ao-card__v { font-family: var(--font-display); font-weight: 700; font-size: clamp(15px, 3vw, 20px); }
 .scr--allout .ao-card--static, .scr--allout .ao-card:disabled { cursor: default; }
 .scr--allout .ao-card.is-selected { transform: translateY(-12px); box-shadow: 0 0 16px rgb(43 214 255 / 0.5); }
 .scr--allout .ao-card.is-glow { box-shadow: 0 0 12px rgb(43 214 255 / 0.35); }
-.scr--allout .ao-card.is-dim { opacity: 0.3; }
+.scr--allout .ao-card.is-dim { opacity: 0.45; }
 /* +7 joker — flashy rainbow */
 .scr--allout .ao-card--joker { background: conic-gradient(from 0deg, #ff4d57, #ffce3a, #3ddb8f, #36b6ff, #b07cff, #ff4d57); color: #0a0710; border-color: #fff; animation: aoJoker 6s linear infinite; }
 .scr--allout .ao-card--joker .ao-card__v { text-shadow: 0 1px 2px rgb(255 255 255 / 0.6); }
 @keyframes aoJoker { to { filter: hue-rotate(360deg); } }
 /* exchange — fancy violet */
-.scr--allout .ao-card--fancy { background: linear-gradient(135deg, rgb(176 124 255 / 0.4), rgb(43 214 255 / 0.25)); border-color: var(--card-violet); color: #fff; }
+.scr--allout .ao-card--fancy { background: linear-gradient(135deg, color-mix(in srgb, var(--card-violet) 40%, transparent), color-mix(in srgb, var(--cyan) 25%, transparent)); border-color: var(--card-violet); color: #fff; }
 
 /* color wheel + exchange targets (modals rendered inside the scoped main) */
 .scr--allout .ao-wheel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

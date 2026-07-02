@@ -23,7 +23,7 @@ import {
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT, useLangStore } from "../../i18n";
 import type { Lang } from "../../i18n";
-import { Backdrop, AvatarImg, SettingsModal } from "../../ui/terminal";
+import { Backdrop, AvatarImg, SettingsModal, RulesModal, ConfirmModal } from "../../ui/terminal";
 
 type KingGameScreenProps = {
   roomState: PartyRoomState;
@@ -53,6 +53,8 @@ export const KingGameScreen = ({ roomState, privateState, currentPlayerId }: Kin
   const lang = useLangStore((s) => s.lang);
   const send = useRoomStore((state) => state.send);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
 
   const pub = roomState.activeGame?.publicState as KingGamePublicState | undefined;
   const me = privateState as KingGamePrivateState | null;
@@ -91,14 +93,17 @@ export const KingGameScreen = ({ roomState, privateState, currentPlayerId }: Kin
           <span className="val">{String(pub.round).padStart(2, "0")}</span>
         </div>
         <div className="king-toolbar">
-          <button className="btn btn--sm" type="button" onClick={() => setSettingsOpen(true)}>
+          <button className="btn btn--sm" type="button" aria-label={t("rules.help")} onClick={() => setRulesOpen(true)}>
+            <span>?</span>
+          </button>
+          <button className="btn btn--sm" type="button" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
             <span>⚙</span>
           </button>
           {isHost && pub.phase !== "setup" ? (
             <button
               className="btn btn--sm btn--danger"
               type="button"
-              onClick={() => sendAction(KING_ACTIONS.endGame)}
+              onClick={() => setEndOpen(true)}
             >
               <span>⏻ {t("king.endGame")}</span>
             </button>
@@ -138,6 +143,21 @@ export const KingGameScreen = ({ roomState, privateState, currentPlayerId }: Kin
       </footer>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <RulesModal
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        title={t("king.rules.title")}
+        paragraphs={[t("king.rules.p1"), t("king.rules.p2"), t("king.rules.p3"), t("king.rules.p4"), t("king.rules.p5")]}
+      />
+      <ConfirmModal
+        open={endOpen}
+        onClose={() => setEndOpen(false)}
+        onConfirm={() => sendAction(KING_ACTIONS.endGame)}
+        title={t("endgame.title")}
+        body={t("endgame.body")}
+        confirmLabel={t("endgame.confirm")}
+        cancelLabel={t("endgame.cancel")}
+      />
     </main>
   );
 };

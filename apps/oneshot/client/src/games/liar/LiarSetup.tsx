@@ -7,10 +7,12 @@ import { useT } from "../../i18n";
 export const LiarSetup = ({
   isHost,
   maxLiars,
+  title,
   onConfigure,
 }: {
   isHost: boolean;
   maxLiars: number;
+  title: string;
   onConfigure: (payload: LiarConfigurePayload) => void;
 }) => {
   const t = useT();
@@ -35,7 +37,7 @@ export const LiarSetup = ({
   return (
     <div className="liar-setup">
       <div className="liar-setup__head">
-        <h2>{t("liar.setup.title")}</h2>
+        <h2>{title}</h2>
         <span className="panel-label">{t("liar.setup.chooseCategory")}</span>
       </div>
 

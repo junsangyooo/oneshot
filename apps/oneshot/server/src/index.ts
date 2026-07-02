@@ -113,7 +113,9 @@ app.use(
     },
   }),
 );
-app.get(["/", "/r/:roomCode"], (_request, response) => {
+// "/_states" is the client-side state/error gallery — every SPA route the
+// client owns must be listed here or production serves "Cannot GET".
+app.get(["/", "/r/:roomCode", "/_states"], (_request, response) => {
   response.sendFile(path.join(clientDistPath, "index.html"), (error) => {
     if (error) {
       response.status(200).json({

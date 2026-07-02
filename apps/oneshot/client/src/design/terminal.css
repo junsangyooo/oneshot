@@ -49,7 +49,7 @@
 .rail-seat .glyph--img { width: 34px; height: 34px; flex: 0 0 auto; }
 .rail-seat__body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .rail-seat__name { font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rail-seat__badge { font-size: 9px; color: var(--warn); letter-spacing: var(--track-mid); text-transform: uppercase; }
+.rail-seat__badge { font-size: 10px; color: var(--warn); letter-spacing: var(--track-mid); text-transform: uppercase; }
 .rail-seat__count { font-family: var(--font-display); font-weight: 700; color: var(--ink); font-size: 16px; }
 .rail-seat.is-turn { border-color: var(--cyan); box-shadow: 0 0 12px rgb(43 214 255 / 0.32); }
 .rail-seat.is-turn::before { content: "▶"; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); color: var(--cyan); font-size: 10px; }
@@ -178,6 +178,10 @@ body {
 .btn--danger { border-color: rgb(var(--glow-red) / 0.5); color: var(--accent); }
 .btn--danger:hover { background: rgb(var(--glow-red) / 0.12); border-color: var(--accent); }
 .btn--sm { padding: 10px 16px; font-size: 12px; min-height: 44px; justify-content: center; }
+/* disabled buttons must READ disabled — otherwise "nothing happens" on tap */
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:disabled:hover { transform: none; border-color: var(--line-bright); }
+.btn--primary:disabled:hover { background-color: #ecebf1; }
 .btn .enter { color: var(--ink-dim); font-weight: 400; }
 .btn--primary .enter { color: var(--accent); }
 
@@ -295,7 +299,7 @@ body {
 .avatar-opt img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(0.85) brightness(0.82); transition: filter 0.15s; }
 .avatar-opt .av-name {
   position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 0;
-  font-size: 8px; letter-spacing: 0.12em; text-align: center; color: var(--ink-dim);
+  font-size: 10px; letter-spacing: 0.12em; text-align: center; color: var(--ink-dim);
   background: linear-gradient(transparent, rgb(5 3 8 / 0.9)); opacity: 0; transition: opacity 0.15s;
 }
 .avatar-opt:hover { border-color: var(--line-bright); transform: translateY(-2px); }
@@ -333,12 +337,12 @@ body {
   --teal: #8ed18e;
   --warn: #f7d154;
   --gold: #f5c344;
-  /* ALL OUT card colors (cozy: warm pastel) */
-  --card-red: #ef7d7d;
-  --card-yellow: #e6b34a;
-  --card-blue: #6aa9d8;
-  --card-green: #6cc79a;
-  --card-violet: #b79ae0;
+  /* ALL OUT card colors (cozy: warm but saturated enough to tell apart on cream) */
+  --card-red: #e05656;
+  --card-yellow: #cf9418;
+  --card-blue: #3f87c2;
+  --card-green: #35a173;
+  --card-violet: #9a71d6;
   --font-display: "Jua", var(--font-ko), sans-serif;
   --font-mono: var(--font-ko), system-ui, -apple-system, sans-serif;
 }
@@ -633,9 +637,15 @@ body {
 [data-theme="cozy"] .scr--allout .ao-pile { border-style: solid; border-radius: 18px; border-color: var(--line-bright); background: #fff; }
 [data-theme="cozy"] .scr--allout .ao-card { border-width: 2px; background: #fff; border-radius: 12px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.07); }
 [data-theme="cozy"] .scr--allout .ao-card.is-selected { box-shadow: 0 10px 0 rgb(130 196 232 / 0.45); }
-[data-theme="cozy"] .scr--allout .ao-card--wild,
-[data-theme="cozy"] .scr--allout .ao-card[data-color="wild"] { background: linear-gradient(135deg, rgb(239 125 125 / 0.18), rgb(106 169 216 / 0.18)); }
-[data-theme="cozy"] .scr--allout .ao-card--joker { color: #5a4636; border-color: #fff; }
+/* dimmed (unplayable) cards keep their suit color readable on cream */
+[data-theme="cozy"] .scr--allout .ao-card.is-dim { opacity: 0.55; }
+/* wild/fancy gradients inherit the cozy --card-* tokens via color-mix (app.css). */
+/* joker: pastel rainbow instead of the cyber neon conic */
+[data-theme="cozy"] .scr--allout .ao-card--joker {
+  color: #5a4636; border-color: #fff;
+  background: conic-gradient(from 0deg, #f0908d, #ecc46a, #8fd0ab, #8ab7e0, #c3a6ea, #f0908d);
+  animation: none;
+}
 [data-theme="cozy"] .scr--allout .ao-card--fancy { color: #5a4636; border-color: var(--card-violet); }
 [data-theme="cozy"] .scr--allout .ao-wheel__seg { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.06); }
 [data-theme="cozy"] .scr--allout .ao-target { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
