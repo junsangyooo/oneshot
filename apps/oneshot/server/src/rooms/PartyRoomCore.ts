@@ -178,6 +178,8 @@ export class PartyRoomCore {
     player.connectionStatus = "online";
     player.lastSeenAt = session.lastSeenAt;
     this.activeGame?.onPlayerReturn(session.playerId);
+    // A return re-resolves quorums (rolls, votes) and may end the game.
+    this.settleGameOutcome();
 
     this.reconcileHost();
     this.touch();
@@ -207,6 +209,8 @@ export class PartyRoomCore {
       session.lastSeenAt = player.lastSeenAt;
     }
     this.activeGame?.onPlayerLeave(playerId);
+    // The shrunken connected base may have just passed an open end vote.
+    this.settleGameOutcome();
     this.reconcileHost();
     this.touch();
     this.broadcastEverything();
@@ -388,27 +392,49 @@ export class PartyRoomCore {
       return;
     }
 
+    if (!this.settleGameOutcome()) {
+      this.roomState.activeGame = {
+        ...this.roomState.activeGame,
+        publicState: this.activeGame.getPublicState(),
+        result: null,
+      };
+    }
+    this.touch();
+    this.broadcastEverything();
+  }
+
+  /** Sweep the active game for a finished result and transition the room.
+   * Returns true when the game ended (room moved to lobby or results).
+   *
+   * Actions reach this via handleGameAction, but lifecycle hooks can ALSO end
+   * a game — e.g. an open end vote passes the connected-majority the moment a
+   * voter is kicked or drops (the hook shrinks the base). Every hook call site
+   * (markReconnecting / reconnect / kickPlayer) must sweep afterwards, or the
+   * room would sit in phase "game" with an ended module that rejects every
+   * action — a permanent stall with no way back to the lobby. */
+  private settleGameOutcome(): boolean {
+    if (!this.activeGame || !this.roomState.activeGame) {
+      return false;
+    }
     const gameResult = this.activeGame.isOver();
-    if (gameResult?.canceled) {
+    if (!gameResult) {
+      return false;
+    }
+    if (gameResult.canceled) {
       // Stopped early by a vote — go straight back to the (team-preserving)
       // lobby instead of the results screen.
       this.activeGame = null;
       this.roomState.phase = "lobby";
       this.roomState.activeGame = null;
-      this.touch();
-      this.broadcastEverything();
-      return;
+      return true;
     }
     this.roomState.activeGame = {
       ...this.roomState.activeGame,
       publicState: this.activeGame.getPublicState(),
       result: gameResult,
     };
-    if (gameResult) {
-      this.roomState.phase = "results";
-    }
-    this.touch();
-    this.broadcastEverything();
+    this.roomState.phase = "results";
+    return true;
   }
 
   private returnToLobby(playerId: string): void {
@@ -451,6 +477,8 @@ export class PartyRoomCore {
     // A kick is permanent (vs. a temporary disconnect → onPlayerLeave), so the
     // game must drop the player from its roster, not just pause them.
     this.activeGame?.onPlayerRemoved(targetPlayerId);
+    // Removing a seat shrinks quorums — an open end vote may pass right here.
+    this.settleGameOutcome();
     this.callbacks.kickPlayer(targetPlayerId);
 
     if (this.roomState.hostPlayerId === targetPlayerId) {

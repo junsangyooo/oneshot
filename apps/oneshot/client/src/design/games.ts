@@ -18,9 +18,10 @@ export const GAME_META: Record<GameId, GameMeta> = {
   "fool-liar": { glyph: "✕", accent: "gray", min: 3, max: null },
   arithmetic: { glyph: "⌗", accent: "cyan", min: 2, max: null },
   allout: { glyph: "◆", accent: "red", min: 2, max: 16 },
+  dice: { glyph: "⚄", accent: "cyan", min: 2, max: null },
 };
 
-export const GAME_ORDER: GameId[] = ["kinggame", "upstage", "allout", "liar", "fool-liar", "arithmetic"];
+export const GAME_ORDER: GameId[] = ["kinggame", "upstage", "allout", "dice", "liar", "fool-liar", "arithmetic"];
 
 export const gameMeta = (id: GameId): GameMeta =>
   GAME_META[id] ?? { glyph: "▣", accent: "gray", min: 2, max: null };

@@ -146,6 +146,88 @@ describe("PartyRoomCore", () => {
     expect(Object.keys(st.players)).toHaveLength(2); // team preserved
   });
 
+  it("returns to the lobby when an end vote passes via a disconnect hook (no room stall)", () => {
+    const core = createCore();
+    const host = joinOrThrow(core, "host");
+    const g1 = joinOrThrow(core, "g1");
+    const g2 = joinOrThrow(core, "g2");
+
+    core.handleMessage(host.playerId, { type: "room:selectGame", gameId: "dice" });
+    core.handleMessage(host.playerId, { type: "room:startGame" });
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:configure", payload: { totalRounds: 2 }, clientActionId: "c1" },
+    });
+    for (const p of [host, g1, g2]) {
+      core.handleMessage(p.playerId, {
+        type: "game:action",
+        action: { type: "dice:roll", clientActionId: `r-${p.playerId}` },
+      });
+    }
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:nextRound", clientActionId: "c2" },
+    });
+    // round 2: host opens the vote (1 yes / 3 connected — stays open)
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:proposeEnd", clientActionId: "c3" },
+    });
+    expect(core.toState().phase).toBe("game");
+
+    // both guests drop: the connected base shrinks to the host alone, so the
+    // standing yes vote becomes a majority INSIDE the onPlayerLeave hook.
+    core.markReconnecting(g1.playerId);
+    core.markReconnecting(g2.playerId);
+
+    const st = core.toState();
+    expect(st.phase).toBe("lobby"); // not stuck in "game" with a dead module
+    expect(st.activeGame).toBeNull();
+  });
+
+  it("returns to the lobby when an end vote passes via a kick hook (no room stall)", () => {
+    const core = createCore();
+    const host = joinOrThrow(core, "host");
+    const g1 = joinOrThrow(core, "g1");
+    const g2 = joinOrThrow(core, "g2");
+    const g3 = joinOrThrow(core, "g3");
+
+    core.handleMessage(host.playerId, { type: "room:selectGame", gameId: "dice" });
+    core.handleMessage(host.playerId, { type: "room:startGame" });
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:configure", payload: { totalRounds: 2 }, clientActionId: "c1" },
+    });
+    for (const p of [host, g1, g2, g3]) {
+      core.handleMessage(p.playerId, {
+        type: "game:action",
+        action: { type: "dice:roll", clientActionId: `r-${p.playerId}` },
+      });
+    }
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:nextRound", clientActionId: "c2" },
+    });
+    // 2 yes / 4 connected — not a majority yet
+    core.handleMessage(host.playerId, {
+      type: "game:action",
+      action: { type: "dice:proposeEnd", clientActionId: "c3" },
+    });
+    core.handleMessage(g1.playerId, {
+      type: "game:action",
+      action: { type: "dice:voteEnd", payload: { agree: true }, clientActionId: "c4" },
+    });
+    expect(core.toState().phase).toBe("game");
+
+    // kicking a non-voter shrinks the base to 3 → 2 yes passes INSIDE the hook
+    core.handleMessage(host.playerId, { type: "room:kickPlayer", playerId: g2.playerId });
+
+    const st = core.toState();
+    expect(st.phase).toBe("lobby");
+    expect(st.activeGame).toBeNull();
+    expect(st.players[g2.playerId]).toBeUndefined();
+  });
+
   it("survives a kick during a game without breaking room state", () => {
     const core = createCore();
     const host = joinOrThrow(core, "host");

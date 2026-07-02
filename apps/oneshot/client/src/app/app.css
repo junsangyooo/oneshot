@@ -671,3 +671,119 @@ button { font: inherit; }
   .scr--allout .ao-toolbar { justify-content: center; flex-wrap: wrap; }
   .scr--allout .topbar .readout { text-align: center; }
 }
+
+/* =========================================================
+   DICE (주사위) — pure-luck dice race. CYBER layout (default).
+   Cozy overrides live in design/terminal.css under [data-theme="cozy"] .scr--dice.
+   ========================================================= */
+.scr--dice { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-rows: auto 1fr; gap: 14px; --dice-burst: 43 214 255; }
+.scr--dice .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+.scr--dice .dice-round { text-align: center; }
+.scr--dice .dice-round .lbl { display: block; font-size: 11px; letter-spacing: var(--track-mid); color: var(--ink-dim); text-transform: uppercase; }
+.scr--dice .dice-round .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(18px, 2.6vw, 26px); color: var(--ink); }
+.scr--dice .dice-toolbar { display: flex; gap: 8px; justify-content: flex-end; align-items: start; }
+.scr--dice .dice-loading, .scr--dice .dice-wait { color: var(--ink-dim); font-size: 13px; letter-spacing: var(--track-mid); text-transform: uppercase; text-align: center; }
+.scr--dice .dice-loading { display: grid; place-items: center; height: 100svh; position: relative; z-index: 2; }
+.scr--dice .dice-stage { min-height: 0; display: grid; align-content: safe center; justify-items: center; overflow: auto; gap: 16px; padding: 14px 2px; }
+
+/* panels (setup / round result) */
+.scr--dice .dice-panel { width: min(560px, 92vw); margin: 0 auto; border: 1px solid var(--line-bright); background: rgb(255 255 255 / 0.02); padding: clamp(18px, 3vw, 30px); display: grid; gap: 16px; justify-items: center; }
+.scr--dice .dice-h { font-family: var(--font-display); font-weight: 700; font-size: clamp(18px, 3vw, 26px); color: var(--ink); text-align: center; letter-spacing: var(--track-mid); }
+.scr--dice .dice-hint { font-size: 12px; color: var(--ink-dim); text-align: center; max-width: 46ch; }
+.scr--dice .dice-hint--dim { color: var(--ink-faint); font-size: 11px; }
+.scr--dice .dice-cta { min-width: 220px; justify-content: center; }
+.scr--dice .dice-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.scr--dice .dice-wait__pulse { font-size: clamp(48px, 12vw, 90px); color: var(--cyan); line-height: 1; animation: dicefloat 2.4s ease-in-out infinite; }
+
+/* setup controls */
+.scr--dice .dice-field { display: flex; align-items: center; gap: 16px; }
+.scr--dice .dice-field__label { font-size: 13px; color: var(--ink-dim); letter-spacing: var(--track-mid); text-transform: uppercase; }
+.scr--dice .dice-stepper { display: inline-flex; align-items: center; gap: 14px; }
+.scr--dice .dice-stepper__v { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--ink); min-width: 28px; text-align: center; }
+
+/* player pods */
+.scr--dice .dice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; width: min(920px, 94vw); }
+.scr--dice .dice-pod { position: relative; border: 1px solid var(--line); background: rgb(255 255 255 / 0.02); padding: 14px 12px 12px; display: grid; gap: 10px; justify-items: center; }
+.scr--dice .dice-pod.is-me { border-color: var(--line-bright); background: rgb(255 255 255 / 0.035); }
+.scr--dice .dice-pod.is-waiting { opacity: 0.75; }
+.scr--dice .dice-pod.is-first { border-color: var(--gold); box-shadow: 0 0 22px rgb(244 185 66 / 0.22); }
+.scr--dice .dice-pod.is-landed { animation: dice-pod-land 0.4s ease-out 1; }
+.scr--dice .dice-pod.is-landed::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: dice-burst 0.55s ease-out 1; }
+.scr--dice .dice-pod__head { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; justify-content: center; }
+.scr--dice .dice-pod__head .glyph--img { width: 30px; height: 30px; }
+.scr--dice .dice-pod__name { font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 12ch; }
+.scr--dice .dice-pod__rank { position: absolute; top: -10px; right: -6px; z-index: 2; font-family: var(--font-display); font-weight: 700; font-size: 14px; padding: 3px 9px; border: 1px solid var(--line-bright); background: var(--bg-0); color: var(--ink); animation: dice-pop 0.35s ease-out 1; }
+.scr--dice .dice-pod__rank.is-gold { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 14px rgb(244 185 66 / 0.4); }
+.scr--dice .dice-pod__dice { display: flex; gap: 16px; padding: 10px 0 4px; }
+.scr--dice .dice-pod__foot { min-height: 26px; display: grid; place-items: center; }
+.scr--dice .dice-pod__status { font-size: 10px; letter-spacing: var(--track-mid); color: var(--ink-faint); text-transform: uppercase; }
+.scr--dice .dice-pod__sum { display: inline-flex; align-items: baseline; gap: 8px; animation: dice-pop 0.35s ease-out 1; }
+.scr--dice .dice-pod__sum .lbl { font-size: 10px; letter-spacing: var(--track-mid); color: var(--ink-dim); text-transform: uppercase; }
+.scr--dice .dice-pod__sum-v { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--ink); text-shadow: 0 0 18px rgb(43 214 255 / 0.35); }
+.scr--dice .dice-pod__auto { font-size: 9px; letter-spacing: var(--track-mid); color: var(--warn); text-transform: uppercase; border: 1px solid rgb(245 181 66 / 0.5); padding: 1px 5px; }
+
+/* ---- the 3D dice ---- */
+.scr--dice .die { --die: clamp(44px, 6vw, 60px); width: var(--die); height: var(--die); perspective: 620px; display: block; }
+.scr--dice .die__cube { display: block; position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(-22deg) rotateY(34deg); transition: transform 0.95s cubic-bezier(0.16, 1.18, 0.34, 1); }
+.scr--dice .die.is-rolling { animation: dice-hop 0.62s ease-in-out infinite; }
+.scr--dice .die.is-rolling .die__cube { animation: dice-tumble 0.62s linear infinite; transition: none; }
+.scr--dice .die__face { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 15%; border: 1px solid var(--line-bright); background: var(--bg-1); backface-visibility: hidden; border-radius: 8%; }
+.scr--dice .die__face--1 { transform: translateZ(calc(var(--die) / 2)); }
+.scr--dice .die__face--2 { transform: rotateY(90deg) translateZ(calc(var(--die) / 2)); }
+.scr--dice .die__face--3 { transform: rotateX(90deg) translateZ(calc(var(--die) / 2)); }
+.scr--dice .die__face--4 { transform: rotateX(-90deg) translateZ(calc(var(--die) / 2)); }
+.scr--dice .die__face--5 { transform: rotateY(-90deg) translateZ(calc(var(--die) / 2)); }
+.scr--dice .die__face--6 { transform: rotateY(180deg) translateZ(calc(var(--die) / 2)); }
+.scr--dice .pip { place-self: center; width: 64%; aspect-ratio: 1; border-radius: 50%; }
+/* neon pair — one cyan, one magenta/red (mirrors the cyber thumbnail) */
+.scr--dice .die--a .die__face { border-color: rgb(43 214 255 / 0.85); background: color-mix(in srgb, var(--cyan) 14%, var(--bg-0)); box-shadow: inset 0 0 14px rgb(43 214 255 / 0.2); }
+.scr--dice .die--a .pip { background: var(--cyan); box-shadow: 0 0 7px var(--cyan); }
+.scr--dice .die--b .die__face { border-color: rgb(var(--glow-red) / 0.9); background: color-mix(in srgb, var(--accent) 14%, var(--bg-0)); box-shadow: inset 0 0 14px rgb(var(--glow-red) / 0.22); }
+.scr--dice .die--b .pip { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
+/* idle: dashed empty cube slowly turning, waiting for the throw */
+.scr--dice .die.is-idle { animation: dicefloat 3s ease-in-out infinite; }
+.scr--dice .die.is-idle .die__cube { animation: dice-idle-turn 7s linear infinite; transition: none; }
+.scr--dice .die.is-idle .die__face { border-style: dashed; background: transparent; box-shadow: none; opacity: 0.6; }
+.scr--dice .die.is-idle .pip { opacity: 0; box-shadow: none; }
+
+/* the big roll button throbs while it's my throw */
+.scr--dice .dice-actions { display: grid; gap: 10px; justify-items: center; }
+.scr--dice .dice-cta.is-hot { animation: dice-cta-pulse 1.6s ease-in-out infinite; }
+
+/* round-result table */
+.scr--dice .dice-table { width: 100%; display: grid; gap: 4px; }
+.scr--dice .dice-table__head, .scr--dice .dice-table__row { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 10px; padding: 8px 12px; }
+.scr--dice .dice-table__head { font-size: 10px; color: var(--ink-faint); letter-spacing: var(--track-mid); text-transform: uppercase; }
+.scr--dice .dice-table__row { border: 1px solid var(--line); }
+.scr--dice .dice-table__rank { font-family: var(--font-display); font-weight: 700; color: var(--gold); font-size: 18px; }
+.scr--dice .dice-table__name { color: var(--ink); }
+.scr--dice .dice-table__score { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
+.scr--dice .dice-vote__tally { text-align: center; color: var(--ink); font-family: var(--font-display); font-weight: 700; }
+
+@keyframes dice-tumble { 0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); } 100% { transform: rotateX(360deg) rotateY(720deg) rotateZ(360deg); } }
+@keyframes dice-hop { 0%, 100% { transform: translateY(0); } 42% { transform: translateY(-30%); } 72% { transform: translateY(5%); } }
+@keyframes dice-idle-turn { 0% { transform: rotateX(-22deg) rotateY(0deg); } 100% { transform: rotateX(-22deg) rotateY(360deg); } }
+@keyframes dicefloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes dice-pod-land { 0% { transform: translateY(-4px); } 45% { transform: translateY(2px); } 100% { transform: none; } }
+@keyframes dice-burst { 0% { box-shadow: 0 0 0 0 rgb(var(--dice-burst) / 0.5), inset 0 0 26px rgb(var(--dice-burst) / 0.28); } 100% { box-shadow: 0 0 36px 22px rgb(var(--dice-burst) / 0), inset 0 0 0 rgb(var(--dice-burst) / 0); } }
+@keyframes dice-pop { 0% { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes dice-cta-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgb(var(--glow-red) / 0.4); } 50% { box-shadow: 0 0 22px 4px rgb(var(--glow-red) / 0.25); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .scr--dice .die.is-rolling, .scr--dice .die.is-rolling .die__cube,
+  .scr--dice .die.is-idle, .scr--dice .die.is-idle .die__cube,
+  .scr--dice .dice-pod.is-landed, .scr--dice .dice-pod.is-landed::after,
+  .scr--dice .dice-cta.is-hot, .scr--dice .dice-wait__pulse { animation: none; }
+  .scr--dice .die__cube { transition: none; }
+}
+@media (max-width: 720px) {
+  .scr--dice { height: auto; min-height: 100svh; overflow: visible; }
+  .scr--dice .dice-stage { align-content: start; overflow: visible; }
+  .scr--dice .dice-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+@media (max-width: 560px) {
+  .scr--dice .topbar { grid-template-columns: 1fr; gap: 10px; justify-items: center; }
+  .scr--dice .dice-toolbar { justify-content: center; flex-wrap: wrap; }
+  .scr--dice .topbar .readout { text-align: center; }
+  .scr--dice .dice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

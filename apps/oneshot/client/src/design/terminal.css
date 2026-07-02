@@ -656,6 +656,32 @@ body {
 [data-theme="cozy"] .scr--allout .ao-round .val,
 [data-theme="cozy"] .scr--allout .ao-h { text-shadow: none; }
 
+/* ---- DICE cozy overrides: chocolate dice on cream, soft 3D ----
+   Cyber base lives in app/app.css under .scr--dice. */
+[data-theme="cozy"] .scr--dice { --dice-burst: 245 195 68; }
+[data-theme="cozy"] .scr--dice .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--dice .dice-panel { border: 0; background: var(--bg-1); border-radius: 22px; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--dice .dice-pod { border: 0; background: #fff; border-radius: 18px; box-shadow: 0 6px 0 rgb(0 0 0 / 0.05); }
+/* the cyber .is-me tint must not wash out the white card (cascade order) */
+[data-theme="cozy"] .scr--dice .dice-pod.is-me { background: #fff; border: 0; box-shadow: 0 6px 0 rgb(130 196 232 / 0.5); }
+[data-theme="cozy"] .scr--dice .dice-pod.is-first { border: 0; box-shadow: 0 6px 0 rgb(245 195 68 / 0.55); }
+[data-theme="cozy"] .scr--dice .dice-pod__rank { border: 0; border-radius: 999px; background: var(--cyan); color: #fff; box-shadow: 0 3px 0 rgb(0 0 0 / 0.08); }
+[data-theme="cozy"] .scr--dice .dice-pod__rank.is-gold { background: var(--gold); color: #fff; box-shadow: 0 3px 0 rgb(0 0 0 / 0.08); }
+[data-theme="cozy"] .scr--dice .dice-pod__auto { border-radius: 999px; }
+/* chocolate faces + cream pips (mirrors the cozy thumbnail) */
+[data-theme="cozy"] .scr--dice .die__face { border: 0; border-radius: 22%; }
+[data-theme="cozy"] .scr--dice .die--a .die__face { background: #6f4e37; box-shadow: inset 0 0 0 2px rgb(253 241 226 / 0.35); }
+[data-theme="cozy"] .scr--dice .die--b .die__face { background: #5d4030; box-shadow: inset 0 0 0 2px rgb(253 241 226 / 0.3); }
+[data-theme="cozy"] .scr--dice .die--a .pip,
+[data-theme="cozy"] .scr--dice .die--b .pip { background: #fdf1e2; box-shadow: none; }
+[data-theme="cozy"] .scr--dice .die.is-idle .die__face { background: #f4f5f7; border: 2px dashed var(--line-bright); box-shadow: none; }
+[data-theme="cozy"] .scr--dice .dice-table__row { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.04); }
+[data-theme="cozy"] .scr--dice .dice-pod__sum-v,
+[data-theme="cozy"] .scr--dice .dice-round .val,
+[data-theme="cozy"] .scr--dice .dice-h { text-shadow: none; }
+[data-theme="cozy"] .scr--dice .dice-wait__pulse { color: var(--accent); }
+[data-theme="cozy"] .scr--dice .dice-cta.is-hot { animation: none; }
+
 /* ---- shared player rail — cozy ---- */
 [data-theme="cozy"] .rail-seat { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .rail-seat.is-turn { box-shadow: 0 3px 0 rgb(130 196 232 / 0.55); }

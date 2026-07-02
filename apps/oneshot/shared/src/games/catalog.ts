@@ -1,5 +1,6 @@
 import type { GameCatalogItem } from "../schema/domain";
 import { defaultAlloutOptions } from "./allout";
+import { defaultDiceOptions } from "./dice";
 import { defaultKingGameOptions } from "./kinggame";
 import { defaultUpstageOptions } from "./upstage";
 
@@ -52,6 +53,16 @@ export const gameCatalog: GameCatalogItem[] = [
     complexity: 3,
     supportsJoinInProgress: false,
     defaultOptions: defaultAlloutOptions,
+    status: "available",
+  },
+  {
+    id: "dice",
+    title: "주사위",
+    minPlayers: 2,
+    maxPlayers: null,
+    complexity: 1,
+    supportsJoinInProgress: false,
+    defaultOptions: defaultDiceOptions,
     status: "available",
   },
   {

@@ -1,6 +1,7 @@
 import type { GameId } from "@oneshot/shared";
 import type { GameModuleFactory } from "./GameModule";
 import { AlloutModule } from "./allout/AlloutModule";
+import { DiceModule } from "./dice/DiceModule";
 import { FoolLiarModule } from "./fool-liar/FoolLiarModule";
 import { KingGameModule } from "./kinggame/KingGameModule";
 import { LiarModule } from "./liar/LiarModule";
@@ -12,6 +13,7 @@ const registry = new Map<GameId, GameModuleFactory>([
   ["fool-liar", () => new FoolLiarModule()],
   ["upstage", () => new UpstageModule()],
   ["allout", () => new AlloutModule()],
+  ["dice", () => new DiceModule()],
 ]);
 
 export const getGameModule = (gameId: GameId) => registry.get(gameId)?.();
