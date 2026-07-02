@@ -175,7 +175,7 @@ button { font: inherit; }
 }
 /* short desktop windows: the fixed-height grid squeezes the module list into a
    sliver — fall back to page scroll so game selection stays usable */
-@media (max-height: 880px) {
+@media (max-height: 940px) {
   .scr--lobby { height: auto; overflow: visible; }
   .scr--lobby .col, .scr--lobby .col--center { overflow: visible; grid-template-rows: none; }
   .scr--lobby .avail { grid-template-rows: none; }
