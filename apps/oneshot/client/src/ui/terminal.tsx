@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import type { GameId } from "@oneshot/shared";
 import { LANGS, LANG_LABEL, useLangStore, useT } from "../i18n";
 import { THEMES, THEME_META, isThemeId, useTheme } from "../theme";
 import type { ThemeId } from "../theme";
 import { AVATARS, avatarSrc, resolveAvatar } from "../design/avatars";
+import { gameMeta, gameThumb } from "../design/games";
 import { useIdentity } from "../app/identity";
 import { useRoomStore } from "../app/useRoomStore";
 
@@ -68,6 +70,24 @@ export const GameRail = ({
     ))}
   </aside>
 );
+
+/* themed game thumbnail box. Tries /themes/<theme>/games/<id>.png and falls
+   back to the terminal glyph when that theme has no art for the game yet —
+   so themes can gain thumbnails one image at a time. */
+export const GameIcon = ({ id }: { id: GameId }) => {
+  const theme = useTheme((s) => s.theme);
+  const meta = gameMeta(id);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [id, theme]);
+  if (failed) {
+    return <span className={`glyph glyph--game glyph--${meta.accent}`}>{meta.glyph}</span>;
+  }
+  return (
+    <span className={`glyph glyph--img glyph--game glyph--${meta.accent}`}>
+      <img src={gameThumb(id, theme)} alt="" loading="lazy" onError={() => setFailed(true)} />
+    </span>
+  );
+};
 
 /* image-filled avatar box. A player always renders in THEIR OWN theme,
    so pass that player's themeId; falls back to the viewer's theme. */

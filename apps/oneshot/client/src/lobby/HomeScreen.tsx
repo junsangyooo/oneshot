@@ -14,7 +14,7 @@ import { GAME_ORDER, gameMeta } from "../design/games";
 const AVAILABLE_GAMES = GAME_ORDER.filter(
   (id) => gameCatalog.find((game) => game.id === id)?.status === "available",
 );
-import { Backdrop, SettingsModal } from "../ui/terminal";
+import { Backdrop, SettingsModal, GameIcon } from "../ui/terminal";
 
 type HomeScreenProps = {
   initialRoomCode: string;
@@ -79,7 +79,7 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
             const meta = gameMeta(id);
             return (
               <div className={`game-row ${i === 0 ? "is-active" : ""}`} key={id}>
-                <span className={`glyph glyph--${meta.accent}`}>{meta.glyph}</span>
+                <GameIcon id={id} />
                 <span>
 	                  <div className="nm">{gameTitle(lang, id, id)}</div>
 	                  <div className="mt">{playerRange(meta.min, meta.max)}</div>

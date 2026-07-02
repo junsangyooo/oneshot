@@ -383,6 +383,8 @@ body {
 [data-theme="cozy"] .glyph--img img, [data-theme="cozy"] .avatar-opt {
   border-radius: 50%; border: 0;
 }
+/* game thumbnails are rounded squares (circles are for avatars) */
+[data-theme="cozy"] .glyph--game, [data-theme="cozy"] .glyph--game img { border-radius: 14px; }
 [data-theme="cozy"] .glyph { background: #f0f1f3; background-image: none; }
 
 /* buttons — pill, bold, soft 3D bottom shadow */

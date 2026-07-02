@@ -115,6 +115,8 @@ button { font: inherit; }
 .scr--lobby .hero::before, .scr--lobby .hero::after { content: ""; position: absolute; width: 18px; height: 18px; border-color: var(--accent); }
 .scr--lobby .hero::before { top: -1px; left: -1px; border-top: 2px solid; border-left: 2px solid; }
 .scr--lobby .hero::after { bottom: -1px; right: -1px; border-bottom: 2px solid; border-right: 2px solid; }
+.scr--lobby .hero { padding-right: clamp(120px, 15vw, 160px); }
+.scr--lobby .hero .hero-thumb .glyph { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); width: clamp(76px, 9vw, 116px); height: clamp(76px, 9vw, 116px); font-size: 40px; }
 .scr--lobby .hero .sel { font-size: 11px; letter-spacing: 0.2em; color: var(--accent); }
 .scr--lobby .hero .title { font-family: var(--font-mono); font-weight: 700; font-size: clamp(20px, 3vw, 32px); letter-spacing: 0.04em; color: #fff; }
 .scr--lobby .hero .desc { font-size: 12px; color: var(--ink-dim); letter-spacing: 0.02em; }
@@ -126,6 +128,7 @@ button { font: inherit; }
 .scr--lobby .mod:disabled { cursor: default; opacity: 0.7; }
 .scr--lobby .mod.is-selected { border-color: rgb(var(--glow-red) / 0.6); background: rgb(var(--glow-red) / 0.06); }
 .scr--lobby .mod-top { display: flex; align-items: center; justify-content: space-between; }
+.scr--lobby .mod .glyph--game { width: 46px; height: 46px; font-size: 20px; }
 .scr--lobby .mod .nm { font-size: 14px; letter-spacing: 0.04em; color: var(--ink); }
 .scr--lobby .mod .st { font-size: 10px; letter-spacing: 0.14em; }
 .scr--lobby .mod .st.loaded { color: var(--accent); }
@@ -184,6 +187,8 @@ button { font: inherit; }
 @media (max-width: 620px) {
   .scr--lobby .topbar, .scr--lobby .botbar { grid-template-columns: 1fr; gap: 14px; }
   .scr--lobby .mod-grid, .scr--lobby .cmd-row { grid-template-columns: 1fr; }
+  .scr--lobby .hero { padding-right: 22px; }
+  .scr--lobby .hero .hero-thumb { display: none; }
 }
 
 /* =========================================================

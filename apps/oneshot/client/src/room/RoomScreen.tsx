@@ -5,8 +5,7 @@ import { clientConfig } from "../config/env";
 import { useRoomStore } from "../app/useRoomStore";
 import { useT, useLangStore, gameTitle, gameTagline } from "../i18n";
 import { useTheme } from "../theme";
-import { gameMeta } from "../design/games";
-import { Backdrop, AvatarImg, SettingsModal, ConfirmModal } from "../ui/terminal";
+import { Backdrop, AvatarImg, SettingsModal, ConfirmModal, GameIcon } from "../ui/terminal";
 
 type RoomScreenProps = {
   roomState: PartyRoomState;
@@ -134,6 +133,9 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
 
           {selectedGame ? (
             <div className="hero">
+              <div className="hero-thumb">
+                <GameIcon id={selectedGame.id} />
+              </div>
               <div className="sel">{t("lobby.currentlySelected")}</div>
               <div className="title">{gameTitle(lang, selectedGame.id, selectedGame.title)}</div>
               <div className="desc">{gameTagline(lang, selectedGame.id)}</div>
@@ -152,7 +154,6 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
                 .map((game) => {
                 const available = game.status === "available";
                 const selected = game.id === roomState.selectedGameId;
-                const meta = gameMeta(game.id);
                 return (
                   <button
                     key={game.id}
@@ -162,7 +163,7 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
                     onClick={() => selectGame(game.id)}
                   >
                     <div className="mod-top">
-                      <span className={`glyph glyph--${meta.accent}`}>{meta.glyph}</span>
+                      <GameIcon id={game.id} />
                       <span className={`st ${selected ? "loaded" : "standby"}`}>
                         {selected ? t("lobby.loaded") : t("lobby.standby")}
                       </span>
