@@ -81,6 +81,7 @@ button { font: inherit; }
 .scr--lobby .sector .lbl { font-size: 11px; letter-spacing: 0.3em; color: var(--ink-dim); }
 .scr--lobby .sector .code { font-family: var(--font-mono); font-weight: 700; font-size: clamp(26px, 4vw, 44px); letter-spacing: 0.14em; color: var(--ink); display: inline-flex; align-items: center; gap: 14px; text-shadow: 0 0 30px rgb(var(--glow-red) / 0.25); }
 .scr--lobby .sector .copy { font-size: 17px; color: var(--ink-dim); cursor: pointer; border: 0; background: none; transition: color 0.2s; width: 44px; height: 44px; display: inline-grid; place-items: center; }
+.scr--lobby .sector .copy.is-copied { color: var(--cyan); }
 .scr--lobby .sector .copy:hover { color: var(--cyan); }
 .scr--lobby .readout--r { text-align: right; }
 

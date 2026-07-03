@@ -35,6 +35,8 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ejectOpen, setEjectOpen] = useState(false);
   const [kickTarget, setKickTarget] = useState<{ id: string; nickname: string } | null>(null);
+  // which copy button just fired, for the brief ✓ feedback
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
   const players = Object.values(roomState.players).sort((a, b) => a.seatIndex - b.seatIndex);
   const currentPlayer = currentPlayerId ? roomState.players[currentPlayerId] : null;
@@ -55,7 +57,12 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
     max === null ? `${min}${t("lobby.players_or_more_suffix")}` : `${min}-${max}${t("lobby.players_count")}`;
 
   const selectGame = (gameId: GameId) => send({ type: "room:selectGame", gameId });
-  const copyLink = () => void navigator.clipboard.writeText(joinUrl);
+  // The button next to the room CODE copies the code; the link box copies the URL.
+  const copy = (what: "code" | "link") =>
+    void navigator.clipboard.writeText(what === "code" ? roomState.roomCode : joinUrl).then(() => {
+      setCopied(what);
+      setTimeout(() => setCopied((prev) => (prev === what ? null : prev)), 1500);
+    });
   const closeRoom = () => {
     setEjectOpen(false);
     send({ type: "room:close" });
@@ -80,8 +87,14 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
           <div className="lbl">{t("lobby.sectorCode")}</div>
           <div className="code">
             <span>#{roomState.roomCode}</span>
-            <button className="copy" type="button" title={t("lobby.copyLink")} onClick={copyLink}>
-              &#x2750;
+            <button
+              className={`copy${copied === "code" ? " is-copied" : ""}`}
+              type="button"
+              title={t("lobby.copyCode")}
+              aria-label={t("lobby.copyCode")}
+              onClick={() => copy("code")}
+            >
+              {copied === "code" ? "✓" : "❐"}
             </button>
           </div>
         </div>
@@ -99,9 +112,9 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
             <div className="panel-label">{t("lobby.authLink")}</div>
             <div className="link-box">
               <div className="link-url">{joinUrl}</div>
-              <button className="btn btn--sm" type="button" onClick={copyLink}>
-                <span>{t("lobby.copyLink")}</span>
-                <span>&#x2750;</span>
+              <button className="btn btn--sm" type="button" onClick={() => copy("link")}>
+                <span>{copied === "link" ? t("lobby.copied") : t("lobby.copyLink")}</span>
+                <span>{copied === "link" ? "✓" : "❐"}</span>
               </button>
             </div>
           </div>
