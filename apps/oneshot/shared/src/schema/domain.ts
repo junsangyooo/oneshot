@@ -1,6 +1,14 @@
 export type PlayerId = string;
 export type SessionId = string;
-export type GameId = "kinggame" | "upstage" | "liar" | "fool-liar" | "arithmetic" | "allout" | "dice";
+export type GameId =
+  | "kinggame"
+  | "upstage"
+  | "liar"
+  | "fool-liar"
+  | "arithmetic"
+  | "allout"
+  | "dice"
+  | "roulette";
 
 export type RoomPhase = "lobby" | "game" | "results";
 export type ConnectionStatus = "online" | "reconnecting" | "offline";

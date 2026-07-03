@@ -852,3 +852,100 @@ button { font: inherit; }
   .scr--dice .topbar .readout { text-align: center; }
   .scr--dice .dice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* =========================================================
+   ROULETTE (룰렛) — pure-luck single-round picker. CYBER layout (default).
+   Cozy overrides live in design/terminal.css under [data-theme="cozy"] .scr--roulette.
+   ========================================================= */
+.scr--roulette { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-rows: auto 1fr; gap: 14px; --rl-burst: 43 214 255; }
+.scr--roulette .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+.scr--roulette .rl-title { text-align: center; }
+.scr--roulette .rl-title .lbl { font-size: 11px; letter-spacing: var(--track-mid); color: var(--ink-dim); text-transform: uppercase; }
+.scr--roulette .rl-toolbar { display: flex; gap: 8px; justify-content: flex-end; }
+.scr--roulette .rl-loading { display: grid; place-items: center; height: 100svh; position: relative; z-index: 2; color: var(--ink-dim); font-size: 13px; letter-spacing: var(--track-mid); text-transform: uppercase; }
+.scr--roulette .rl-stage { min-height: 0; display: grid; justify-items: center; align-content: safe center; gap: 22px; overflow: auto; padding: 10px 2px; }
+.scr--roulette .rl-status { font-size: 12px; letter-spacing: var(--track-mid); text-transform: uppercase; color: var(--ink-dim); text-align: center; margin: 0; }
+
+/* ---- the wheel itself ---- */
+.scr--roulette .rl-wheel-wrap {
+  position: relative; width: clamp(240px, min(58vw, 50svh), 460px); aspect-ratio: 1; margin: 0 auto;
+  --rl-avatar: clamp(16px, calc(46px - var(--rl-slices) * 1.1px), 34px);
+}
+.scr--roulette .rl-wheel {
+  position: absolute; inset: 0; border-radius: 50%; border: 4px solid var(--line-bright);
+  box-shadow: 0 0 0 1px var(--line), 0 20px 60px -20px rgb(0 0 0 / 0.6), inset 0 0 30px rgb(0 0 0 / 0.35);
+  transition-property: transform; transition-timing-function: cubic-bezier(0.14, 0.85, 0.22, 1);
+}
+.scr--roulette .rl-wheel.is-spinning { box-shadow: 0 0 0 1px var(--line), 0 0 46px rgb(var(--rl-burst) / 0.35), inset 0 0 30px rgb(0 0 0 / 0.35); }
+
+.scr--roulette .rl-pin {
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 0; height: 0; z-index: 4;
+  border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 22px solid var(--accent);
+  filter: drop-shadow(0 0 10px rgb(var(--glow-red) / 0.6));
+}
+
+.scr--roulette .rl-labels {
+  position: absolute; inset: 0; pointer-events: none;
+  transition-property: transform; transition-timing-function: cubic-bezier(0.14, 0.85, 0.22, 1);
+}
+.scr--roulette .rl-label-arm { position: absolute; inset: 0; display: flex; justify-content: center; align-items: flex-start; transform: rotate(var(--arm-deg)); }
+.scr--roulette .rl-label-counter {
+  margin-top: 9%; display: grid; justify-items: center; align-items: start; gap: 4px;
+  transition-property: transform; transition-timing-function: cubic-bezier(0.14, 0.85, 0.22, 1);
+}
+.scr--roulette .rl-label-counter .glyph--img { width: var(--rl-avatar); height: var(--rl-avatar); }
+.scr--roulette .rl-label-name {
+  font-size: 10px; color: var(--ink); background: rgb(10 7 16 / 0.55); padding: 1px 6px;
+  max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.scr--roulette .rl-label-counter.is-winner { animation: rl-winner-pop 0.6s ease-out 1; }
+.scr--roulette .rl-label-counter.is-winner .glyph--img {
+  box-shadow: 0 0 0 3px var(--gold), 0 0 26px rgb(244 185 66 / 0.6); border-radius: 50%;
+}
+
+.scr--roulette .rl-hub {
+  position: absolute; top: 50%; left: 50%; width: 15%; height: 15%; transform: translate(-50%, -50%);
+  border-radius: 50%; background: var(--bg-0); border: 3px solid var(--line-bright); z-index: 3;
+  box-shadow: 0 0 18px rgb(var(--rl-burst) / 0.4), inset 0 0 10px rgb(0 0 0 / 0.5);
+}
+
+/* ---- winner burst (neon sparks — cyber default) ---- */
+.scr--roulette .rl-fx { position: absolute; inset: -10%; pointer-events: none; z-index: 5; }
+.scr--roulette .rl-fx-piece {
+  position: absolute; top: 50%; left: 50%; width: 6px; height: 14px;
+  background: rgb(var(--rl-burst) / 0.9); box-shadow: 0 0 8px rgb(var(--rl-burst) / 0.8);
+  animation: rl-spark 0.9s ease-out forwards; animation-delay: calc(var(--i) * 18ms);
+}
+.scr--roulette .rl-fx-piece:nth-child(odd) { background: var(--accent); box-shadow: 0 0 8px rgb(var(--glow-red) / 0.7); }
+.scr--roulette .rl-fx-piece:nth-child(3n) { background: var(--gold); box-shadow: 0 0 8px rgb(244 185 66 / 0.7); }
+@keyframes rl-spark {
+  0% { transform: rotate(calc(var(--i) * 18deg)) translateY(0) scale(1); opacity: 1; }
+  100% { transform: rotate(calc(var(--i) * 18deg)) translateY(-140px) scale(0.3); opacity: 0; }
+}
+@keyframes rl-winner-pop { 0% { transform: scale(0.7); } 55% { transform: scale(1.22); } 100% { transform: scale(1); } }
+
+.scr--roulette .rl-winner-card {
+  display: flex; align-items: center; gap: 12px; border: 1px solid var(--gold);
+  background: rgb(244 185 66 / 0.08); padding: 14px 22px; animation: rl-winner-in 0.4s ease-out 1;
+}
+.scr--roulette .rl-winner-crown { font-size: 22px; color: var(--gold); }
+.scr--roulette .rl-winner-card .glyph--img { width: 44px; height: 44px; }
+.scr--roulette .rl-winner-name { display: grid; }
+.scr--roulette .rl-winner-label { font-size: 10px; letter-spacing: var(--track-mid); text-transform: uppercase; color: var(--ink-dim); }
+.scr--roulette .rl-winner-nick { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--ink); }
+@keyframes rl-winner-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .scr--roulette .rl-wheel, .scr--roulette .rl-labels, .scr--roulette .rl-label-counter { transition: none !important; }
+  .scr--roulette .rl-fx-piece, .scr--roulette .rl-label-counter.is-winner { animation: none; }
+}
+@media (max-width: 720px) {
+  .scr--roulette { height: auto; min-height: 100svh; overflow: visible; }
+  .scr--roulette .rl-stage { overflow: visible; }
+  .scr--roulette .rl-wheel-wrap { width: clamp(200px, 78vw, 340px); }
+}
+@media (max-width: 560px) {
+  .scr--roulette .topbar { grid-template-columns: 1fr; gap: 10px; justify-items: center; }
+  .scr--roulette .rl-toolbar { justify-content: center; }
+  .scr--roulette .topbar .readout { text-align: center; }
+}

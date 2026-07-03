@@ -5,6 +5,7 @@ import { DiceModule } from "./dice/DiceModule";
 import { FoolLiarModule } from "./fool-liar/FoolLiarModule";
 import { KingGameModule } from "./kinggame/KingGameModule";
 import { LiarModule } from "./liar/LiarModule";
+import { RouletteModule } from "./roulette/RouletteModule";
 import { UpstageModule } from "./upstage/UpstageModule";
 
 const registry = new Map<GameId, GameModuleFactory>([
@@ -14,6 +15,7 @@ const registry = new Map<GameId, GameModuleFactory>([
   ["upstage", () => new UpstageModule()],
   ["allout", () => new AlloutModule()],
   ["dice", () => new DiceModule()],
+  ["roulette", () => new RouletteModule()],
 ]);
 
 export const getGameModule = (gameId: GameId) => registry.get(gameId)?.();

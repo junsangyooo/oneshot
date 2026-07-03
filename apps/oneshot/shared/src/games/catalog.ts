@@ -2,6 +2,7 @@ import type { GameCatalogItem } from "../schema/domain";
 import { defaultAlloutOptions } from "./allout";
 import { defaultDiceOptions } from "./dice";
 import { defaultKingGameOptions } from "./kinggame";
+import { defaultRouletteOptions } from "./roulette";
 import { defaultUpstageOptions } from "./upstage";
 
 export const gameCatalog: GameCatalogItem[] = [
@@ -64,6 +65,16 @@ export const gameCatalog: GameCatalogItem[] = [
     complexity: 1,
     supportsJoinInProgress: false,
     defaultOptions: defaultDiceOptions,
+    status: "available",
+  },
+  {
+    id: "roulette",
+    title: "룰렛",
+    minPlayers: 1, // solo spins are a valid way to play, mirrors dice
+    maxPlayers: 24, // beyond this the wheel's slices/labels stop being legible
+    complexity: 1,
+    supportsJoinInProgress: false,
+    defaultOptions: defaultRouletteOptions,
     status: "available",
   },
   {

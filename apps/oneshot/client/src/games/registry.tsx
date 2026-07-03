@@ -4,6 +4,7 @@ import { AlloutGameScreen } from "./allout/AlloutGameScreen";
 import { DiceGameScreen } from "./dice/DiceGameScreen";
 import { KingGameScreen } from "./kinggame/KingGameScreen";
 import { LiarGameScreen } from "./liar/LiarGameScreen";
+import { RouletteGameScreen } from "./roulette/RouletteGameScreen";
 import { UpstageGameScreen } from "./upstage/UpstageGameScreen";
 
 /* Common props every in-game screen receives. Keep this in sync with the
@@ -24,4 +25,5 @@ export const GAME_SCREENS: Partial<Record<GameId, ComponentType<GameScreenProps>
   upstage: UpstageGameScreen,
   allout: AlloutGameScreen,
   dice: DiceGameScreen,
+  roulette: RouletteGameScreen,
 };

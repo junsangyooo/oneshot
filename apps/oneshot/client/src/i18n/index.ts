@@ -224,6 +224,8 @@ const ko: Dict = {
   "gametag.allout": "손패를 모두 비워라",
   "game.dice": "주사위",
   "gametag.dice": "던져라, 운명의 두 주사위!",
+  "game.roulette": "룰렛",
+  "gametag.roulette": "100% 운, 핀이 멈추는 자리가 당첨!",
 
   "vote.cooldown": "재투표 {s}초",
   "allout.loading": "게임 상태를 불러오는 중...",
@@ -412,6 +414,19 @@ const ko: Dict = {
   "dice.rules.p4": "접속이 끊긴 친구의 주사위는 서버가 대신 공정하게 굴려줘서 게임이 멈추지 않아요.",
   "dice.rules.p5": "2라운드부터는 누구나 종료 투표를 열 수 있어요. 접속 중인 과반이 찬성하면 게임을 멈추고 로비로 돌아가요. 부결되면 30초 동안 다시 발의할 수 없어요.",
   "dice.rules.p6": "최종 누적(등수 합)이 같으면 지금까지 굴린 주사위 눈의 총합이 높은 사람이 이겨요.",
+
+  "roulette.loading": "게임 상태를 불러오는 중...",
+  "roulette.you": "나",
+  "roulette.spinning": "돌아가는 중...",
+  "roulette.settling": "핀이 멈추는 중...",
+  "roulette.winner": "당첨자",
+  "roulette.congrats": "당첨을 축하합니다!",
+  "roulette.playerCount": "참가자 {n}명",
+  "roulette.rules.title": "룰렛 — 게임 방법",
+  "roulette.rules.p1": "참가자 전원이 인원수만큼 똑같이 나뉜 원판 조각을 하나씩 가져요. 예를 들어 5명이면 각자 72도씩 차지해요.",
+  "roulette.rules.p2": "게임을 시작하면 아무 버튼도 누를 필요 없이 자동으로 원판이 돌아가고, 점점 느려지다 멈춰요.",
+  "roulette.rules.p3": "맨 위 고정된 핀이 가리키는 조각의 주인이 당첨이에요. 전략도 실력도 없는 100% 운게임이에요.",
+  "roulette.rules.p4": "전원이 한 판만 진행하는 단판 게임이에요. 당첨자가 정해지면 바로 결과 화면으로 넘어가요.",
 };
 
 const en: Dict = {
@@ -624,6 +639,8 @@ const en: Dict = {
   "gametag.allout": "Empty your hand first",
   "game.dice": "DICE ROLL",
   "gametag.dice": "Throw the bones — pure luck!",
+  "game.roulette": "ROULETTE",
+  "gametag.roulette": "Pure luck — wherever the pin stops, wins!",
 
   "vote.cooldown": "retry in {s}s",
   "allout.loading": "Loading game state...",
@@ -812,6 +829,19 @@ const en: Dict = {
   "dice.rules.p4": "If a friend disconnects, the server rolls fairly on their behalf so the game never stalls.",
   "dice.rules.p5": "From round 2 anyone can call an end vote. If a majority of connected players agree, the game stops and everyone returns to the lobby. A rejected vote blocks re-proposals for 30 seconds.",
   "dice.rules.p6": "If final totals (rank sums) tie, the higher sum of all pips rolled wins.",
+
+  "roulette.loading": "Loading game state...",
+  "roulette.you": "YOU",
+  "roulette.spinning": "Spinning...",
+  "roulette.settling": "The pin is settling...",
+  "roulette.winner": "WINNER",
+  "roulette.congrats": "Congratulations!",
+  "roulette.playerCount": "PLAYERS: {n}",
+  "roulette.rules.title": "ROULETTE — How to play",
+  "roulette.rules.p1": "Everyone gets an equal slice of the wheel — with 5 players, each slice is 72°.",
+  "roulette.rules.p2": "Starting the game spins the wheel automatically — no buttons to press — and it gradually slows to a stop.",
+  "roulette.rules.p3": "Whoever's slice lands under the fixed pin at the top wins. No strategy, no skill — 100% pure luck.",
+  "roulette.rules.p4": "It's a single round for everyone. The moment a winner is decided, you're taken straight to the results screen.",
 };
 
 const DICTS: Record<Lang, Dict> = { ko, en };

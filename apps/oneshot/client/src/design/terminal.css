@@ -694,6 +694,52 @@ body {
 [data-theme="cozy"] .scr--dice .dice-wait__pulse { color: var(--accent); }
 [data-theme="cozy"] .scr--dice .dice-cta.is-hot { animation: none; }
 
+/* ---- ROULETTE cozy overrides: warm wooden prize wheel, paper confetti ----
+   Cyber base lives in app/app.css under .scr--roulette. */
+[data-theme="cozy"] .scr--roulette { --rl-burst: 245 195 68; }
+[data-theme="cozy"] .scr--roulette .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--roulette .rl-title .lbl { letter-spacing: 0; text-transform: none; font-weight: 700; }
+
+[data-theme="cozy"] .scr--roulette .rl-wheel {
+  border: 8px solid var(--gold); box-shadow: 0 10px 0 rgb(0 0 0 / 0.06), 0 22px 40px -20px rgb(120 90 60 / 0.4);
+}
+[data-theme="cozy"] .scr--roulette .rl-wheel.is-spinning { box-shadow: 0 10px 0 rgb(0 0 0 / 0.06), 0 0 34px rgb(var(--rl-burst) / 0.45); }
+[data-theme="cozy"] .scr--roulette .rl-pin {
+  border-top-color: var(--gold); filter: drop-shadow(0 3px 0 rgb(0 0 0 / 0.12));
+}
+[data-theme="cozy"] .scr--roulette .rl-hub {
+  background: #fff; border-color: var(--gold); box-shadow: 0 4px 0 rgb(0 0 0 / 0.08);
+}
+[data-theme="cozy"] .scr--roulette .rl-label-name {
+  background: #fff; color: var(--ink); border-radius: 999px; box-shadow: 0 2px 0 rgb(0 0 0 / 0.05);
+}
+[data-theme="cozy"] .scr--roulette .rl-label-counter.is-winner .glyph--img {
+  box-shadow: 0 0 0 3px var(--gold), 0 6px 16px rgb(245 195 68 / 0.5);
+}
+[data-theme="cozy"] .scr--roulette .rl-winner-card {
+  border: 0; border-radius: 22px; background: #fff; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05);
+}
+[data-theme="cozy"] .scr--roulette .rl-winner-nick { font-family: var(--font-display); text-shadow: none; }
+
+/* paper confetti falling from above instead of a neon spark burst */
+[data-theme="cozy"] .scr--roulette .rl-fx { inset: -60% -10% auto -10%; height: 160%; }
+[data-theme="cozy"] .scr--roulette .rl-fx-piece {
+  top: -10%; left: calc(5% + (var(--i) * 4.7%)); width: 8px; height: 14px; border-radius: 2px;
+  background: var(--card-yellow); box-shadow: none;
+  animation: rl-confetti-fall 1.6s ease-in forwards; animation-delay: calc(var(--i) * 45ms);
+}
+[data-theme="cozy"] .scr--roulette .rl-fx-piece:nth-child(2n) { background: var(--card-red); }
+[data-theme="cozy"] .scr--roulette .rl-fx-piece:nth-child(3n) { background: var(--card-blue); }
+[data-theme="cozy"] .scr--roulette .rl-fx-piece:nth-child(4n) { background: var(--card-green); }
+[data-theme="cozy"] .scr--roulette .rl-fx-piece:nth-child(5n) { background: var(--card-violet); }
+@keyframes rl-confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(220px) rotate(340deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="cozy"] .scr--roulette .rl-fx-piece { animation: none; }
+}
+
 /* ---- shared player rail — cozy ---- */
 [data-theme="cozy"] .rail-seat { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .rail-seat.is-turn { box-shadow: 0 3px 0 rgb(130 196 232 / 0.55); }
