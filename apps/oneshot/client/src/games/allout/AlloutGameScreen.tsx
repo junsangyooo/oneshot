@@ -450,23 +450,58 @@ const PlayView = ({
   const drawnCard = drawn && me ? me.hand.find((c) => c.id === me.drawnCardId) : undefined;
   const underAttack = pub.pendingAttack > 0;
   const turnName = pub.currentTurnPlayerId ? nameOf(pub.currentTurnPlayerId) : "—";
+  const activeColor = pub.top?.color ?? "red";
+
+  // Under attack: do I hold any card that can respond? (mirror of server rules)
+  const hasResponse =
+    !me || !underAttack ? true : me.hand.some((c) => canStart(c, pub.top, activeColor, pub.pendingAttack));
+
+  // After drawing: can the drawn card lead a legal set? The played set must
+  // include the drawn card; a same-value/kind sibling can supply the color match.
+  const drawnPlayable = ((): boolean => {
+    if (!drawn || !drawnCard || !me || !pub.top) return true;
+    const k = drawnCard.kind;
+    if (k === "plus4" || k === "plus7" || k === "exchange" || k === "wild") return true;
+    if (k === "shield" || k === "reflect") return false;
+    const siblings = me.hand.filter((c) => compatible(c, drawnCard));
+    const colorMatch = siblings.some((c) => "color" in c && c.color === activeColor);
+    if (k === "number") {
+      return (pub.top.card.kind === "number" && pub.top.card.value === drawnCard.value) || colorMatch;
+    }
+    return pub.top.card.kind === k || colorMatch; // plus2 / reverse
+  })();
+
+  // No decision left for the player → act automatically after a short beat so
+  // they see WHY (banner + pile pulse) instead of a dead "받기/패스" button.
+  const autoTaking = myTurn && underAttack && !drawn && !hasResponse;
+  const autoPassing = myTurn && drawn && !drawnPlayable;
+  useEffect(() => {
+    if (!autoTaking && !autoPassing) return;
+    const timer = setTimeout(() => (autoTaking ? onDraw() : onPass()), autoTaking ? 1600 : 1300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoTaking, autoPassing]);
 
   const pickable = (card: TCard): boolean => {
     if (!myTurn) return false;
     if (selected.includes(card.id)) return true;
     if (selected.length === 0) {
       if (drawn) {
-        return (
-          card.id === me?.drawnCardId ||
-          (card.kind === "number" && drawnCard?.kind === "number" && card.value === drawnCard.value)
-        );
+        if (!drawnPlayable || !drawnCard) return false;
+        return card.id === me?.drawnCardId || compatible(card, drawnCard);
       }
-      return canStart(card, pub.top, pub.top?.color ?? "red", pub.pendingAttack);
+      return canStart(card, pub.top, activeColor, pub.pendingAttack);
     }
     return firstSelected ? compatible(card, firstSelected) : false;
   };
   const glowing = (card: TCard): boolean =>
-    myTurn && selected.length === 0 && !drawn && canStart(card, pub.top, pub.top?.color ?? "red", pub.pendingAttack);
+    myTurn &&
+    selected.length === 0 &&
+    (drawn
+      ? drawnPlayable && card.id === me?.drawnCardId
+      : canStart(card, pub.top, activeColor, pub.pendingAttack));
+  const canStartAny = !me ? true : me.hand.some((c) => canStart(c, pub.top, activeColor, pub.pendingAttack));
+  const drawPulse = myTurn && !underAttack && !drawn && !canStartAny;
 
   return (
     <div className="ao-play">
@@ -474,10 +509,15 @@ const PlayView = ({
         <span className="ao-dir" aria-label={pub.direction === 1 ? t("allout.play.dirCW") : t("allout.play.dirCCW")}>
           {pub.direction === 1 ? "↻" : "↺"}
         </span>
-        <div className="ao-pile" data-color={pub.top?.color ?? "wild"}>
-          {pub.top ? <AlloutCardFace card={pub.top.card} /> : null}
+        <div className={`ao-pile${autoTaking ? " is-shaking" : ""}`} data-color={pub.top?.color ?? "wild"}>
+          {pub.top ? <AlloutCardFace key={pub.top.card.id} card={pub.top.card} /> : null}
         </div>
-        {underAttack ? <span className="ao-attack">+{pub.pendingAttack}</span> : null}
+        <div className="ao-side">
+          <span className="ao-colorchip" data-color={activeColor} aria-label={t("allout.play.activeColor")}>
+            {t(`allout.color.${activeColor}`)}
+          </span>
+          {underAttack ? <span className="ao-attack">+{pub.pendingAttack}</span> : null}
+        </div>
       </div>
 
       <div className="ao-status">
@@ -501,31 +541,39 @@ const PlayView = ({
               card={card}
               selected={selected.includes(card.id)}
               glow={glowing(card)}
-              dim={myTurn && !can && !selected.includes(card.id)}
+              dim={(!myTurn || !can) && !selected.includes(card.id)}
               onClick={can ? () => toggleCard(card) : undefined}
             />
           );
         })}
       </div>
 
-      <div className="ao-actions">
-        <button type="button" className="btn btn--primary" disabled={!myTurn || selected.length === 0} onClick={onPlay}>
-          {selected.length > 1 ? fill(t("allout.play.playN"), { n: selected.length }) : t("allout.play.play")}
-        </button>
-        {drawn ? (
-          <button type="button" className="btn" disabled={!myTurn} onClick={onPass}>
-            {t("allout.play.pass")}
+      {autoTaking || autoPassing ? (
+        <div className="ao-actions">
+          <span className="ao-autobanner" role="status">
+            {autoTaking ? fill(t("allout.play.autoTake"), { n: pub.pendingAttack }) : t("allout.play.autoPass")}
+          </span>
+        </div>
+      ) : (
+        <div className="ao-actions">
+          <button type="button" className="btn btn--primary" disabled={!myTurn || selected.length === 0} onClick={onPlay}>
+            {selected.length > 1 ? fill(t("allout.play.playN"), { n: selected.length }) : t("allout.play.play")}
           </button>
-        ) : underAttack ? (
-          <button type="button" className="btn btn--danger" disabled={!myTurn} onClick={onDraw}>
-            {fill(t("allout.play.take"), { n: pub.pendingAttack })}
-          </button>
-        ) : (
-          <button type="button" className="btn" disabled={!myTurn} onClick={onDraw}>
-            {t("allout.play.draw")} · {pub.drawPileCount}
-          </button>
-        )}
-      </div>
+          {drawn ? (
+            <button type="button" className="btn" disabled={!myTurn} onClick={onPass}>
+              {t("allout.play.pass")}
+            </button>
+          ) : underAttack ? (
+            <button type="button" className="btn btn--danger" disabled={!myTurn} onClick={onDraw}>
+              {fill(t("allout.play.take"), { n: pub.pendingAttack })}
+            </button>
+          ) : (
+            <button type="button" className={`btn${drawPulse ? " is-pulse" : ""}`} disabled={!myTurn} onClick={onDraw}>
+              {t("allout.play.draw")} · {pub.drawPileCount}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -620,8 +620,11 @@ body {
 [data-theme="cozy"] .scr--upstage .topbar .readout { display: none; }
 [data-theme="cozy"] .scr--upstage .up-panel { border: 0; background: var(--bg-1); border-radius: 22px; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--upstage .up-card { border: 0; background: var(--bg-1); border-radius: 12px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.08); }
-[data-theme="cozy"] .scr--upstage .up-card--star { box-shadow: 0 4px 0 rgb(245 195 68 / 0.4); }
+[data-theme="cozy"] .scr--upstage .up-card--star { background: color-mix(in srgb, var(--gold) 14%, var(--bg-1)); box-shadow: 0 4px 0 rgb(245 195 68 / 0.4); }
+[data-theme="cozy"] .scr--upstage .up-card--best { background: color-mix(in srgb, var(--cyan) 12%, var(--bg-1)); box-shadow: 0 4px 0 rgb(130 196 232 / 0.4); }
 [data-theme="cozy"] .scr--upstage .up-card.is-selected { box-shadow: 0 10px 0 rgb(130 196 232 / 0.45); }
+[data-theme="cozy"] .scr--upstage .up-card.is-dim { opacity: 0.55; }
+[data-theme="cozy"] .scr--upstage .up-autobanner { border-radius: 14px; border-style: solid; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--upstage .up-seg { border: 0; border-radius: 14px; overflow: hidden; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--upstage .up-seg__btn.is-on { background: var(--accent); }
 [data-theme="cozy"] .scr--upstage .up-pile { border-radius: 18px; border-color: var(--line-bright); }
@@ -649,6 +652,11 @@ body {
   animation: none;
 }
 [data-theme="cozy"] .scr--allout .ao-card--fancy { color: #5a4636; border-color: var(--card-violet); }
+/* the 4-color disc / strip keep their --card-* tokens; soften the disc ring on cream */
+[data-theme="cozy"] .scr--allout .ao-card__quad { box-shadow: 0 0 0 2px rgb(0 0 0 / 0.08); }
+[data-theme="cozy"] .scr--allout .ao-card__multi { border-radius: 999px; }
+[data-theme="cozy"] .scr--allout .ao-colorchip { border: 0; border-radius: 999px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--allout .ao-autobanner { border-radius: 14px; border-style: solid; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--allout .ao-wheel__seg { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.06); }
 [data-theme="cozy"] .scr--allout .ao-target { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--allout .ao-table__row { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.04); }

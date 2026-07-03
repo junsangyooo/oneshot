@@ -11,8 +11,11 @@ const KIND_GLYPH: Record<TCard["kind"], string> = {
   reverse: "⟲",
   shield: "⛨",
   reflect: "↩",
-  wild: "✦",
+  wild: "", // wild face is the 4-color disc, not a glyph
 };
+
+// Colorless kinds get a 4-color strip so "matches any color" is visible at a glance.
+const MULTI: TCard["kind"][] = ["plus4", "plus7", "exchange", "reflect", "wild"];
 
 type Props = {
   card: TCard;
@@ -25,7 +28,6 @@ type Props = {
 export const AlloutCardFace = ({ card, selected, dim, glow, onClick }: Props) => {
   const t = useT();
   const color = "color" in card ? card.color : null;
-  const label = card.kind === "number" ? String(card.value) : KIND_GLYPH[card.kind];
   const aria =
     card.kind === "number"
       ? `${t(`allout.color.${card.color}`)} ${card.value}`
@@ -51,7 +53,29 @@ export const AlloutCardFace = ({ card, selected, dim, glow, onClick }: Props) =>
       disabled={!onClick}
       aria-label={aria}
     >
-      <span className="ao-card__v">{label}</span>
+      {card.kind === "number" ? (
+        <>
+          <span className="ao-card__pip" aria-hidden>
+            {card.value}
+          </span>
+          <span className="ao-card__v">{card.value}</span>
+          <span className="ao-card__pip ao-card__pip--br" aria-hidden>
+            {card.value}
+          </span>
+        </>
+      ) : (
+        <>
+          {card.kind === "wild" ? (
+            <span className="ao-card__quad" aria-hidden />
+          ) : (
+            <span className="ao-card__v">{KIND_GLYPH[card.kind]}</span>
+          )}
+          <span className="ao-card__k">{t(`allout.cardk.${card.kind}`)}</span>
+          {MULTI.includes(card.kind) && card.kind !== "plus7" ? (
+            <span className="ao-card__multi" aria-hidden />
+          ) : null}
+        </>
+      )}
     </button>
   );
 };

@@ -27,25 +27,44 @@ const fill = (s: string, vars: Record<string, string | number>): string =>
 
 const cardLabel = (card: UpstageCard): string => (card.value === "star" ? "★" : String(card.value));
 
-// One playing card.
+// One playing card. Stars are wilds, 1 is the strongest — both get a caption so
+// first-time players can read the card without opening the rules.
 const CardFace = ({
   card,
   selected,
+  dim,
   onClick,
 }: {
   card: UpstageCard;
   selected?: boolean;
+  dim?: boolean;
   onClick?: () => void;
-}) => (
-  <button
-    type="button"
-    className={`up-card${card.value === "star" ? " up-card--star" : ""}${selected ? " is-selected" : ""}${onClick ? "" : " up-card--static"}`}
-    onClick={onClick}
-    disabled={!onClick}
-  >
-    <span className="up-card__v">{cardLabel(card)}</span>
-  </button>
-);
+}) => {
+  const t = useT();
+  const cls = [
+    "up-card",
+    card.value === "star" ? "up-card--star" : "",
+    card.value === 1 ? "up-card--best" : "",
+    selected ? "is-selected" : "",
+    dim ? "is-dim" : "",
+    onClick ? "" : "up-card--static",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <button
+      type="button"
+      className={cls}
+      onClick={onClick}
+      disabled={!onClick}
+      aria-label={card.value === "star" ? t("upstage.card.star") : String(card.value)}
+    >
+      <span className="up-card__v">{cardLabel(card)}</span>
+      {card.value === "star" ? <span className="up-card__k">{t("upstage.card.star")}</span> : null}
+      {card.value === 1 ? <span className="up-card__k">{t("upstage.card.best")}</span> : null}
+    </button>
+  );
+};
 
 export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: Props) => {
   const t = useT();
@@ -371,9 +390,18 @@ const TaxView = ({
     <div className="up-panel up-tax">
       <h2 className="up-h">{t("upstage.tax.youReceive")}</h2>
       <div className="up-hand up-hand--wrap">
-        {(me?.hand ?? []).map((card) => (
-          <CardFace key={card.id} card={card} selected={selected.includes(card.id)} onClick={() => toggleCard(card.id)} />
-        ))}
+        {(me?.hand ?? []).map((card) => {
+          const can = selected.includes(card.id) || selected.length < owed;
+          return (
+            <CardFace
+              key={card.id}
+              card={card}
+              selected={selected.includes(card.id)}
+              dim={!can}
+              onClick={can ? () => toggleCard(card.id) : undefined}
+            />
+          );
+        })}
       </div>
       <button
         type="button"
@@ -411,13 +439,61 @@ const PlayView = ({
 }) => {
   const myTurn = pub.currentTurnPlayerId === currentPlayerId;
   const turnName = pub.currentTurnPlayerId ? nameOf(pub.currentTurnPlayerId) : "—";
+  const hand = me?.hand ?? [];
+  const follow = pub.currentPlay;
+
+  // --- client-side legality mirror (UI gating only; the server re-validates) ---
+  const stars = hand.filter((c) => c.value === "star").length;
+  const countOf = (v: number): number => hand.filter((c) => c.value === v).length;
+  // Can value v (plus stars as padding) form a beating set of exactly `count`?
+  const valueBeats = (v: number): boolean =>
+    follow != null && v < follow.value && countOf(v) + stars >= follow.count;
+  const canBeat = follow == null || hand.some((c) => c.value !== "star" && valueBeats(c.value));
+
+  // Would this card ever participate in a legal play right now?
+  const usable = (card: UpstageCard): boolean => {
+    if (!follow) return true; // leading: anything goes
+    if (card.value === "star") {
+      // a star can only pad a number set (a lone/all-star set never beats)
+      return follow.count >= 2 && hand.some((c) => c.value !== "star" && valueBeats(c.value));
+    }
+    return valueBeats(card.value);
+  };
+
+  // Selection compatibility: sets are one number value + stars.
+  const selCards = selected.map((id) => hand.find((c) => c.id === id)).filter((c): c is UpstageCard => c != null);
+  const selValue = selCards.find((c) => c.value !== "star")?.value as number | undefined;
+  const togglable = (card: UpstageCard): boolean => {
+    if (!myTurn || !usable(card)) return false;
+    if (selected.includes(card.id) || selCards.length === 0) return true;
+    if (card.value === "star") return true;
+    return selValue == null || card.value === selValue;
+  };
+
+  // Is the current selection a set the server would accept?
+  const effValue = selValue ?? pub.starSoloValue;
+  const selectionLegal =
+    selCards.length > 0 &&
+    selCards.every((c) => c.value === "star" || c.value === selValue) &&
+    (follow == null || (selCards.length === follow.count && effValue < follow.value));
+
+  // Nothing can beat the pile → no decision left; pass automatically after a
+  // visible beat instead of presenting a dead Play/Pass choice.
+  const autoPassing = myTurn && follow != null && !canBeat && hand.length > 0;
+  useEffect(() => {
+    if (!autoPassing) return;
+    const timer = setTimeout(() => onPass(), 1300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPassing]);
+
   return (
     <div className="up-play">
       <div className="up-pile">
         <span className="up-pile__label">{t("upstage.play.pile")}</span>
-        {pub.currentPlay ? (
+        {follow ? (
           <div className="up-pile__cards">
-            {pub.currentPlay.cards.map((c) => (
+            {follow.cards.map((c) => (
               <CardFace key={c.id} card={c} />
             ))}
           </div>
@@ -433,36 +509,49 @@ const PlayView = ({
           <span className="up-status__wait">{fill(t("upstage.play.turnOf"), { name: turnName })}</span>
         )}
         <span className="up-status__hint">
-          {pub.currentPlay
-            ? fill(t("upstage.play.follow"), { count: pub.currentPlay.count, value: pub.currentPlay.value })
-            : t("upstage.play.lead")}
+          {follow ? fill(t("upstage.play.follow"), { count: follow.count, value: follow.value }) : t("upstage.play.lead")}
         </span>
+        {follow ? <span className="up-status__hint up-status__hint--mute">{t("upstage.play.lowWins")}</span> : null}
       </div>
 
       <div className="up-hand">
-        {(me?.hand ?? []).map((card) => (
-          <CardFace
-            key={card.id}
-            card={card}
-            selected={selected.includes(card.id)}
-            onClick={myTurn ? () => toggleCard(card.id) : undefined}
-          />
-        ))}
+        {hand.map((card) => {
+          const can = togglable(card);
+          return (
+            <CardFace
+              key={card.id}
+              card={card}
+              selected={selected.includes(card.id)}
+              dim={(!myTurn || !can) && !selected.includes(card.id)}
+              onClick={can ? () => toggleCard(card.id) : undefined}
+            />
+          );
+        })}
       </div>
 
-      <div className="up-actions">
-        <button
-          type="button"
-          className="btn btn--primary"
-          disabled={!myTurn || selected.length === 0}
-          onClick={() => onPlay(selected)}
-        >
-          {t("upstage.play.play")}
-        </button>
-        <button type="button" className="btn" disabled={!myTurn || !pub.currentPlay} onClick={onPass}>
-          {t("upstage.play.pass")}
-        </button>
-      </div>
+      {autoPassing ? (
+        <div className="up-actions">
+          <span className="up-autobanner" role="status">
+            {t("upstage.play.autoPass")}
+          </span>
+        </div>
+      ) : (
+        <div className="up-actions">
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={!myTurn || !selectionLegal}
+            onClick={() => onPlay(selected)}
+          >
+            {selected.length > 1
+              ? fill(t("upstage.play.playN"), { n: selected.length })
+              : t("upstage.play.play")}
+          </button>
+          <button type="button" className="btn" disabled={!myTurn || !follow} onClick={onPass}>
+            {t("upstage.play.pass")}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
