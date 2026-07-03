@@ -20,6 +20,7 @@ import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
 import { Backdrop, AvatarImg, SettingsModal, RulesModal, GameRail } from "../../ui/terminal";
 import type { RailSeat } from "../../ui/terminal";
+import { useCountdown } from "../../ui/useCountdown";
 import { AlloutCardFace } from "./AlloutCard";
 
 type Props = {
@@ -76,6 +77,8 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
   const me = privateState as AlloutPrivateState | null;
   const myPlayer = currentPlayerId ? roomState.players[currentPlayerId] : null;
   const isHost = myPlayer?.isHost ?? false;
+  const amSeated = currentPlayerId != null && (pub?.players.some((p) => p.playerId === currentPlayerId) ?? false);
+  const voteCooldown = useCountdown(pub?.endVoteCooldownUntil);
 
   const sendAction = (type: string, payload?: unknown) =>
     send({ type: "game:action", action: { type, payload, clientActionId: crypto.randomUUID() } });
@@ -185,9 +188,16 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
           <button className="btn btn--sm" type="button" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
             <span>⚙</span>
           </button>
-          {isHost && pub.phase !== "setup" && pub.phase !== "ended" && !voteOpen ? (
-            <button className="btn btn--sm btn--danger" type="button" onClick={() => sendAction(ALLOUT_ACTIONS.proposeEnd)}>
-              <span>⏻ {t("allout.proposeEnd")}</span>
+          {amSeated && pub.phase !== "setup" && pub.phase !== "ended" && !voteOpen ? (
+            <button
+              className="btn btn--sm btn--danger"
+              type="button"
+              disabled={voteCooldown > 0}
+              onClick={() => sendAction(ALLOUT_ACTIONS.proposeEnd)}
+            >
+              <span>
+                ⏻ {voteCooldown > 0 ? fill(t("vote.cooldown"), { s: voteCooldown }) : t("allout.proposeEnd")}
+              </span>
             </button>
           ) : null}
         </div>
@@ -225,7 +235,7 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
             t={t}
           />
         ) : pub.phase === "roundEnd" ? (
-          <RoundEndView pub={pub} isHost={isHost} onNext={() => sendAction(ALLOUT_ACTIONS.nextRound)} nameOf={nameOf} t={t} />
+          <RoundEndView pub={pub} canAdvance={amSeated} onNext={() => sendAction(ALLOUT_ACTIONS.nextRound)} nameOf={nameOf} t={t} />
         ) : (
           <div className="ao-panel">
             <p className="ao-wait">{t("allout.ended")}</p>
@@ -581,13 +591,13 @@ const PlayView = ({
 // ---------------------------------------------------------------- round end
 const RoundEndView = ({
   pub,
-  isHost,
+  canAdvance,
   onNext,
   nameOf,
   t,
 }: {
   pub: AlloutPublicState;
-  isHost: boolean;
+  canAdvance: boolean;
   onNext: () => void;
   nameOf: (id: string) => string;
   t: TFn;
@@ -614,13 +624,11 @@ const RoundEndView = ({
           );
         })}
       </div>
-      {isHost ? (
+      {canAdvance ? (
         <button type="button" className="btn btn--primary ao-cta" onClick={onNext}>
           {isFinal ? t("allout.roundEnd.finish") : t("allout.roundEnd.next")}
         </button>
-      ) : (
-        <p className="ao-wait">{t("allout.roundEnd.waitingHost")}</p>
-      )}
+      ) : null}
     </div>
   );
 };

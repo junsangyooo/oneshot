@@ -19,6 +19,7 @@ import {
   ALLOUT_ROUNDS_MIN,
   ALLOUT_BANKRUPT_DEFAULT,
   ALLOUT_START_HAND,
+  END_VOTE_COOLDOWN_MS,
   alloutAttackAmount,
   alloutDeckCopies,
 } from "@oneshot/shared";
@@ -95,6 +96,7 @@ export class AlloutCore {
 
   private disconnected = new Set<string>();
   private endVote: { proposedBy: string; votes: Map<string, boolean> } | null = null;
+  private voteCooldownUntil = 0;
   private result: GameResult | null = null;
 
   start(input: { players: PublicPlayerState[]; randomSeed: string }): void {
@@ -271,10 +273,10 @@ export class AlloutCore {
     return ok();
   }
 
-  // ---- host: roundEnd -> next round ----
-  nextRound(isHost: boolean): ActionResult {
+  // ---- anyone: roundEnd -> next round ----
+  nextRound(playerId: string): ActionResult {
     if (this.phase !== "roundEnd") return fail("INVALID_ACTION", "지금은 다음 라운드로 넘어갈 수 없습니다.");
-    if (!isHost) return fail("HOST_ONLY", "방장만 다음 라운드를 시작할 수 있습니다.");
+    if (!this.players.some((p) => p.id === playerId)) return fail("INVALID_ACTION", "참가자가 아닙니다.");
     if (this.roundNumber >= this.totalRounds) {
       this.finish("모든 라운드가 끝났어요.");
       return ok();
@@ -283,11 +285,15 @@ export class AlloutCore {
     return ok();
   }
 
-  // ---- early-end vote ----
-  proposeEnd(isHost: boolean, playerId: string): ActionResult {
-    if (!isHost) return fail("HOST_ONLY", "방장만 종료를 발의할 수 있습니다.");
+  // ---- anyone: early-end vote (rejected votes start a cooldown) ----
+  proposeEnd(playerId: string): ActionResult {
+    if (!this.players.some((p) => p.id === playerId)) return fail("INVALID_ACTION", "참가자가 아닙니다.");
     if (this.phase === "setup" || this.phase === "ended") return fail("INVALID_ACTION", "지금은 발의할 수 없습니다.");
     if (this.endVote) return fail("INVALID_ACTION", "이미 투표가 진행 중입니다.");
+    if (Date.now() < this.voteCooldownUntil) {
+      const s = Math.ceil((this.voteCooldownUntil - Date.now()) / 1000);
+      return fail("INVALID_ACTION", `부결된 지 얼마 안 됐어요. ${s}초 후 다시 발의할 수 있어요.`);
+    }
     this.endVote = { proposedBy: playerId, votes: new Map([[playerId, true]]) };
     this.resolveEndVote();
     return ok();
@@ -378,6 +384,7 @@ export class AlloutCore {
       endVote: this.endVote
         ? { proposedBy: this.endVote.proposedBy, votes: Object.fromEntries(this.endVote.votes) }
         : null,
+      endVoteCooldownUntil: this.voteCooldownUntil > Date.now() ? this.voteCooldownUntil : null,
     };
   }
 
@@ -640,9 +647,11 @@ export class AlloutCore {
       this.finish("투표로 게임을 종료했어요.", true);
       return;
     }
+    // A rejected vote starts a cooldown so nobody can spam re-proposals.
     const undecided = total - cast.length;
     if ((agrees + undecided) * 2 <= total || rejects * 2 >= total) {
       this.endVote = null;
+      this.voteCooldownUntil = Date.now() + END_VOTE_COOLDOWN_MS;
     }
   }
 

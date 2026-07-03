@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DicePublicState, PublicPlayerState } from "@oneshot/shared";
 import { DICE_ACTIONS } from "@oneshot/shared";
 import { DiceModule } from "../src/games/dice/DiceModule";
@@ -55,6 +55,10 @@ const driveToEnd = (module: DiceModule, players: PublicPlayerState[], totalRound
 };
 
 describe("DiceModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("requires at least 2 players", () => {
     const module = new DiceModule();
     expect(() => module.start({ players: makePlayers(1), options: {}, randomSeed: "s" })).toThrow();
@@ -166,13 +170,14 @@ describe("DiceModule", () => {
     }
   });
 
-  it("gates nextRound to the host in roundEnd", () => {
+  it("lets ANY player advance from roundEnd (not just the host)", () => {
     const { module, players, host } = startGame(2);
     configure(module, host, 2);
+    // not in roundEnd yet
     expect(act(module, host.id, DICE_ACTIONS.nextRound, undefined, true)).toMatchObject({ ok: false });
     rollAll(module, players);
-    expect(act(module, players[1]!.id, DICE_ACTIONS.nextRound)).toMatchObject({ ok: false, code: "HOST_ONLY" });
-    expect(act(module, host.id, DICE_ACTIONS.nextRound, undefined, true)).toMatchObject({ ok: true });
+    // a non-host guest advances the round
+    expect(act(module, players[1]!.id, DICE_ACTIONS.nextRound)).toMatchObject({ ok: true });
     expect(module.getPublicState().roundNumber).toBe(2);
   });
 
@@ -261,14 +266,11 @@ describe("DiceModule", () => {
     configure(module, host, 3);
     rollAll(module, players);
     act(module, host.id, DICE_ACTIONS.nextRound, undefined, true);
-    expect(act(module, players[1]!.id, DICE_ACTIONS.proposeEnd, undefined, false)).toMatchObject({
-      ok: false,
-      code: "HOST_ONLY",
-    });
-    expect(act(module, host.id, DICE_ACTIONS.proposeEnd, undefined, true)).toMatchObject({ ok: true });
+    // any player may open the vote (proposer auto-agrees)
+    expect(act(module, players[1]!.id, DICE_ACTIONS.proposeEnd, undefined, false)).toMatchObject({ ok: true });
     expect(module.getPublicState().endVote).not.toBeNull();
-    act(module, players[1]!.id, DICE_ACTIONS.voteEnd, { agree: true });
     act(module, players[2]!.id, DICE_ACTIONS.voteEnd, { agree: true });
+    act(module, players[3]!.id, DICE_ACTIONS.voteEnd, { agree: true });
     const result = module.isOver();
     expect(result).not.toBeNull();
     expect(result!.canceled).toBe(true);
@@ -286,6 +288,76 @@ describe("DiceModule", () => {
     expect(module.isOver()).toBeNull();
     rollAll(module, players);
     expect(module.getPublicState().phase).toBe("roundEnd");
+  });
+
+  it("a rejected vote starts a cooldown that blocks EVERYONE, then expires", () => {
+    const { module, players, host } = startGame(4);
+    configure(module, host, 3);
+    rollAll(module, players);
+    act(module, host.id, DICE_ACTIONS.nextRound, undefined, true);
+    act(module, players[1]!.id, DICE_ACTIONS.proposeEnd);
+    act(module, players[2]!.id, DICE_ACTIONS.voteEnd, { agree: false });
+    act(module, players[3]!.id, DICE_ACTIONS.voteEnd, { agree: false });
+    act(module, host.id, DICE_ACTIONS.voteEnd, { agree: false });
+    // rejected → cooldown live for everyone, host included
+    const pub = module.getPublicState();
+    expect(pub.endVote).toBeNull();
+    expect(pub.endVoteCooldownUntil).not.toBeNull();
+    expect(act(module, host.id, DICE_ACTIONS.proposeEnd, undefined, true)).toMatchObject({ ok: false });
+    expect(act(module, players[1]!.id, DICE_ACTIONS.proposeEnd)).toMatchObject({ ok: false });
+    // 31s later the cooldown has expired
+    const later = Date.now() + 31_000;
+    vi.spyOn(Date, "now").mockReturnValue(later);
+    expect(module.getPublicState().endVoteCooldownUntil).toBeNull();
+    expect(act(module, players[1]!.id, DICE_ACTIONS.proposeEnd)).toMatchObject({ ok: true });
+  });
+
+  it("breaks tied rank sums by the higher cumulative pip total", () => {
+    // Search seeds for a genuine rank-sum tie, then check the tiebreak. Multiple
+    // hits keep this a property test rather than a single lucky seed.
+    let checked = 0;
+    for (let s = 0; s < 400 && checked < 3; s += 1) {
+      const module = new DiceModule();
+      const players = makePlayers(2);
+      module.start({ players, options: {}, randomSeed: `tie-${s}` });
+      configure(module, players[0]!, 2);
+      for (let round = 0; round < 2; round += 1) {
+        rollAll(module, players);
+        act(module, players[0]!.id, DICE_ACTIONS.nextRound);
+      }
+      const result = module.isOver();
+      expect(result).not.toBeNull();
+      const pub = module.getPublicState();
+      const [a, b] = pub.players;
+      if (!a || !b || a.cumulativeScore !== b.cumulativeScore || a.pipTotal === b.pipTotal) continue;
+      checked += 1;
+      const expectedWinner = a.pipTotal > b.pipTotal ? a.playerId : b.playerId;
+      expect(result!.winnerPlayerIds).toEqual([expectedWinner]);
+      expect(result!.ranking[0]!.playerId).toBe(expectedWinner);
+      expect(result!.ranking[0]!.rank).toBe(1);
+      expect(result!.ranking[1]!.rank).toBe(2);
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  it("shares the win on a full tie (equal rank sum AND equal pips)", () => {
+    let checked = 0;
+    for (let s = 0; s < 2000 && checked < 1; s += 1) {
+      const module = new DiceModule();
+      const players = makePlayers(2);
+      module.start({ players, options: {}, randomSeed: `fulltie-${s}` });
+      configure(module, players[0]!, 1);
+      rollAll(module, players);
+      const pub = module.getPublicState();
+      const [a, b] = pub.players;
+      act(module, players[0]!.id, DICE_ACTIONS.nextRound);
+      const result = module.isOver()!;
+      if (!a || !b || a.cumulativeScore !== b.cumulativeScore || a.pipTotal !== b.pipTotal) continue;
+      checked += 1;
+      expect(result.winnerPlayerIds).toHaveLength(2);
+      expect(result.ranking.every((r) => r.rank === 1)).toBe(true);
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 
   it("resolves the vote against connected players only (no dropout deadlock)", () => {

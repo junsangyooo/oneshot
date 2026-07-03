@@ -80,13 +80,13 @@ test("three players play a full 2-round dice game to the results screen", async 
   await expect(host.locator(".dice-pod__rank")).toHaveCount(3);
   await expect(host.locator(".dice-pod__sum")).toHaveCount(3);
 
-  // non-host waits; host advances
-  await expect(guest1.getByText("방장이 다음 라운드를 준비 중...")).toBeVisible({ timeout: 10_000 });
-  await host.getByRole("button", { name: "다음 라운드" }).click();
+  // ANYONE can advance — a guest presses next
+  await expect(guest1.getByRole("button", { name: "다음 라운드" })).toBeVisible({ timeout: 10_000 });
+  await guest1.getByRole("button", { name: "다음 라운드" }).click();
 
-  // round 2: end-vote button unlocks for the host only
+  // round 2: end-vote button unlocks for everyone
   await expect(host.getByRole("button", { name: /종료 투표/ })).toBeVisible({ timeout: 10_000 });
-  await expect(guest1.getByRole("button", { name: /종료 투표/ })).toHaveCount(0);
+  await expect(guest1.getByRole("button", { name: /종료 투표/ })).toBeVisible({ timeout: 10_000 });
 
   await rollAll(pages);
   await expect(host.getByRole("heading", { name: "2라운드 결과" })).toBeVisible({ timeout: 10_000 });
@@ -123,6 +123,35 @@ test("host end vote from round 2 cancels the game back to the lobby", async ({ b
   for (const page of pages) {
     await expect(page.getByText("초대 링크")).toBeVisible({ timeout: 10_000 });
   }
+  for (const context of contexts) await context.close();
+});
+
+test("a guest-proposed vote that gets rejected locks re-proposals with a countdown", async ({ browser }) => {
+  const { contexts, pages } = await openThreeSeats(browser);
+  const [host, guest1, guest2] = pages as [Page, Page, Page];
+
+  await startDice(host, 3);
+  await rollAll(pages);
+  await expect(guest1.getByRole("button", { name: "다음 라운드" })).toBeVisible({ timeout: 10_000 });
+  await guest1.getByRole("button", { name: "다음 라운드" }).click();
+
+  // a GUEST opens the vote (auto-yes), the other two reject it
+  await expect(guest1.getByRole("button", { name: /종료 투표/ })).toBeVisible({ timeout: 10_000 });
+  await guest1.getByRole("button", { name: /종료 투표/ }).click();
+  await expect(host.getByRole("button", { name: "반대" })).toBeVisible({ timeout: 10_000 });
+  await host.getByRole("button", { name: "반대" }).click();
+  await expect(guest2.getByRole("button", { name: "반대" })).toBeVisible({ timeout: 10_000 });
+  await guest2.getByRole("button", { name: "반대" }).click();
+
+  // rejected → every seat shows a disabled countdown instead of the vote button
+  for (const page of pages) {
+    const cooldownBtn = page.getByRole("button", { name: /재투표/ });
+    await expect(cooldownBtn).toBeVisible({ timeout: 10_000 });
+    await expect(cooldownBtn).toBeDisabled();
+  }
+  // and the game itself continues (round 2 keeps rolling)
+  await expect(rollButton(host)).toBeVisible({ timeout: 10_000 });
+
   for (const context of contexts) await context.close();
 });
 

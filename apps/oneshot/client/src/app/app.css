@@ -804,6 +804,9 @@ button { font: inherit; }
 .scr--dice .dice-table__rank { font-family: var(--font-display); font-weight: 700; color: var(--gold); font-size: 18px; }
 .scr--dice .dice-table__name { color: var(--ink); }
 .scr--dice .dice-table__score { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
+/* +pips = the rank-sum tiebreaker column */
+.scr--dice .dice-table--pips .dice-table__head, .scr--dice .dice-table--pips .dice-table__row { grid-template-columns: 48px 1fr auto auto; }
+.scr--dice .dice-table__pips { font-family: var(--font-display); font-weight: 700; color: var(--ink-dim); min-width: 5ch; text-align: right; }
 .scr--dice .dice-vote__tally { text-align: center; color: var(--ink); font-family: var(--font-display); font-weight: 700; }
 
 @keyframes dice-tumble { 0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); } 100% { transform: rotateX(360deg) rotateY(720deg) rotateZ(360deg); } }

@@ -67,6 +67,7 @@ export type UpstagePublicState = {
   pendingTaxReceivers: string[]; // receivers who still owe a taxReturn
   lastHandRanking: string[] | null; // previous hand finishing order (display)
   endVote: UpstageEndVote | null;
+  endVoteCooldownUntil: number | null; // epoch ms; re-propose blocked until then (null = none)
 };
 
 export type UpstagePrivateState = {

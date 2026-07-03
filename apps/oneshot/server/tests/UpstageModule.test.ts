@@ -294,15 +294,26 @@ describe("UpstageModule — early-end vote", () => {
     expect(module.isOver()).not.toBeNull();
   });
 
-  it("non-host cannot propose; rejected vote clears", () => {
+  it("anyone can propose; a rejected vote clears and starts a cooldown", () => {
     const { module, host, players } = startGame(4, "vote2");
     act(module, host.id, UPSTAGE_ACTIONS.configure, { penalty: false, totalHands: 5 }, true);
     act(module, host.id, UPSTAGE_ACTIONS.startHand, undefined, true);
-    expect(act(module, players[1]!.id, UPSTAGE_ACTIONS.proposeEnd)).toMatchObject({ ok: false, code: "HOST_ONLY" });
-    act(module, host.id, UPSTAGE_ACTIONS.proposeEnd, undefined, true);
-    for (const p of players.slice(1)) act(module, p.id, UPSTAGE_ACTIONS.voteEnd, { agree: false });
+    // a non-host guest opens the vote
+    expect(act(module, players[1]!.id, UPSTAGE_ACTIONS.proposeEnd)).toMatchObject({ ok: true });
+    for (const p of [host, players[2]!, players[3]!]) act(module, p.id, UPSTAGE_ACTIONS.voteEnd, { agree: false });
     expect(module.getPublicState().endVote).toBeNull();
     expect(module.isOver()).toBeNull();
+    // rejected → nobody (host included) can re-propose during the cooldown
+    expect(module.getPublicState().endVoteCooldownUntil).not.toBeNull();
+    expect(act(module, host.id, UPSTAGE_ACTIONS.proposeEnd, undefined, true)).toMatchObject({ ok: false });
+  });
+
+  it("any player can advance draw -> hand 1 and handEnd -> next hand", () => {
+    const { module, host, players } = startGame(4, "advance");
+    act(module, host.id, UPSTAGE_ACTIONS.configure, { penalty: false, totalHands: 5 }, true);
+    expect(module.getPublicState().phase).toBe("draw");
+    expect(act(module, players[2]!.id, UPSTAGE_ACTIONS.startHand)).toMatchObject({ ok: true });
+    expect(module.getPublicState().phase).toBe("play");
   });
 });
 

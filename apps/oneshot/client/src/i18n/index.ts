@@ -221,6 +221,7 @@ const ko: Dict = {
   "game.dice": "주사위",
   "gametag.dice": "던져라, 운명의 두 주사위!",
 
+  "vote.cooldown": "재투표 {s}초",
   "allout.loading": "게임 상태를 불러오는 중...",
   "allout.you": "나",
   "allout.round": "라운드",
@@ -391,6 +392,8 @@ const ko: Dict = {
   "dice.roundEnd.waitingHost": "방장이 다음 라운드를 준비 중...",
   "dice.table.rankCol": "순위",
   "dice.table.scoreCol": "누적",
+  "dice.table.pipsCol": "눈 합계",
+  "dice.tiebreakHint": "누적이 같으면 눈 합계가 높은 사람이 앞서요",
   "dice.vote.title": "게임을 그만둘까요?",
   "dice.vote.desc": "과반이 찬성하면 게임을 멈추고 로비로 돌아가요. (팀은 유지돼요)",
   "dice.vote.agree": "찬성",
@@ -403,7 +406,8 @@ const ko: Dict = {
   "dice.rules.p2": "라운드가 여러 개면 라운드 순위를 모두 더해, 합이 가장 낮은 사람이 최종 우승해요.",
   "dice.rules.p3": "전략도 실력도 없어요. 100% 운 — 던지고 기도하세요!",
   "dice.rules.p4": "접속이 끊긴 친구의 주사위는 서버가 대신 공정하게 굴려줘서 게임이 멈추지 않아요.",
-  "dice.rules.p5": "2라운드부터는 방장이 종료 투표를 열 수 있어요. 접속 중인 과반이 찬성하면 게임을 멈추고 로비로 돌아가요.",
+  "dice.rules.p5": "2라운드부터는 누구나 종료 투표를 열 수 있어요. 접속 중인 과반이 찬성하면 게임을 멈추고 로비로 돌아가요. 부결되면 30초 동안 다시 발의할 수 없어요.",
+  "dice.rules.p6": "최종 누적(등수 합)이 같으면 지금까지 굴린 주사위 눈의 총합이 높은 사람이 이겨요.",
 };
 
 const en: Dict = {
@@ -613,6 +617,7 @@ const en: Dict = {
   "game.dice": "DICE ROLL",
   "gametag.dice": "Throw the bones — pure luck!",
 
+  "vote.cooldown": "retry in {s}s",
   "allout.loading": "Loading game state...",
   "allout.you": "YOU",
   "allout.round": "ROUND",
@@ -783,6 +788,8 @@ const en: Dict = {
   "dice.roundEnd.waitingHost": "The host is preparing the next round...",
   "dice.table.rankCol": "RANK",
   "dice.table.scoreCol": "TOTAL",
+  "dice.table.pipsCol": "PIPS",
+  "dice.tiebreakHint": "Tied totals break by the higher pip sum",
   "dice.vote.title": "Stop the game?",
   "dice.vote.desc": "If the majority agrees, the game stops and everyone returns to the lobby. (Team is kept.)",
   "dice.vote.agree": "Agree",
@@ -795,7 +802,8 @@ const en: Dict = {
   "dice.rules.p2": "Across several rounds the ranks add up, and the lowest total wins overall.",
   "dice.rules.p3": "No strategy, no skill. 100% luck — throw and pray!",
   "dice.rules.p4": "If a friend disconnects, the server rolls fairly on their behalf so the game never stalls.",
-  "dice.rules.p5": "From round 2 the host can call an end vote. If a majority of connected players agree, the game stops and everyone returns to the lobby.",
+  "dice.rules.p5": "From round 2 anyone can call an end vote. If a majority of connected players agree, the game stops and everyone returns to the lobby. A rejected vote blocks re-proposals for 30 seconds.",
+  "dice.rules.p6": "If final totals (rank sums) tie, the higher sum of all pips rolled wins.",
 };
 
 const DICTS: Record<Lang, Dict> = { ko, en };

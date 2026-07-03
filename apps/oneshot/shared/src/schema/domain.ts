@@ -71,3 +71,7 @@ export type PrivatePlayerSession = {
   createdAt: number;
   lastSeenAt: number;
 };
+
+// After an early-end vote is REJECTED, nobody may re-propose for this long.
+// Server-enforced; clients render a countdown from the public-state deadline.
+export const END_VOTE_COOLDOWN_MS = 30_000;

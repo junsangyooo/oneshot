@@ -4,6 +4,7 @@ import { DICE_ACTIONS, DICE_ROUNDS_DEFAULT, DICE_ROUNDS_MAX, DICE_ROUNDS_MIN } f
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
 import { Backdrop, AvatarImg, SettingsModal, RulesModal } from "../../ui/terminal";
+import { useCountdown } from "../../ui/useCountdown";
 
 type Props = {
   roomState: PartyRoomState;
@@ -208,6 +209,7 @@ export const DiceGameScreen = ({ roomState, privateState, currentPlayerId }: Pro
   const isHost = myPlayer?.isHost ?? false;
   const me = pub?.players.find((p) => p.playerId === currentPlayerId) ?? null;
   const iRolled = me?.roll != null;
+  const voteCooldown = useCountdown(pub?.endVoteCooldownUntil);
 
   const sendAction = (type: string, payload?: unknown) =>
     send({ type: "game:action", action: { type, payload, clientActionId: crypto.randomUUID() } });
@@ -270,11 +272,18 @@ export const DiceGameScreen = ({ roomState, privateState, currentPlayerId }: Pro
   const showRanks = pub.phase === "roundEnd" && boardSettled;
   const inRound = pub.phase === "rolling" || pub.phase === "roundEnd";
 
+  // Standings mirror the server's final ordering: rank-sum asc, then cumulative
+  // pip total desc (the tiebreaker), so mid-game standings match the end result.
   const standings = [...pub.players].sort(
-    (a, b) => a.cumulativeScore - b.cumulativeScore,
+    (a, b) => a.cumulativeScore - b.cumulativeScore || b.pipTotal - a.pipTotal,
   );
   const standingRank = (p: DicePlayerPublic): number =>
-    1 + pub.players.filter((x) => x.cumulativeScore < p.cumulativeScore).length;
+    1 +
+    pub.players.filter(
+      (x) =>
+        x.cumulativeScore < p.cumulativeScore ||
+        (x.cumulativeScore === p.cumulativeScore && x.pipTotal > p.pipTotal),
+    ).length;
 
   return (
     <main className="scr scr--dice">
@@ -308,9 +317,16 @@ export const DiceGameScreen = ({ roomState, privateState, currentPlayerId }: Pro
           >
             <span>⚙</span>
           </button>
-          {isHost && inRound && pub.roundNumber >= 2 && !voteOpen ? (
-            <button className="btn btn--sm btn--danger" type="button" onClick={() => sendAction(DICE_ACTIONS.proposeEnd)}>
-              <span>⏻ {t("dice.proposeEnd")}</span>
+          {me && inRound && pub.roundNumber >= 2 && !voteOpen ? (
+            <button
+              className="btn btn--sm btn--danger"
+              type="button"
+              disabled={voteCooldown > 0}
+              onClick={() => sendAction(DICE_ACTIONS.proposeEnd)}
+            >
+              <span>
+                ⏻ {voteCooldown > 0 ? fill(t("vote.cooldown"), { s: voteCooldown }) : t("dice.proposeEnd")}
+              </span>
             </button>
           ) : null}
         </div>
@@ -403,31 +419,30 @@ export const DiceGameScreen = ({ roomState, privateState, currentPlayerId }: Pro
             {showRanks ? (
               <div className="dice-panel dice-after">
                 <h2 className="dice-h">{fill(t("dice.roundEnd.title"), { n: pub.roundNumber })}</h2>
-                <div className="dice-table">
+                <div className="dice-table dice-table--pips">
                   <div className="dice-table__head">
                     <span>{t("dice.table.rankCol")}</span>
                     <span />
+                    <span>{t("dice.table.pipsCol")}</span>
                     <span>{t("dice.table.scoreCol")}</span>
                   </div>
                   {standings.map((p) => (
                     <div className="dice-table__row" key={p.playerId}>
                       <span className="dice-table__rank">{standingRank(p)}</span>
                       <span className="dice-table__name">{nameOf(p.playerId)}</span>
+                      <span className="dice-table__pips">{p.pipTotal}</span>
                       <span className="dice-table__score">{p.cumulativeScore}</span>
                     </div>
                   ))}
                 </div>
-                {isHost ? (
-                  <button
-                    type="button"
-                    className="btn btn--primary dice-cta"
-                    onClick={() => sendAction(DICE_ACTIONS.nextRound)}
-                  >
-                    {isFinal ? t("dice.roundEnd.finish") : t("dice.roundEnd.next")}
-                  </button>
-                ) : (
-                  <p className="dice-wait">{t("dice.roundEnd.waitingHost")}</p>
-                )}
+                <p className="dice-hint dice-hint--dim">{t("dice.tiebreakHint")}</p>
+                <button
+                  type="button"
+                  className="btn btn--primary dice-cta"
+                  onClick={() => sendAction(DICE_ACTIONS.nextRound)}
+                >
+                  {isFinal ? t("dice.roundEnd.finish") : t("dice.roundEnd.next")}
+                </button>
               </div>
             ) : null}
           </>
@@ -484,6 +499,7 @@ export const DiceGameScreen = ({ roomState, privateState, currentPlayerId }: Pro
           t("dice.rules.p3"),
           t("dice.rules.p4"),
           t("dice.rules.p5"),
+          t("dice.rules.p6"),
         ]}
       />
     </main>

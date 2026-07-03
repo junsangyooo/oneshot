@@ -80,6 +80,7 @@ export type AlloutPublicState = {
   drawnPendingPlayerId: string | null; // draw 후 그 카드로 낼지/패스할지 대기 중인 플레이어
   lastRoundRanking: string[] | null;
   endVote: AlloutEndVote | null;
+  endVoteCooldownUntil: number | null; // epoch ms; re-propose blocked until then (null = none)
 };
 
 export type AlloutPrivateState = {

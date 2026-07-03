@@ -36,6 +36,7 @@ export type DicePlayerPublic = {
   roll: DiceRoll | null; // this round's throw (null until rolled)
   roundRank: number | null; // rank in the just-resolved round (ties share)
   cumulativeScore: number; // sum of round ranks across rounds (lower is better)
+  pipTotal: number; // sum of every pip rolled so far — the rank-sum tiebreaker (higher wins)
 };
 
 export type DiceEndVote = {
@@ -51,6 +52,7 @@ export type DicePublicState = {
   waitingOn: string[]; // connected players who have not rolled yet (rolling phase)
   lastRoundRanking: string[] | null; // resolved round order, rank 1 first (ties by seat)
   endVote: DiceEndVote | null;
+  endVoteCooldownUntil: number | null; // epoch ms; re-propose blocked until then (null = none)
 };
 
 // No secrets in this game.
@@ -67,7 +69,7 @@ export type DiceVoteEndPayload = { agree: boolean };
 export const DICE_ACTIONS = {
   configure: "dice:configure",
   roll: "dice:roll",
-  nextRound: "dice:nextRound", // host: roundEnd -> next round (or finish after the last)
-  proposeEnd: "dice:proposeEnd", // host: open an early-end vote (from round 2 on)
+  nextRound: "dice:nextRound", // anyone: roundEnd -> next round (or finish after the last)
+  proposeEnd: "dice:proposeEnd", // anyone: open an early-end vote (from round 2 on, cooldown after a reject)
   voteEnd: "dice:voteEnd",
 } as const;

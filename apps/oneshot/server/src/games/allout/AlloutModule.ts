@@ -35,9 +35,9 @@ export class AlloutModule
       case ALLOUT_ACTIONS.pass:
         return this.core.pass(playerId);
       case ALLOUT_ACTIONS.nextRound:
-        return this.core.nextRound(isHost);
+        return this.core.nextRound(playerId);
       case ALLOUT_ACTIONS.proposeEnd:
-        return this.core.proposeEnd(isHost, playerId);
+        return this.core.proposeEnd(playerId);
       case ALLOUT_ACTIONS.voteEnd:
         return this.core.voteEnd(playerId, action.payload);
       default:

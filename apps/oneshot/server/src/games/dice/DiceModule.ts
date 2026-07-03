@@ -10,7 +10,13 @@ import type {
   GameResult,
   PublicPlayerState,
 } from "@oneshot/shared";
-import { DICE_ACTIONS, DICE_ROUNDS_DEFAULT, DICE_ROUNDS_MAX, DICE_ROUNDS_MIN } from "@oneshot/shared";
+import {
+  DICE_ACTIONS,
+  DICE_ROUNDS_DEFAULT,
+  DICE_ROUNDS_MAX,
+  DICE_ROUNDS_MIN,
+  END_VOTE_COOLDOWN_MS,
+} from "@oneshot/shared";
 import { Randomizer } from "../../core/Randomizer";
 import type { ActionResult, GameModule } from "../GameModule";
 
@@ -39,7 +45,10 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
   private rolls = new Map<string, DiceRoll>();
   private roundRanks = new Map<string, number>();
   private cumulative = new Map<string, number>();
+  // Cumulative pip total across rounds — breaks rank-sum ties (higher wins).
+  private pipTotal = new Map<string, number>();
   private lastRoundRanking: string[] | null = null;
+  private voteCooldownUntil = 0;
 
   // Temporarily disconnected (reconnectable) players. They stay seated but the
   // round-completion quorum and the early-end vote count CONNECTED players only.
@@ -61,9 +70,11 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
     this.rolls.clear();
     this.roundRanks.clear();
     this.cumulative = new Map(this.players.map((p) => [p.id, 0]));
+    this.pipTotal = new Map(this.players.map((p) => [p.id, 0]));
     this.lastRoundRanking = null;
     this.disconnected.clear();
     this.endVote = null;
+    this.voteCooldownUntil = 0;
     this.result = null;
   }
 
@@ -75,9 +86,9 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
       case DICE_ACTIONS.roll:
         return this.roll(playerId);
       case DICE_ACTIONS.nextRound:
-        return this.nextRound(isHost);
+        return this.nextRound(playerId);
       case DICE_ACTIONS.proposeEnd:
-        return this.proposeEnd(isHost, playerId);
+        return this.proposeEnd(playerId);
       case DICE_ACTIONS.voteEnd:
         return this.voteEnd(playerId, action.payload);
       default:
@@ -109,10 +120,10 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
     return ok();
   }
 
-  // ---- host: roundEnd -> next round (or finish after the last) ----
-  private nextRound(isHost: boolean): ActionResult {
+  // ---- anyone: roundEnd -> next round (or finish after the last) ----
+  private nextRound(playerId: string): ActionResult {
     if (this.phase !== "roundEnd") return fail("INVALID_ACTION", "지금은 다음 라운드로 넘어갈 수 없습니다.");
-    if (!isHost) return fail("HOST_ONLY", "방장만 다음 라운드를 시작할 수 있습니다.");
+    if (!this.players.some((p) => p.id === playerId)) return fail("INVALID_ACTION", "참가자가 아닙니다.");
     if (this.roundNumber >= this.totalRounds) {
       this.finish("모든 라운드가 끝났어요.");
       return ok();
@@ -121,12 +132,16 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
     return ok();
   }
 
-  // ---- early-end vote (only meaningful from round 2 on) ----
-  private proposeEnd(isHost: boolean, playerId: string): ActionResult {
-    if (!isHost) return fail("HOST_ONLY", "방장만 종료를 발의할 수 있습니다.");
+  // ---- anyone: early-end vote (from round 2 on; rejected votes start a cooldown) ----
+  private proposeEnd(playerId: string): ActionResult {
+    if (!this.players.some((p) => p.id === playerId)) return fail("INVALID_ACTION", "참가자가 아닙니다.");
     if (this.phase === "setup" || this.phase === "ended") return fail("INVALID_ACTION", "지금은 발의할 수 없습니다.");
     if (this.roundNumber < 2) return fail("INVALID_ACTION", "2라운드부터 종료 투표를 열 수 있습니다.");
     if (this.endVote) return fail("INVALID_ACTION", "이미 투표가 진행 중입니다.");
+    if (Date.now() < this.voteCooldownUntil) {
+      const s = Math.ceil((this.voteCooldownUntil - Date.now()) / 1000);
+      return fail("INVALID_ACTION", `부결된 지 얼마 안 됐어요. ${s}초 후 다시 발의할 수 있어요.`);
+    }
     this.endVote = { proposedBy: playerId, votes: new Map([[playerId, true]]) };
     this.resolveEndVote();
     return ok();
@@ -165,6 +180,7 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
     this.rolls.delete(playerId);
     this.roundRanks.delete(playerId);
     this.cumulative.delete(playerId);
+    this.pipTotal.delete(playerId);
     this.disconnected.delete(playerId);
     if (this.lastRoundRanking) {
       this.lastRoundRanking = this.lastRoundRanking.filter((id) => id !== playerId);
@@ -187,6 +203,7 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
       roll: this.rolls.get(p.id) ?? null,
       roundRank: this.roundRanks.get(p.id) ?? null,
       cumulativeScore: this.cumulative.get(p.id) ?? 0,
+      pipTotal: this.pipTotal.get(p.id) ?? 0,
     }));
     const waitingOn =
       this.phase === "rolling"
@@ -204,6 +221,7 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
       endVote: this.endVote
         ? { proposedBy: this.endVote.proposedBy, votes: Object.fromEntries(this.endVote.votes) }
         : null,
+      endVoteCooldownUntil: this.voteCooldownUntil > Date.now() ? this.voteCooldownUntil : null,
     };
   }
 
@@ -249,6 +267,7 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
       const rank = 1 + sums.filter((s) => s > mySum).length;
       this.roundRanks.set(p.id, rank);
       this.cumulative.set(p.id, (this.cumulative.get(p.id) ?? 0) + rank);
+      this.pipTotal.set(p.id, (this.pipTotal.get(p.id) ?? 0) + mySum);
     });
     this.lastRoundRanking = [...this.players]
       .map((p) => p.id)
@@ -276,19 +295,32 @@ export class DiceModule implements GameModule<DiceOptions, DicePublicState, Dice
       return;
     }
     // Can no longer pass even if all remaining connected players vote yes? -> fail.
+    // A rejected vote starts a cooldown so nobody can spam re-proposals.
     const undecided = total - cast.length;
     if ((agrees + undecided) * 2 <= total || rejects * 2 >= total) {
       this.endVote = null;
+      this.voteCooldownUntil = Date.now() + END_VOTE_COOLDOWN_MS;
     }
   }
 
   private finish(summary: string, canceled = false): void {
-    const ranking = this.players
-      .map((p) => ({ playerId: p.id, score: this.cumulative.get(p.id) ?? 0 }))
-      .sort((a, b) => a.score - b.score)
-      .map((entry, index) => ({ playerId: entry.playerId, rank: index + 1, scoreDelta: entry.score }));
-    const best = ranking.length > 0 ? ranking[0]!.scoreDelta : 0;
-    const winners = ranking.filter((r) => r.scoreDelta === best).map((r) => r.playerId);
+    // Rank-sum asc; ties break by cumulative pip total (higher wins); a full tie
+    // on both shares the rank (and the win).
+    const entries = this.players
+      .map((p) => ({
+        playerId: p.id,
+        score: this.cumulative.get(p.id) ?? 0,
+        pips: this.pipTotal.get(p.id) ?? 0,
+      }))
+      .sort((a, b) => a.score - b.score || b.pips - a.pips);
+    let lastRank = 0;
+    const ranking = entries.map((entry, index) => {
+      const prev = entries[index - 1];
+      const rank = prev && prev.score === entry.score && prev.pips === entry.pips ? lastRank : index + 1;
+      lastRank = rank;
+      return { playerId: entry.playerId, rank, scoreDelta: entry.score };
+    });
+    const winners = ranking.filter((r) => r.rank === 1).map((r) => r.playerId);
     this.result = { ranking, winnerPlayerIds: winners, summary, canceled };
     this.phase = "ended";
     this.endVote = null;

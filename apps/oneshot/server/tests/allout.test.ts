@@ -202,7 +202,7 @@ describe("allout exchange & bankruptcy", () => {
     expect(pub.players.find((p) => p.playerId === "p1")!.bankrupt).toBe(true);
     // 2 players, one bankrupt -> round over (final round) -> host finishes
     expect(pub.phase).toBe("roundEnd");
-    core.nextRound(true);
+    core.nextRound("p0");
     const result = core.isOver();
     expect(result).not.toBeNull();
     expect(result!.winnerPlayerIds).toContain("p0"); // p1 bankrupt = worst
@@ -320,7 +320,7 @@ const playGame = (core: AlloutCore): void => {
     if (core.isOver()) return;
     const pub = core.getPublicState();
     if (pub.phase === "roundEnd") {
-      core.nextRound(true);
+      core.nextRound("p0");
       continue;
     }
     if (pub.phase !== "play") return;
@@ -379,7 +379,7 @@ describe("allout robustness", () => {
   it("disconnected players do not deadlock the early-end vote", () => {
     const core = setupCore(3);
     core.onPlayerLeave("p2"); // disconnected, cannot vote
-    expect(core.proposeEnd(true, "p0").ok).toBe(true); // host auto-agrees
+    expect(core.proposeEnd("p0").ok).toBe(true); // host auto-agrees
     core.voteEnd("p1", { agree: true }); // 2 of 2 connected agree -> end
     const res = core.isOver();
     expect(res).not.toBeNull();
@@ -389,7 +389,7 @@ describe("allout robustness", () => {
   it("a temporarily disconnected player does not end the game by themselves", () => {
     const core = setupCore(4);
     core.onPlayerLeave("p3");
-    expect(core.proposeEnd(true, "p0").ok).toBe(true); // 1 of 3 connected
+    expect(core.proposeEnd("p0").ok).toBe(true); // 1 of 3 connected
     expect(core.isOver()).toBeNull();
   });
 });

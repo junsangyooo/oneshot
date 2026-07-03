@@ -29,7 +29,7 @@ export class UpstageModule
       case UPSTAGE_ACTIONS.configure:
         return this.core.configure(isHost, action.payload);
       case UPSTAGE_ACTIONS.startHand:
-        return this.core.startHand(isHost);
+        return this.core.startHand(playerId);
       case UPSTAGE_ACTIONS.declare:
         return this.core.declare(playerId, action.payload);
       case UPSTAGE_ACTIONS.taxReturn:
@@ -39,9 +39,9 @@ export class UpstageModule
       case UPSTAGE_ACTIONS.pass:
         return this.core.pass(playerId);
       case UPSTAGE_ACTIONS.nextHand:
-        return this.core.nextHand(isHost);
+        return this.core.nextHand(playerId);
       case UPSTAGE_ACTIONS.proposeEnd:
-        return this.core.proposeEnd(isHost, playerId);
+        return this.core.proposeEnd(playerId);
       case UPSTAGE_ACTIONS.voteEnd:
         return this.core.voteEnd(playerId, action.payload);
       default:

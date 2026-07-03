@@ -15,6 +15,7 @@ import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
 import { Backdrop, AvatarImg, SettingsModal, RulesModal, GameRail } from "../../ui/terminal";
 import type { RailSeat } from "../../ui/terminal";
+import { useCountdown } from "../../ui/useCountdown";
 
 type Props = {
   roomState: PartyRoomState;
@@ -81,6 +82,8 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
   const me = privateState as UpstagePrivateState | null;
   const myPlayer = currentPlayerId ? roomState.players[currentPlayerId] : null;
   const isHost = myPlayer?.isHost ?? false;
+  const amSeated = currentPlayerId != null && (pub?.players.some((p) => p.playerId === currentPlayerId) ?? false);
+  const voteCooldown = useCountdown(pub?.endVoteCooldownUntil);
 
   const sendAction = (type: string, payload?: unknown) =>
     send({ type: "game:action", action: { type, payload, clientActionId: crypto.randomUUID() } });
@@ -149,13 +152,16 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
           <button className="btn btn--sm" type="button" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
             <span>⚙</span>
           </button>
-          {isHost && pub.phase !== "setup" && pub.phase !== "ended" && !voteOpen ? (
+          {amSeated && pub.phase !== "setup" && pub.phase !== "ended" && !voteOpen ? (
             <button
               className="btn btn--sm btn--danger"
               type="button"
+              disabled={voteCooldown > 0}
               onClick={() => sendAction(UPSTAGE_ACTIONS.proposeEnd)}
             >
-              <span>⏻ {t("upstage.proposeEnd")}</span>
+              <span>
+                ⏻ {voteCooldown > 0 ? fill(t("vote.cooldown"), { s: voteCooldown }) : t("upstage.proposeEnd")}
+              </span>
             </button>
           ) : null}
         </div>
@@ -237,13 +243,11 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
                 );
               })}
             </div>
-            {isHost ? (
+            {amSeated ? (
               <button type="button" className="btn btn--primary up-cta" onClick={() => sendAction(UPSTAGE_ACTIONS.startHand)}>
                 {t("upstage.draw.start")}
               </button>
-            ) : (
-              <p className="up-wait">{t("upstage.draw.waitingHost")}</p>
-            )}
+            ) : null}
           </div>
         ) : pub.phase === "declare" ? (
           <div className="up-panel up-declare">
@@ -290,7 +294,7 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
             t={t}
           />
         ) : pub.phase === "handEnd" ? (
-          <HandEndView pub={pub} isHost={isHost} onNext={() => sendAction(UPSTAGE_ACTIONS.nextHand)} nameOf={nameOf} t={t} />
+          <HandEndView pub={pub} canAdvance={amSeated} onNext={() => sendAction(UPSTAGE_ACTIONS.nextHand)} nameOf={nameOf} t={t} />
         ) : (
           <div className="up-panel">
             <p className="up-wait">{t("upstage.ended")}</p>
@@ -559,13 +563,13 @@ const PlayView = ({
 // ---------------------------------------------------------------- hand end
 const HandEndView = ({
   pub,
-  isHost,
+  canAdvance,
   onNext,
   nameOf,
   t,
 }: {
   pub: UpstagePublicState;
-  isHost: boolean;
+  canAdvance: boolean;
   onNext: () => void;
   nameOf: (id: string) => string;
   t: TFn;
@@ -592,13 +596,11 @@ const HandEndView = ({
           );
         })}
       </div>
-      {isHost ? (
+      {canAdvance ? (
         <button type="button" className="btn btn--primary up-cta" onClick={onNext}>
           {isFinal ? t("upstage.hand.finish") : t("upstage.hand.next")}
         </button>
-      ) : (
-        <p className="up-wait">{t("upstage.hand.waitingHost")}</p>
-      )}
+      ) : null}
     </div>
   );
 };
