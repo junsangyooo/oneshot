@@ -33,7 +33,7 @@ const fail = (code: ErrorCode, message: string): ActionResult => ({ ok: false, c
 // lower wins — same convention as upstage/allout.
 export class DiceModule implements GameModule<DiceOptions, DicePublicState, DicePrivateState> {
   readonly id = "dice" as const;
-  readonly minPlayers = 2;
+  readonly minPlayers = 1; // solo luck-checking is allowed
 
   private players: PublicPlayerState[] = [];
   private randomizer = new Randomizer("dice");

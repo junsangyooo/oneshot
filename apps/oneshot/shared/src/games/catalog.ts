@@ -58,7 +58,8 @@ export const gameCatalog: GameCatalogItem[] = [
   {
     id: "dice",
     title: "주사위",
-    minPlayers: 2,
+    minPlayers: 1, // solo luck-checking is a valid way to play
+
     maxPlayers: null,
     complexity: 1,
     supportsJoinInProgress: false,

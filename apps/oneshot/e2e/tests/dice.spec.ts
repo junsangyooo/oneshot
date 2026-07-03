@@ -59,6 +59,21 @@ const rollAll = async (pages: Page[]) => {
   }
 };
 
+test("a solo player can start dice alone and finish a game", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await createRoom(page, "혼자");
+
+  await startDice(page, 1);
+  await expect(rollButton(page)).toBeVisible({ timeout: 10_000 });
+  await rollButton(page).click();
+  await expect(page.getByRole("heading", { name: "1라운드 결과" })).toBeVisible({ timeout: 10_000 });
+  await page.getByRole("button", { name: "최종 결과 보기" }).click();
+  await expect(page.getByRole("heading", { name: "게임 종료" })).toBeVisible({ timeout: 10_000 });
+
+  await context.close();
+});
+
 test("three players play a full 2-round dice game to the results screen", async ({ browser }) => {
   const { contexts, pages } = await openThreeSeats(browser);
   const [host, guest1] = pages as [Page, Page, Page];

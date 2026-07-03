@@ -59,9 +59,26 @@ describe("DiceModule", () => {
     vi.restoreAllMocks();
   });
 
-  it("requires at least 2 players", () => {
+  it("allows solo play but rejects zero players", () => {
     const module = new DiceModule();
-    expect(() => module.start({ players: makePlayers(1), options: {}, randomSeed: "s" })).toThrow();
+    expect(() => module.start({ players: makePlayers(0), options: {}, randomSeed: "s" })).toThrow();
+    expect(() => module.start({ players: makePlayers(1), options: {}, randomSeed: "s" })).not.toThrow();
+  });
+
+  it("plays a full solo game to a result", () => {
+    const { module, players, host } = startGame(1);
+    configure(module, host, 2);
+    for (let round = 0; round < 2; round += 1) {
+      act(module, host.id, DICE_ACTIONS.roll);
+      expect(module.getPublicState().phase).toBe("roundEnd");
+      const me = module.getPublicState().players[0]!;
+      expect(me.roundRank).toBe(1);
+      act(module, host.id, DICE_ACTIONS.nextRound);
+    }
+    const result = module.isOver();
+    expect(result).not.toBeNull();
+    expect(result!.winnerPlayerIds).toEqual([players[0]!.id]);
+    expect(result!.ranking[0]!.rank).toBe(1);
   });
 
   it("gates configure to the host during setup and clamps rounds", () => {
