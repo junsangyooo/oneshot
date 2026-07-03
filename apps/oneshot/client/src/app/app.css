@@ -39,6 +39,21 @@ button { font: inherit; }
 /* =========================================================
    HOME
    ========================================================= */
+/* ============================ JOIN (invite link / QR landing) ============================
+   Minimal flow: nickname + join only. Cozy overrides in design/terminal.css. */
+.scr--join { min-height: 100svh; padding: var(--frame-pad); display: grid; place-items: center; }
+.scr--join .join-card { width: min(440px, 92vw); display: grid; gap: 18px; justify-items: center; text-align: center; border: 1px solid var(--line-bright); background: rgb(255 255 255 / 0.02); padding: clamp(24px, 5vw, 40px) clamp(18px, 4vw, 34px); }
+.scr--join .brand { font-size: clamp(40px, 8vw, 64px); }
+.scr--join .join-invited { font-size: 13px; color: var(--ink-dim); letter-spacing: var(--track-mid); text-transform: uppercase; }
+.scr--join .join-code { display: grid; gap: 4px; }
+.scr--join .join-code .lbl { font-size: 10px; letter-spacing: var(--track-wide); color: var(--ink-faint); text-transform: uppercase; }
+.scr--join .join-code .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 6vw, 44px); color: var(--accent); letter-spacing: 0.14em; }
+.scr--join .join-form { width: 100%; display: grid; gap: 16px; }
+.scr--join .join-cta { width: 100%; justify-content: center; min-height: 48px; }
+.scr--join .join-other { font-size: 12px; color: var(--ink-dim); text-decoration: underline; text-underline-offset: 4px; min-height: 44px; display: inline-flex; align-items: center; }
+.scr--join .join-other:hover { color: var(--cyan); }
+.scr--join .config-pill { position: fixed; top: 14px; right: 14px; }
+
 .scr--home { height: 100svh; overflow: hidden; padding: var(--frame-pad); display: grid; grid-template-rows: auto 1fr auto; }
 .scr--home .topbar, .scr--home .botbar { display: flex; justify-content: space-between; align-items: flex-start; }
 .scr--home .botbar { align-items: flex-end; }

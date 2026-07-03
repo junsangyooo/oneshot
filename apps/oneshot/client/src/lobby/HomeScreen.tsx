@@ -55,9 +55,13 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
     void joinRoom(normalizedRoomCode, nickname.trim(), profile);
   };
 
-  const onCreate = (event: FormEvent<HTMLFormElement>) => {
+  // Enter follows intent: with a room code typed it JOINS, otherwise it creates.
+  const enterJoins = normalizedRoomCode.length >= 4;
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    doCreate();
+    if (connecting) return;
+    if (enterJoins) doJoin();
+    else doCreate();
   };
 
   return (
@@ -114,7 +118,7 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
           <div className="brand-sub">{t("home.tagline")}</div>
         </div>
 
-        <form className="form" onSubmit={onCreate} autoComplete="off">
+        <form className="form" onSubmit={onSubmit} autoComplete="off">
           <label className="field">
             <div className="field-head">
               <span>{t("home.nickname")}</span>
@@ -144,9 +148,16 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
           </div>
 
           <div className="actions">
-            <button className="btn btn--primary" type="submit" disabled={connecting || nickname.trim().length === 0}>
+            {/* hidden default submit so Enter always routes through onSubmit */}
+            <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
+            <button
+              className="btn btn--primary"
+              type="button"
+              disabled={connecting || nickname.trim().length === 0}
+              onClick={doCreate}
+            >
               <span>{t("home.create")}</span>
-              <span className="dot" style={{ margin: 0 }} />
+              {enterJoins ? <span className="dot" style={{ margin: 0 }} /> : <span className="enter">&#x21B5;</span>}
             </button>
             <button
               className="btn"
@@ -155,7 +166,7 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
               onClick={doJoin}
             >
               <span>{t("home.join")}</span>
-              <span className="enter">&#x21B5;</span>
+              {enterJoins ? <span className="enter">&#x21B5;</span> : <span className="dot" style={{ margin: 0 }} />}
             </button>
           </div>
         </form>

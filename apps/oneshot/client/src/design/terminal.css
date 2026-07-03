@@ -614,6 +614,10 @@ body {
 [data-theme="cozy"] .scr--liar .liar-card__word { text-shadow: none; }
 [data-theme="cozy"] .scr--liar .liar-card:active { transform: translateY(2px); box-shadow: 0 6px 0 rgb(0 0 0 / 0.06); }
 
+/* ---- JOIN (invite landing) cozy overrides: soft rounded card ---- */
+[data-theme="cozy"] .scr--join .join-card { border: 0; background: var(--bg-1); border-radius: 26px; box-shadow: 0 10px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--join .join-code .val { color: var(--accent); text-shadow: none; }
+
 /* ============================ UPSTAGE (cozy overrides) ============================
    Cyber base lives in app/app.css under .scr--upstage. Cozy = rounded corners,
    soft 3D shadows, no telemetry/scanlines, warm card faces. */

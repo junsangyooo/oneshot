@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { HomeScreen } from "../lobby/HomeScreen";
+import { JoinScreen } from "../lobby/JoinScreen";
 import { RoomScreen } from "../room/RoomScreen";
 import { ResultsScreen } from "../room/ResultsScreen";
 import { GAME_SCREENS } from "../games/registry";
@@ -22,6 +23,16 @@ export const App = () => {
     void reconnect();
   }, [reconnect]);
 
+  // Keep the address bar in sync with the room actually joined. Creating a room
+  // while sitting on someone else's invite URL (/r/OLD) must not keep the stale
+  // code around — shares/refreshes would land in the wrong room.
+  const currentRoomCode = roomState?.roomCode ?? null;
+  useEffect(() => {
+    if (!currentRoomCode) return;
+    const want = `/r/${currentRoomCode}`;
+    if (window.location.pathname !== want) window.history.replaceState(null, "", want);
+  }, [currentRoomCode]);
+
   const path = window.location.pathname;
   const routeRoomCode = useMemo(() => {
     const match = path.match(/^\/r\/([A-Za-z0-9]{4,6})\/?$/);
@@ -35,7 +46,8 @@ export const App = () => {
     if (window.location.pathname !== "/") window.location.href = "/";
   };
 
-  let screen = <HomeScreen initialRoomCode={routeRoomCode} />;
+  // Invite links / QR scans land on a focused join page, not the full home.
+  let screen = routeRoomCode ? <JoinScreen roomCode={routeRoomCode} /> : <HomeScreen initialRoomCode="" />;
   if (isStatesRoute) {
     screen = <StatesGallery />;
   } else if (!roomState && screenError) {
