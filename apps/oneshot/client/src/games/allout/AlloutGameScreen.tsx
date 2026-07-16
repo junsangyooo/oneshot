@@ -18,10 +18,10 @@ import {
 } from "@oneshot/shared";
 import { useRoomStore } from "../../app/useRoomStore";
 import { useT } from "../../i18n";
-import { Backdrop, AvatarImg, SettingsModal, RulesModal, GameRail } from "../../ui/terminal";
-import type { RailSeat } from "../../ui/terminal";
+import { Backdrop, AvatarImg, SettingsModal, RulesModal } from "../../ui/terminal";
 import { useCountdown } from "../../ui/useCountdown";
 import { AlloutCardFace } from "./AlloutCard";
+import { AlloutRing, type RingPlayer } from "./AlloutRing";
 
 type Props = {
   roomState: PartyRoomState;
@@ -108,24 +108,27 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
   const voteOpen = pub.endVote != null;
   const iVoted = voteOpen && currentPlayerId != null && currentPlayerId in (pub.endVote?.votes ?? {});
 
-  const railSeats: RailSeat[] =
+  // Ring roster (seat/turn order). Avatar+theme come from the room, hand size /
+  // finished from the game's public state. `meIndex` anchors me at the bottom.
+  const ringPlayers: RingPlayer[] =
     pub.phase === "play"
       ? pub.order.map((id) => {
-          const p = pub.players.find((x) => x.playerId === id);
+          const gp = pub.players.find((x) => x.playerId === id);
+          const rp = roomState.players[id];
           return {
             id,
-            countLabel: p?.bankrupt
-              ? t("allout.play.bankruptOut")
-              : p?.finished
-                ? t("allout.play.out")
-                : String(p?.handCount ?? 0),
-            turn: pub.currentTurnPlayerId === id,
-            accent: pub.attackFromId === id ? "attacker" : null,
-            badge: p && !p.finished && p.handCount === 1 ? t("allout.play.lastCard") : null,
-            dim: p?.finished ?? false,
+            nickname: rp?.nickname ?? "—",
+            avatarKey: rp?.avatarKey ?? "",
+            themeId: rp?.themeId ?? "cyber",
+            count: gp?.handCount ?? 0,
+            finished: (gp?.finished ?? false) || (gp?.bankrupt ?? false),
+            isMe: id === currentPlayerId,
+            isTurn: pub.currentTurnPlayerId === id,
+            isAttacker: pub.attackFromId === id,
           };
         })
       : [];
+  const meIndex = currentPlayerId ? pub.order.indexOf(currentPlayerId) : -1;
 
   const toggleCard = (card: TCard) => {
     setSelected((prev) => {
@@ -157,6 +160,12 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
     setColorOpen(false);
     doSend(color, pendingTarget ?? undefined);
   };
+  // Backing out of the color wheel must also drop the target, or an exchange replay
+  // skips the target modal and reuses the stale pick.
+  const onColorCancel = () => {
+    setColorOpen(false);
+    setPendingTarget(null);
+  };
   const doSend = (chosenColor?: AlloutColor, exchangeTargetId?: string) => {
     sendAction(ALLOUT_ACTIONS.play, { cards: selected, chosenColor, exchangeTargetId });
     setSelected([]);
@@ -164,7 +173,7 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
   };
 
   return (
-    <main className={`scr scr--allout${pub.phase === "play" ? " has-rail" : ""}`}>
+    <main className="scr scr--allout">
       <Backdrop />
 
       <header className="topbar">
@@ -203,8 +212,6 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
         </div>
       </header>
 
-      {pub.phase === "play" ? <GameRail seats={railSeats} players={roomState.players} nameOf={nameOf} /> : null}
-
       <section className="ao-stage">
         {pub.phase === "setup" ? (
           <SetupView
@@ -225,6 +232,8 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
             pub={pub}
             me={me}
             currentPlayerId={currentPlayerId}
+            ringPlayers={ringPlayers}
+            meIndex={meIndex}
             selected={selected}
             firstSelected={firstSelected}
             toggleCard={toggleCard}
@@ -264,6 +273,11 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="btn" onClick={onColorCancel}>
+                {t("allout.color.cancel")}
+              </button>
             </div>
           </div>
         </div>
@@ -434,6 +448,8 @@ const PlayView = ({
   pub,
   me,
   currentPlayerId,
+  ringPlayers,
+  meIndex,
   selected,
   firstSelected,
   toggleCard,
@@ -446,6 +462,8 @@ const PlayView = ({
   pub: AlloutPublicState;
   me: AlloutPrivateState | null;
   currentPlayerId: string | null;
+  ringPlayers: RingPlayer[];
+  meIndex: number;
   selected: string[];
   firstSelected: TCard | null;
   toggleCard: (card: TCard) => void;

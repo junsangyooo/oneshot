@@ -40,3 +40,6 @@ coverage/
 # Misc
 *.tsbuildinfo
 .cache/
+
+# Superpowers brainstorm companion (mockups, scratch)
+.superpowers/

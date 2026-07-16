@@ -99,6 +99,11 @@ export class AlloutCore {
   private voteCooldownUntil = 0;
   private result: GameResult | null = null;
 
+  // Animation triggers (see AlloutPublicState). One monotonic counter stamps both.
+  private lastPlay: { byPlayerId: string; cardIds: string[]; seq: number } | null = null;
+  private lastDraw: { playerId: string; count: number; seq: number } | null = null;
+  private moveSeq = 0;
+
   start(input: { players: PublicPlayerState[]; randomSeed: string }): void {
     if (input.players.length < this.minPlayers) {
       throw new Error(`ALL OUT requires at least ${this.minPlayers} players`);
@@ -207,6 +212,7 @@ export class AlloutCore {
     );
     for (const c of chosen) this.discardPile.push(c);
     this.activeColor = parsed.lastColor ?? chosenColor ?? this.activeColor;
+    this.lastPlay = { byPlayerId: playerId, cardIds: chosen.map((c) => c.id), seq: ++this.moveSeq };
 
     this.applyEffect(playerId, parsed, target);
 
@@ -233,6 +239,7 @@ export class AlloutCore {
     if (this.pendingAttack > 0) {
       const taken = this.drawFromPile(this.pendingAttack);
       this.hands.set(playerId, sortHand([...(this.hands.get(playerId) ?? []), ...taken]));
+      if (taken.length > 0) this.lastDraw = { playerId, count: taken.length, seq: ++this.moveSeq };
       this.pendingAttack = 0;
       this.attackFromId = null;
       this.checkBankrupt(playerId);
@@ -251,6 +258,7 @@ export class AlloutCore {
     }
     this.hands.set(playerId, sortHand([...(this.hands.get(playerId) ?? []), card]));
     this.drawnPending = { playerId, cardId: card.id };
+    this.lastDraw = { playerId, count: 1, seq: ++this.moveSeq };
     this.checkBankrupt(playerId);
     if (!this.isActive(playerId)) {
       this.drawnPending = null;
@@ -385,6 +393,8 @@ export class AlloutCore {
         ? { proposedBy: this.endVote.proposedBy, votes: Object.fromEntries(this.endVote.votes) }
         : null,
       endVoteCooldownUntil: this.voteCooldownUntil > Date.now() ? this.voteCooldownUntil : null,
+      lastPlay: this.lastPlay,
+      lastDraw: this.lastDraw,
     };
   }
 
@@ -425,6 +435,8 @@ export class AlloutCore {
     this.pendingAttack = 0;
     this.attackFromId = null;
     this.direction = 1;
+    this.lastPlay = null;
+    this.lastDraw = null;
 
     const deck = this.randomizer.shuffle(this.buildDeck());
     let idx = 0;

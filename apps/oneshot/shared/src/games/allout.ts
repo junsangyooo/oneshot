@@ -81,6 +81,11 @@ export type AlloutPublicState = {
   lastRoundRanking: string[] | null;
   endVote: AlloutEndVote | null;
   endVoteCooldownUntil: number | null; // epoch ms; re-propose blocked until then (null = none)
+  // Animation triggers (public-safe): who most recently played/drew, so the client
+  // can fly cards seat↔pile. `seq` bumps on each event to detect "new". lastPlay's
+  // cardIds already live on the public discard pile; lastDraw exposes only the count.
+  lastPlay: { byPlayerId: string; cardIds: string[]; seq: number } | null;
+  lastDraw: { playerId: string; count: number; seq: number } | null;
 };
 
 export type AlloutPrivateState = {

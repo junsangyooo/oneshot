@@ -393,3 +393,50 @@ describe("allout robustness", () => {
     expect(core.isOver()).toBeNull();
   });
 });
+
+describe("allout animation triggers (lastPlay / lastDraw)", () => {
+  it("starts null, then lastPlay carries the played card ids + bumps seq", () => {
+    const core = setupCore(2);
+    expect(core.getPublicState().lastPlay).toBeNull();
+    expect(core.getPublicState().lastDraw).toBeNull();
+
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [N("c1", "red", 3), N("keep", "blue", 9)]);
+    expect(core.play("p0", { cards: ["c1"] }).ok).toBe(true);
+
+    const lp = core.getPublicState().lastPlay!;
+    expect(lp).not.toBeNull();
+    expect(lp.byPlayerId).toBe("p0");
+    expect(lp.cardIds).toEqual(["c1"]);
+    expect(lp.seq).toBeGreaterThan(0);
+  });
+
+  it("lastDraw exposes only the count (no card ids leak) and bumps seq monotonically", () => {
+    const core = setupCore(2);
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [N("mine", "blue", 3)]); // no legal move -> must draw
+    expect(core.draw("p0").ok).toBe(true);
+
+    const ld = core.getPublicState().lastDraw!;
+    expect(ld).not.toBeNull();
+    expect(ld.playerId).toBe("p0");
+    expect(ld.count).toBe(1);
+    // lastDraw must NOT reveal which card was drawn — shape is count-only.
+    expect(Object.keys(ld).sort()).toEqual(["count", "playerId", "seq"]);
+  });
+
+  it("resets to null at the start of a new round", () => {
+    const core = setupCore(2, { totalRounds: 2 });
+    core.forTest_setTop(N("top", "red", 7), "red");
+    core.forTest_setTurn("p0");
+    core.forTest_setHand("p0", [N("c1", "red", 3)]);
+    core.play("p0", { cards: ["c1"] }); // p0 empties hand -> round should end
+    expect(core.getPublicState().lastPlay).not.toBeNull();
+    // advance to next round; triggers must be cleared so the old play doesn't replay
+    if (core.getPublicState().phase === "roundEnd") core.nextRound("p0");
+    expect(core.getPublicState().lastPlay).toBeNull();
+    expect(core.getPublicState().lastDraw).toBeNull();
+  });
+});
