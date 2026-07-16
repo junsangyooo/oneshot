@@ -533,20 +533,17 @@ const PlayView = ({
 
   return (
     <div className="ao-play">
-      <div className="ao-center">
-        <span className="ao-dir" aria-label={pub.direction === 1 ? t("allout.play.dirCW") : t("allout.play.dirCCW")}>
-          {pub.direction === 1 ? "↻" : "↺"}
-        </span>
-        <div className={`ao-pile${autoTaking ? " is-shaking" : ""}`} data-color={pub.top?.color ?? "wild"}>
-          {pub.top ? <AlloutCardFace key={pub.top.card.id} card={pub.top.card} /> : null}
-        </div>
-        <div className="ao-side">
-          <span className="ao-colorchip" data-color={activeColor} aria-label={t("allout.play.activeColor")}>
-            {t(`allout.color.${activeColor}`)}
-          </span>
-          {underAttack ? <span className="ao-attack">+{pub.pendingAttack}</span> : null}
-        </div>
-      </div>
+      <AlloutRing
+        players={ringPlayers}
+        meIndex={meIndex}
+        top={pub.top}
+        direction={pub.direction}
+        pendingAttack={pub.pendingAttack}
+        shaking={autoTaking}
+        lastPlay={pub.lastPlay}
+        lastDraw={pub.lastDraw}
+        youLabel={t("allout.you")}
+      />
 
       <div className="ao-status">
         {myTurn ? (

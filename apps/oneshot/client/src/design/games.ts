@@ -20,12 +20,14 @@ export const GAME_META: Record<GameId, GameMeta> = {
   allout: { glyph: "◆", accent: "red", min: 2, max: 16 },
   dice: { glyph: "⚄", accent: "cyan", min: 1, max: null },
   roulette: { glyph: "◉", accent: "gold", min: 1, max: 24 },
+  rummikub: { glyph: "▤", accent: "gold", min: 2, max: 8 },
 };
 
 export const GAME_ORDER: GameId[] = [
   "kinggame",
   "upstage",
   "allout",
+  "rummikub",
   "dice",
   "roulette",
   "liar",

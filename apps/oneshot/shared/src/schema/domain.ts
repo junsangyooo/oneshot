@@ -8,7 +8,8 @@ export type GameId =
   | "arithmetic"
   | "allout"
   | "dice"
-  | "roulette";
+  | "roulette"
+  | "rummikub";
 
 export type RoomPhase = "lobby" | "game" | "results";
 export type ConnectionStatus = "online" | "reconnecting" | "offline";

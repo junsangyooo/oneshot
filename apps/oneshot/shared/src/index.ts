@@ -11,6 +11,7 @@ export * from "./games/upstage";
 export * from "./games/allout";
 export * from "./games/dice";
 export * from "./games/roulette";
+export * from "./games/rummikub";
 
 export const NICKNAME_MIN = 1;
 export const NICKNAME_MAX = 16;

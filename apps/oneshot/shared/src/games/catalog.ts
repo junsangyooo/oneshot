@@ -78,6 +78,16 @@ export const gameCatalog: GameCatalogItem[] = [
     status: "available",
   },
   {
+    id: "rummikub",
+    title: "루미큐브",
+    minPlayers: 2,
+    maxPlayers: 8,
+    complexity: 3,
+    supportsJoinInProgress: false,
+    defaultOptions: {},
+    status: "available",
+  },
+  {
     id: "arithmetic",
     title: "사칙연산",
     minPlayers: 2,
