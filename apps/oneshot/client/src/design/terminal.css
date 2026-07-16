@@ -659,8 +659,16 @@ body {
 /* the 4-color disc / strip keep their --card-* tokens; soften the disc ring on cream */
 [data-theme="cozy"] .scr--allout .ao-card__quad { box-shadow: 0 0 0 2px rgb(0 0 0 / 0.08); }
 [data-theme="cozy"] .scr--allout .ao-card__multi { border-radius: 999px; }
-[data-theme="cozy"] .scr--allout .ao-colorchip { border: 0; border-radius: 999px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.06); }
 [data-theme="cozy"] .scr--allout .ao-autobanner { border-radius: 14px; border-style: solid; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
+/* ring: swap neon glows for soft warm shadows; the direction current is gentle, not neon */
+[data-theme="cozy"] .scr--allout .ao-flow__comet { stroke-width: 5; opacity: 0.55; filter: none; }
+[data-theme="cozy"] .scr--allout .ao-pile { border-radius: 14px; }
+[data-theme="cozy"] .scr--allout .ao-pile__atk { text-shadow: none; }
+[data-theme="cozy"] .scr--allout .ao-seat.is-turn .ao-seat__av { box-shadow: 0 4px 0 color-mix(in srgb, var(--cyan) 55%, transparent); }
+[data-theme="cozy"] .scr--allout .ao-seat.is-me .ao-seat__av { box-shadow: 0 4px 0 color-mix(in srgb, var(--gold) 55%, transparent); }
+[data-theme="cozy"] .scr--allout .ao-seat.is-me.is-turn .ao-seat__av { box-shadow: 0 4px 0 color-mix(in srgb, var(--cyan) 55%, transparent); }
+[data-theme="cozy"] .scr--allout .ao-chip { background: #fff; box-shadow: 0 2px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--allout .ao-ghost { border-radius: 8px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.06); }
 [data-theme="cozy"] .scr--allout .ao-wheel__seg { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.06); }
 [data-theme="cozy"] .scr--allout .ao-target { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--allout .ao-table__row { border: 0; background: var(--bg-1); border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.04); }

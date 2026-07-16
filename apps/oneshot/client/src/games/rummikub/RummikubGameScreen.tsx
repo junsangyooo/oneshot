@@ -139,14 +139,24 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   const meState = pub?.players.find((p) => p.playerId === currentPlayerId);
   const didInitial = meState?.hasDoneInitialMeld ?? false;
 
-  // Resync the working copy at every turn boundary (and on mount). During my own
-  // turn the turn number is stable, so local edits are never clobbered.
+  // Resync the working copy whenever the server's authoritative view for THIS
+  // player changes — deal, my commit's turn-advance, an opponent's commit, a
+  // draw, AND the private hand arriving a beat after the public state on game
+  // start (it lands via a separate game:privateState event). Keyed on a
+  // signature of my hand + the board + the turn so a late hand still populates.
+  // We never clobber in-progress staged plays on my own turn.
   const turnNumber = pub?.turnNumber ?? 0;
+  const serverSig =
+    `${turnNumber}|${pub?.phase}|${(me?.hand ?? []).map((t) => t.id).join(",")}` +
+    `|${(pub?.board ?? []).map((m) => m.tiles.map((t) => t.id).join("-")).join("_")}`;
   useEffect(() => {
-    setStage(stageFromServer(pub?.board ?? [], me?.hand ?? []));
+    setStage((prev) => {
+      const midEdit = playedTileIds(prev).length > 0 && pub?.currentTurnPlayerId === currentPlayerId;
+      return midEdit ? prev : stageFromServer(pub?.board ?? [], me?.hand ?? []);
+    });
     setSel([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [turnNumber, pub?.phase]);
+  }, [serverSig]);
 
   // Opponent commit glow.
   const eventSeq = pub?.lastEvent?.seq ?? 0;
@@ -161,18 +171,23 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   }, [eventSeq]);
 
   const timeLeft = useCountdown(isMyTurn ? pub?.turnDeadline : null);
-  // Fire a validated timeout when my deadline passes (server re-checks the clock).
+  // Fire a validated timeout when the deadline passes. ANY seated client arms it
+  // (not just the current player) so a backgrounded/closed active tab can't stall
+  // the game — the server re-checks the clock and dedupes by turnNumber, so
+  // simultaneous fires are harmless. Non-current tabs wait a beat longer to let
+  // the current player's own tab win the race in the common case.
+  const amSeatedNow = currentPlayerId != null && (pub?.players.some((p) => p.playerId === currentPlayerId) ?? false);
   useEffect(() => {
-    if (!pub || pub.phase !== "play" || pub.turnDeadline == null) return;
-    if (pub.currentTurnPlayerId !== currentPlayerId) return;
+    if (!pub || pub.phase !== "play" || pub.turnDeadline == null || !amSeatedNow) return;
     const ms = pub.turnDeadline - Date.now();
+    const grace = pub.currentTurnPlayerId === currentPlayerId ? 250 : 1500;
     const timer = setTimeout(
       () => sendAction(RUMMIKUB_ACTIONS.timeout, { turnNumber: pub.turnNumber }),
-      Math.max(0, ms) + 250,
+      Math.max(0, ms) + grace,
     );
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pub?.turnDeadline, pub?.currentTurnPlayerId, pub?.turnNumber]);
+  }, [pub?.turnDeadline, pub?.currentTurnPlayerId, pub?.turnNumber, amSeatedNow]);
 
   // ---- drag state ----
   const dragRef = useRef<{ ids: string[]; moved: boolean } | null>(null);

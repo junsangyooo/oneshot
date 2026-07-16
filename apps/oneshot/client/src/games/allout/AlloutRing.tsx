@@ -115,31 +115,35 @@ export const AlloutRing = ({
     return idx >= 0 ? layout.base.seats[idx]! : null;
   };
 
-  // --- card motion: play (seat -> pile) ---
+  // Baseline: adopt whatever seq the server already had AT MOUNT, so a reconnect
+  // mid-game doesn't replay an old play/draw. At round start these are null, so the
+  // first real event (null -> value) is correctly seen as new and animates.
   const playSeqRef = useRef<number | null>(null);
+  const drawSeqRef = useRef<number | null>(null);
+  useEffect(() => {
+    playSeqRef.current = lastPlay?.seq ?? null;
+    drawSeqRef.current = lastDraw?.seq ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- card motion: play (seat -> pile) ---
   useEffect(() => {
     if (!lastPlay || !layout) return;
     if (playSeqRef.current === lastPlay.seq) return;
-    const first = playSeqRef.current === null;
     playSeqRef.current = lastPlay.seq;
-    if (first) return; // don't replay history on mount/reconnect
     const from = seatOf(lastPlay.byPlayerId);
     const host = ghostRef.current;
     if (!from || !host) return;
     const to = { x: layout.base.cx, y: layout.base.cy };
-    const color = top?.color ?? "wild";
-    spawnCard(host, from, to, color, PLAY_DUR, 0, prefersReducedMotion());
+    spawnCard(host, from, to, top?.color ?? "wild", PLAY_DUR, 0, prefersReducedMotion());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastPlay?.seq, layout]);
 
   // --- card motion: draw/eat (pile -> seat), staggered, total-time constant ---
-  const drawSeqRef = useRef<number | null>(null);
   useEffect(() => {
     if (!lastDraw || !layout) return;
     if (drawSeqRef.current === lastDraw.seq) return;
-    const first = drawSeqRef.current === null;
     drawSeqRef.current = lastDraw.seq;
-    if (first) return;
     const to = seatOf(lastDraw.playerId);
     const host = ghostRef.current;
     if (!to || !host) return;
