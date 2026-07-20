@@ -98,6 +98,9 @@ body {
 .corner {
   position: fixed; width: 42px; height: 42px;
   border-color: var(--line-bright); z-index: 3; opacity: 0.85;
+  /* purely decorative — without this each bracket swallows clicks on whatever
+     sits in that screen corner (it ate the Rummikub draw button) */
+  pointer-events: none;
 }
 .corner--tl { top: var(--frame-pad); left: var(--frame-pad); border-top: 1px solid; border-left: 1px solid; }
 .corner--tr { top: var(--frame-pad); right: var(--frame-pad); border-top: 1px solid; border-right: 1px solid; }
@@ -763,3 +766,27 @@ body {
 [data-theme="cozy"] .scr--rummikub .rk-stepper__arrow { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--rummikub .rk-me__tag { border-radius: 12px; }
 [data-theme="cozy"] .scr--rummikub .rk-meld--new { border-radius: 16px; }
+/* cozy drag affordances: soft rings instead of the cyber HUD inset glow */
+[data-theme="cozy"] .scr--rummikub .rk-meld.is-dropover {
+  box-shadow: 0 0 0 3px var(--cyan), 0 6px 0 rgb(0 0 0 / 0.05);
+}
+[data-theme="cozy"] .scr--rummikub .rk-meld.is-invalid { box-shadow: 0 0 0 2px var(--warn), 0 3px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--rummikub .rk-coach { font-family: var(--font-ko, var(--font-mono)); }
+[data-theme="cozy"] .scr--rummikub .rk-ex__tiles .rk-tile { border-radius: 8px; }
+/* cozy: rounded, soft-shadowed versions of the new turn banner + deck button */
+[data-theme="cozy"] .scr--rummikub .rk-turn.is-mine {
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 0 rgb(0 0 0 / 0.05);
+}
+[data-theme="cozy"] .scr--rummikub .rk-turn__bar { height: 4px; border-radius: 3px; }
+[data-theme="cozy"] .scr--rummikub .rk-draw {
+  border-radius: 16px;
+  box-shadow: 0 4px 0 rgb(0 0 0 / 0.06);
+}
+[data-theme="cozy"] .scr--rummikub .rk-draw:active:not(:disabled) { box-shadow: 0 1px 0 rgb(0 0 0 / 0.06); }
+/* cream-on-cream needs a firmer rim than the dark theme does */
+[data-theme="cozy"] .scr--rummikub .rk-deck i {
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.22);
+}
+[data-theme="cozy"] .scr--rummikub .rk-draw { background: var(--bg-0); }
+[data-theme="cozy"] .scr--rummikub .rk-fieldtools .btn { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.06); }

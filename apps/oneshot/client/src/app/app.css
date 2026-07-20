@@ -1016,6 +1016,7 @@ button { font: inherit; }
   padding-bottom: 4px;
 }
 .scr--rummikub .rail-seat { flex: 0 0 auto; min-width: 118px; }
+/* turn banner: whose face, whose name, and a clock that drains for everyone */
 .scr--rummikub .rk-turn {
   flex: 0 0 auto;
   display: flex;
@@ -1026,12 +1027,75 @@ button { font: inherit; }
   border-radius: 4px;
   background: var(--bg-1);
   white-space: nowrap;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.scr--rummikub .rk-turn__label { font-family: var(--font-display); letter-spacing: var(--track-mid); color: var(--ink); }
-.scr--rummikub.is-myturn .rk-turn__label { color: var(--accent); animation: rkTurnPulse 1.3s ease-in-out infinite; }
-.scr--rummikub .rk-turn__timer { font-family: var(--font-mono); color: var(--cyan); font-weight: 700; }
+.scr--rummikub .rk-turn .glyph { width: 34px; height: 34px; flex: 0 0 auto; }
+.scr--rummikub .rk-turn__who { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.scr--rummikub .rk-turn__name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: var(--track-mid);
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scr--rummikub .rk-turn__sub { font-family: var(--font-mono); font-size: 10px; color: var(--ink-dim); }
+/* my turn: the banner itself lights up, not just a word */
+.scr--rummikub .rk-turn.is-mine {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset, 0 0 18px rgb(0 0 0 / 0.35);
+}
+.scr--rummikub .rk-turn.is-mine .rk-turn__name { color: var(--accent); animation: rkTurnPulse 1.3s ease-in-out infinite; }
+
+.scr--rummikub .rk-turn__clock { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.scr--rummikub .rk-turn__timer {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.scr--rummikub .rk-turn__bar {
+  display: block;
+  width: 46px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+  position: relative;
+  overflow: hidden;
+}
+.scr--rummikub .rk-turn__bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--rk-left, 100%);
+  background: var(--cyan);
+  transition: width 0.5s linear;
+}
+.scr--rummikub .rk-turn.is-urgent .rk-turn__timer { color: var(--warn); animation: rkTurnPulse 0.8s ease-in-out infinite; }
+.scr--rummikub .rk-turn.is-urgent .rk-turn__bar::after { background: var(--warn); }
 .scr--rummikub .rk-turn__pool { font-family: var(--font-mono); color: var(--ink-dim); font-size: 12px; }
 .scr--rummikub .rk-toolbar { flex: 0 0 auto; display: flex; gap: 8px; }
+
+/* field = board + the tools that float over its lower edge */
+.scr--rummikub .rk-field { position: relative; min-height: 0; display: grid; }
+.scr--rummikub .rk-fieldtools {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+}
+.scr--rummikub .rk-fieldtools .btn {
+  min-height: 44px;
+  min-width: 44px;
+  backdrop-filter: blur(3px);
+  background: var(--bg-1);
+}
+.scr--rummikub .rk-fieldtools__reset span { font-size: 20px; line-height: 1; }
+.scr--rummikub .rk-fieldtools .btn:disabled { opacity: 0.3; }
 
 /* board */
 .scr--rummikub .rk-board {
@@ -1041,6 +1105,8 @@ button { font: inherit; }
   border-radius: 6px;
   background: var(--bg-0);
   padding: 12px;
+  /* keep the last row of sets clear of the floating field tools */
+  padding-bottom: 64px;
 }
 .scr--rummikub .rk-board__inner {
   display: flex;
@@ -1062,16 +1128,38 @@ button { font: inherit; }
 }
 .scr--rummikub .rk-meld.is-invalid { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn) inset; }
 .scr--rummikub .rk-meld.is-glow { animation: rkGlow 0.9s ease-out; }
+/* drag affordances: where the tiles will land, and where they can't */
+.scr--rummikub .rk-meld.is-droppable { border-style: dashed; border-color: var(--cyan); }
+.scr--rummikub .rk-meld.is-dropover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px var(--cyan) inset, 0 0 12px rgb(0 0 0 / 0.35);
+  transform: translateY(-2px);
+}
+.scr--rummikub .rk-meld.is-dropdeny { border-color: var(--warn); opacity: 0.55; }
+.scr--rummikub .rk-meld.is-deny { animation: rkDeny 0.4s ease-out; }
 .scr--rummikub .rk-meld--new {
+  font: inherit;
+  cursor: pointer;
+  border-width: 1px;
   border-style: dashed;
   border-color: var(--line);
   background: transparent;
   min-width: 52px;
   min-height: calc(var(--rk-tile-w) * var(--rk-zoom) * 1.42 + 12px);
   justify-content: center;
+  flex-direction: column;
+  gap: 2px;
   color: var(--ink-dim);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
-.scr--rummikub .rk-meld--new__hint { font-size: 22px; opacity: 0.5; }
+.scr--rummikub .rk-meld--new__hint { font-size: 22px; opacity: 0.5; line-height: 1; }
+.scr--rummikub .rk-meld--new__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--track-mid);
+  opacity: 0.7;
+  white-space: nowrap;
+}
 
 /* tile */
 .scr--rummikub .rk-tilebtn { padding: 0; border: 0; background: none; cursor: pointer; touch-action: none; }
@@ -1116,12 +1204,39 @@ button { font: inherit; }
   color: #7b2fb0;
   margin-top: -6%;
 }
+.scr--rummikub .rk-tile__jokerval {
+  position: absolute;
+  top: 4%;
+  font-family: var(--font-display, sans-serif);
+  font-weight: 800;
+  font-size: calc(var(--rk-tile-w) * var(--rk-zoom) * 0.3);
+  line-height: 1;
+  color: var(--tile-black);
+  opacity: 0.85;
+}
 .scr--rummikub .rk-tile.is-sel { transform: translateY(-10px); box-shadow: 0 6px 8px rgb(0 0 0 / 0.35), 0 0 0 2px var(--accent); }
+/* the slot a dragged tile came from stays visible so the move reads as a move */
+.scr--rummikub .rk-tile.is-dragging { opacity: 0.25; filter: grayscale(0.5); transform: none; box-shadow: none; }
+
+/* coach line — says why End turn is on or off instead of silently greying it */
+.scr--rummikub .rk-coach {
+  margin: 0;
+  min-height: 1.2em;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.scr--rummikub .rk-coach.is-warn { color: var(--warn); }
+
+/* rules modal tile examples */
+.scr--rummikub .rk-ex { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 10px; }
+.scr--rummikub .rk-ex__label { font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); }
+.scr--rummikub .rk-ex__tiles { display: inline-flex; gap: 3px; --rk-tile-w: 30px; --rk-zoom: 1; }
 
 /* my area */
 .scr--rummikub .rk-me {
   display: grid;
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   gap: 8px;
   min-height: 0;
 }
@@ -1146,12 +1261,61 @@ button { font: inherit; }
   min-height: calc(var(--rk-tile-w) * 1.42 + 24px);
   align-items: flex-end;
 }
-.scr--rummikub .rk-rack .rk-tilebtn { flex: 0 0 auto; }
+/* pan-x lets a horizontal swipe scroll the (often overflowing) rack while an
+   upward drag still lifts a tile out — `touch-action: none` made the rack
+   unscrollable on touch because every tile swallowed the gesture. */
+.scr--rummikub .rk-rack .rk-tilebtn { flex: 0 0 auto; touch-action: pan-x; }
 .scr--rummikub .rk-rack__empty { margin: auto; color: var(--ink-dim); }
 
-.scr--rummikub .rk-actions { display: flex; gap: 8px; align-items: stretch; }
+.scr--rummikub .rk-actions { display: flex; gap: 10px; align-items: stretch; }
 .scr--rummikub .rk-actions__end { flex: 1 1 auto; }
-.scr--rummikub .rk-actions .btn { min-height: 44px; }
+.scr--rummikub .rk-actions .btn { min-height: 52px; }
+
+/* draw: a stack of cards with a + under it. No label to parse — you are taking
+   one off the pile, and (per the rules) that ends your turn. */
+.scr--rummikub .rk-draw {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 62px;
+  min-height: 52px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-bright);
+  border-radius: 6px;
+  background: var(--bg-1);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.scr--rummikub .rk-draw:hover:not(:disabled) { border-color: var(--cyan); transform: translateY(-2px); }
+.scr--rummikub .rk-draw:active:not(:disabled) { transform: translateY(0); }
+.scr--rummikub .rk-draw:disabled { opacity: 0.35; cursor: default; }
+/* three overlapping tile backs */
+.scr--rummikub .rk-deck { position: relative; display: block; width: 30px; height: 22px; }
+.scr--rummikub .rk-deck i {
+  position: absolute;
+  top: 0;
+  width: 16px;
+  height: 22px;
+  border-radius: 3px;
+  border: 1px solid var(--tile-edge);
+  background: linear-gradient(160deg, var(--tile-face), var(--tile-face-2));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+/* alternate faces + a rim so the stack reads as three cards on any background */
+.scr--rummikub .rk-deck i:nth-child(1) { left: 0; transform: rotate(-9deg); background: var(--tile-face-2); }
+.scr--rummikub .rk-deck i:nth-child(2) { left: 7px; }
+.scr--rummikub .rk-deck i:nth-child(3) { left: 14px; transform: rotate(9deg); background: var(--tile-face-2); }
+.scr--rummikub .rk-draw__plus {
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--cyan);
+}
+.scr--rummikub .rk-draw:disabled .rk-draw__plus { color: var(--ink-dim); }
 
 /* drag ghost */
 .scr--rummikub .rk-ghost {
@@ -1164,6 +1328,12 @@ button { font: inherit; }
   opacity: 0.92;
   filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.4));
 }
+/* cancelled / illegal drop: the stack flies back to where it was picked up */
+.scr--rummikub .rk-ghost.is-snap {
+  transition: left 0.2s cubic-bezier(0.2, 0.7, 0.3, 1), top 0.2s cubic-bezier(0.2, 0.7, 0.3, 1), opacity 0.2s ease;
+  opacity: 0;
+}
+.scr--rummikub .rk-ghost.is-deny { filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.4)) saturate(0.4); opacity: 0.6; }
 
 /* setup */
 .scr--rummikub-setup { grid-template-rows: auto 1fr; }
@@ -1200,6 +1370,11 @@ button { font: inherit; }
 @keyframes rkGlow { 0% { box-shadow: 0 0 0 2px var(--gold) inset, 0 0 14px var(--gold); } 100% { box-shadow: none; } }
 @keyframes rkTurnPulse { 0%, 100% { text-shadow: none; } 50% { text-shadow: 0 0 10px var(--accent); } }
 @keyframes rkRotateHint { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(90deg); } }
+@keyframes rkDeny {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
 
 @media (max-height: 480px) {
   .scr--rummikub { --rk-tile-w: 34px; }
@@ -1207,4 +1382,12 @@ button { font: inherit; }
 @media (max-width: 640px) {
   .scr--rummikub .rk-topbar { flex-wrap: wrap; }
   .scr--rummikub .rk-turn { order: 3; width: 100%; justify-content: center; }
+  .scr--rummikub .rk-coach { font-size: 11px; }
+  /* the deck stays a fixed square; End turn takes the rest of the row */
+  .scr--rummikub .rk-draw { min-width: 56px; padding: 6px 8px; }
+  .scr--rummikub .rk-turn { gap: 8px; padding: 6px 10px; }
+  .scr--rummikub .rk-turn__pool { display: none; }
+  .scr--rummikub .rk-turn .glyph { width: 28px; height: 28px; }
+  .scr--rummikub .rk-turn__name { font-size: 15px; max-width: 32vw; }
+  .scr--rummikub .rk-board { padding-bottom: 60px; }
 }

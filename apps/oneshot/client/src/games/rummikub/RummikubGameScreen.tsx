@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { PartyRoomState, RummikubPrivateState, RummikubPublicState, Tile } from "@oneshot/shared";
+import type { PartyRoomState, RummikubPrivateState, RummikubPublicState, Tile, TileColor } from "@oneshot/shared";
 import {
   RUMMIKUB_ACTIONS,
   RUMMIKUB_DEFAULT_TURN_SECONDS,
@@ -13,11 +13,13 @@ import { useCountdown } from "../../ui/useCountdown";
 import {
   checkCommit,
   invalidMeldIds,
+  jokerInfo,
   place,
   playedTileIds,
   stageFromServer,
   toCommitPayload,
   type DropTarget,
+  type JokerInfo,
   type Stage,
 } from "./staging";
 import { autoExtend, sort777, sort789 } from "./tileSort";
@@ -32,11 +34,14 @@ const turnLabel = (secs: number, t: ReturnType<typeof useT>): string =>
 
 // ---------------------------- tile face ----------------------------
 
-const TileFace = ({ tile, cls }: { tile: Tile; cls?: string }) => {
+const TileFace = ({ tile, cls, joker }: { tile: Tile; cls?: string; joker?: JokerInfo }) => {
   if (tile.kind === "joker") {
     return (
       <span className={`rk-tile rk-tile--joker ${cls ?? ""}`}>
         <span className="rk-tile__joker">☺</span>
+        {joker ? (
+          <b className={`rk-tile__jokerval ${joker.color ? `rk-tile--${joker.color}` : ""}`}>{joker.num}</b>
+        ) : null}
         <i className="rk-tile__hole" />
       </span>
     );
@@ -51,17 +56,23 @@ const TileFace = ({ tile, cls }: { tile: Tile; cls?: string }) => {
 
 // ---------------------------- orientation ----------------------------
 
-const useIsPortrait = (): boolean => {
-  const [portrait, setPortrait] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(orientation: portrait)").matches,
+// The rotate prompt is for phones held upright — never for a desktop window that
+// simply happens to be taller than it is wide (there is nothing to rotate there,
+// and the old orientation-only check walled those users out of the game).
+// Requires a coarse pointer AND portrait AND a phone-sized width.
+const ROTATE_MAX_WIDTH = 720;
+const useNeedsRotate = (): boolean => {
+  const query = `(orientation: portrait) and (pointer: coarse) and (max-width: ${ROTATE_MAX_WIDTH}px)`;
+  const [needs, setNeeds] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(query).matches,
   );
   useEffect(() => {
-    const mq = window.matchMedia("(orientation: portrait)");
-    const handler = () => setPortrait(mq.matches);
+    const mq = window.matchMedia(query);
+    const handler = () => setNeeds(mq.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, []);
-  return portrait;
+  }, [query]);
+  return needs;
 };
 
 // ---------------------------- setup ----------------------------
@@ -123,7 +134,8 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   const me = privateState as RummikubPrivateState | null;
   const myPlayer = currentPlayerId ? roomState.players[currentPlayerId] : null;
   const isHost = myPlayer?.isHost ?? false;
-  const portrait = useIsPortrait();
+  const needsRotate = useNeedsRotate();
+  const [rotateDismissed, setRotateDismissed] = useState(false);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -131,6 +143,15 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   const [sel, setSel] = useState<string[]>([]);
   const [stage, setStage] = useState<Stage>(() => stageFromServer(pub?.board ?? [], me?.hand ?? []));
   const [glowMelds, setGlowMelds] = useState<string[]>([]);
+  // Tiles currently being dragged — kept in state (not just a ref) so their
+  // origin slot can render a translucent placeholder while they travel.
+  const [dragIds, setDragIds] = useState<string[]>([]);
+  // The drop zone under the pointer, and whether dropping there is legal.
+  const [hover, setHover] = useState<{ key: string; ok: boolean } | null>(null);
+  // Transient "that move isn't allowed" flash on a meld.
+  const [denyMeld, setDenyMeld] = useState<string | null>(null);
+  // Why the player can't touch the board yet (shown once they try).
+  const [lockHint, setLockHint] = useState(false);
 
   const sendAction = (type: string, payload?: unknown) =>
     send({ type: "game:action", action: { type, payload, clientActionId: crypto.randomUUID() } });
@@ -155,6 +176,9 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
       return midEdit ? prev : stageFromServer(pub?.board ?? [], me?.hand ?? []);
     });
     setSel([]);
+    setDragIds([]);
+    setHover(null);
+    setLockHint(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverSig]);
 
@@ -170,7 +194,9 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventSeq]);
 
-  const timeLeft = useCountdown(isMyTurn ? pub?.turnDeadline : null);
+  // Ticks for every seat, not just the active one — spectators need to feel the
+  // clock too, and it makes a stalled turn obvious.
+  const timeLeft = useCountdown(pub?.turnDeadline);
   // Fire a validated timeout when the deadline passes. ANY seated client arms it
   // (not just the current player) so a backgrounded/closed active tab can't stall
   // the game — the server re-checks the clock and dedupes by turnNumber, so
@@ -190,11 +216,42 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   }, [pub?.turnDeadline, pub?.currentTurnPlayerId, pub?.turnNumber, amSeatedNow]);
 
   // ---- drag state ----
-  const dragRef = useRef<{ ids: string[]; moved: boolean } | null>(null);
-  const pressRef = useRef<{ id: string; x: number; y: number; timer: number | null; from: "hand" | "board" } | null>(
-    null,
-  );
-  const [ghost, setGhost] = useState<{ x: number; y: number; tiles: Tile[] } | null>(null);
+  // `origin` is where the drag started, so a cancelled or illegal drop can send
+  // the tiles visibly back to the slot they came from instead of just vanishing.
+  const dragRef = useRef<{ ids: string[]; origin: { x: number; y: number } } | null>(null);
+  const pressRef = useRef<{
+    id: string;
+    x: number;
+    y: number;
+    timer: number | null;
+    from: "hand" | "board";
+    autoSelected: boolean; // the long-press already picked a set — don't toggle on release
+  } | null>(null);
+  const [ghost, setGhost] = useState<{ x: number; y: number; tiles: Tile[]; snapping?: boolean } | null>(null);
+
+  // Escape (or the browser stealing the pointer, e.g. the rack scrolling under a
+  // swipe) cancels the drag and flies the tiles home. Refs, so no stale closure.
+  useEffect(() => {
+    const cancel = () => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      dragRef.current = null;
+      pressRef.current = null;
+      setDragIds([]);
+      setHover(null);
+      setGhost((g) => (g ? { ...g, x: drag.origin.x, y: drag.origin.y, snapping: true } : null));
+      window.setTimeout(() => setGhost(null), 220);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancel();
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointercancel", cancel);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointercancel", cancel);
+    };
+  }, []);
 
   if (!pub) {
     return (
@@ -257,28 +314,82 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   const commit = checkCommit(stage, didInitial);
   const canManip = didInitial;
 
-  const applyPlace = (ids: string[], target: DropTarget) => {
+  const canDrop = (ids: string[], target: DropTarget): boolean =>
+    place(stage, ids, target, canManip) !== null;
+
+  const applyPlace = (ids: string[], target: DropTarget): boolean => {
     const next = place(stage, ids, target, canManip);
-    if (next) setStage(next);
+    if (!next) return false;
+    setStage(next);
     setSel([]);
+    return true;
+  };
+
+  const flashDeny = (meldId?: string) => {
+    setDenyMeld(meldId ?? null);
+    window.setTimeout(() => setDenyMeld(null), 400);
+  };
+
+  // Trying to touch the board before your initial meld used to be a silent
+  // no-op; surface the reason instead.
+  const refuseBoard = (): boolean => {
+    if (canManip) return false;
+    setLockHint(true);
+    window.setTimeout(() => setLockHint(false), 2200);
+    return true;
   };
 
   const toggleSel = (id: string, from: "hand" | "board") => {
-    if (from === "board" && !canManip) return; // can't touch board before initial meld
+    if (from === "board" && refuseBoard()) return;
     setSel((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  };
+
+  // Single refresh: throw away everything staged this turn and start over.
+  const resetAll = () => {
+    setStage(stageFromServer(pub.board, me?.hand ?? []));
+    setSel([]);
+  };
+
+  // Fly the ghost back to where the drag started, then clear it.
+  const snapBack = (origin: { x: number; y: number }) => {
+    setGhost((g) => (g ? { ...g, x: origin.x, y: origin.y, snapping: true } : null));
+    window.setTimeout(() => setGhost(null), 220);
+  };
+
+  const endDrag = () => {
+    dragRef.current = null;
+    setDragIds([]);
+    setHover(null);
+  };
+
+  // Resolve the drop zone under a point into a target + a stable hover key.
+  const zoneAt = (x: number, y: number): { target: DropTarget; key: string } | null => {
+    const el = document.elementFromPoint(x, y);
+    const zone = el?.closest("[data-drop]") as HTMLElement | null;
+    if (!zone) return null;
+    const kind = zone.dataset.drop;
+    if (kind === "new") return { target: { zone: "new" }, key: "new" };
+    if (kind === "hand") return { target: { zone: "hand" }, key: "hand" };
+    if (kind === "meld") {
+      const meldId = zone.dataset.meldId!;
+      return { target: { zone: "meld", meldId, index: computeInsertIndex(zone, x) }, key: `meld:${meldId}` };
+    }
+    return null;
   };
 
   // ---- pointer handlers (tap-select + long-press + drag) ----
   const onTilePointerDown = (e: React.PointerEvent, id: string, from: "hand" | "board") => {
     if (!isMyTurn) return;
-    if (from === "board" && !canManip) return;
+    if (from === "board" && refuseBoard()) return;
     const timer = window.setTimeout(() => {
       if (from === "hand") {
         setSel(autoExtend(stage.hand, id));
-        pressRef.current = null;
+        // Mark it instead of dropping the press: pointerup must know the
+        // long-press already ran, or it would toggle this very tile back off.
+        if (pressRef.current) pressRef.current.autoSelected = true;
       }
     }, 430);
-    pressRef.current = { id, x: e.clientX, y: e.clientY, timer, from };
+    pressRef.current = { id, x: e.clientX, y: e.clientY, timer, from, autoSelected: false };
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
@@ -290,11 +401,15 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     if (!dragRef.current && Math.hypot(dx, dy) > 8) {
       if (press.timer) window.clearTimeout(press.timer);
       const ids = sel.includes(press.id) && sel.length > 0 ? sel : [press.id];
-      dragRef.current = { ids, moved: true };
+      dragRef.current = { ids, origin: { x: press.x, y: press.y } };
+      setDragIds(ids);
     }
-    if (dragRef.current) {
-      const tiles = dragRef.current.ids.map(tileById).filter(Boolean) as Tile[];
+    const drag = dragRef.current;
+    if (drag) {
+      const tiles = drag.ids.map(tileById).filter(Boolean) as Tile[];
       setGhost({ x: e.clientX, y: e.clientY, tiles });
+      const zone = zoneAt(e.clientX, e.clientY);
+      setHover(zone ? { key: zone.key, ok: canDrop(drag.ids, zone.target) } : null);
     }
   };
 
@@ -303,25 +418,38 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     if (press?.timer) window.clearTimeout(press.timer);
     pressRef.current = null;
     const drag = dragRef.current;
-    dragRef.current = null;
-    setGhost(null);
+    endDrag();
+
     if (!drag) {
-      // tap
+      setGhost(null);
+      // Long-press is a GRAB: it lights up the whole set so you can drag it to
+      // the field. Letting go without dragging drops the set entirely — you end
+      // up holding nothing, not a stray tile or a half-selection.
+      if (press?.autoSelected) {
+        setSel([]);
+        return;
+      }
+      // Tap-to-place: with tiles picked, tapping another set drops them there,
+      // so a touch-only player never has to drag.
+      if (from === "board" && sel.length > 0 && !sel.includes(id)) {
+        if (refuseBoard()) return;
+        const zone = zoneAt(e.clientX, e.clientY);
+        if (zone && applyPlace(sel, zone.target)) return;
+        flashDeny((e.target as HTMLElement).closest("[data-meld-id]")?.getAttribute("data-meld-id") ?? undefined);
+        return;
+      }
       toggleSel(id, from);
       return;
     }
-    // drop: hit-test the element under the pointer
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const zone = el?.closest("[data-drop]") as HTMLElement | null;
-    if (!zone) return;
-    const kind = zone.dataset.drop;
-    if (kind === "new") applyPlace(drag.ids, { zone: "new" });
-    else if (kind === "hand") applyPlace(drag.ids, { zone: "hand" });
-    else if (kind === "meld") {
-      const meldId = zone.dataset.meldId!;
-      const index = computeInsertIndex(zone, e.clientX);
-      applyPlace(drag.ids, { zone: "meld", meldId, index });
+
+    // Drop: anything that isn't a legal landing sends the tiles home.
+    const zone = zoneAt(e.clientX, e.clientY);
+    if (!zone || !applyPlace(drag.ids, zone.target)) {
+      if (zone) flashDeny(zone.key.startsWith("meld:") ? zone.key.slice(5) : undefined);
+      snapBack(drag.origin);
+      return;
     }
+    setGhost(null);
   };
 
   // ---- rail ----
@@ -338,6 +466,10 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   });
 
   const currentName = pub.currentTurnPlayerId ? nameOf(pub.currentTurnPlayerId) : "—";
+  const currentPlayer = pub.currentTurnPlayerId ? roomState.players[pub.currentTurnPlayerId] : undefined;
+  // Fraction of the turn clock still left, for the draining bar.
+  const turnFraction = pub.turnSeconds > 0 ? Math.min(1, timeLeft / pub.turnSeconds) : 1;
+  const timePressure = pub.turnDeadline != null && timeLeft <= 10;
   const boardTileCount = stage.board.reduce((s, m) => s + m.tiles.length, 0);
   const zoom = boardTileCount > 66 ? 0.6 : boardTileCount > 46 ? 0.72 : boardTileCount > 28 ? 0.85 : 1;
   const currentDisconnected =
@@ -349,9 +481,28 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
 
       <header className="topbar rk-topbar">
         <GameRail seats={railSeats} players={roomState.players} nameOf={nameOf} />
-        <div className="rk-turn">
-          <span className="rk-turn__label">{isMyTurn ? t("rummikub.yourTurn") : fill(t("rummikub.turnOf"), { name: currentName })}</span>
-          {pub.turnDeadline != null && isMyTurn ? <span className="rk-turn__timer">{timeLeft}s</span> : null}
+        {/* whose turn it is, at a glance: their face, their name, and the clock
+            ticking down for EVERYONE (not just the active player) */}
+        <div className={`rk-turn ${isMyTurn ? "is-mine" : ""} ${timePressure ? "is-urgent" : ""}`} aria-live="polite">
+          <AvatarImg
+            avatarKey={currentPlayer?.avatarKey}
+            themeId={currentPlayer?.themeId}
+          />
+          <span className="rk-turn__who">
+            <span className="rk-turn__name">{isMyTurn ? t("rummikub.turnMine") : currentName}</span>
+            <span className="rk-turn__sub">
+              {isMyTurn ? t("rummikub.turnMineSub") : t("rummikub.turnTheirs")}
+            </span>
+          </span>
+          {pub.turnDeadline != null ? (
+            <span className="rk-turn__clock">
+              <b className="rk-turn__timer">{timeLeft}</b>
+              <i
+                className="rk-turn__bar"
+                style={{ ["--rk-left" as string]: `${turnFraction * 100}%` }}
+              />
+            </span>
+          ) : null}
           <span className="rk-turn__pool">{fill(t("rummikub.poolLeft"), { n: pub.poolCount })}</span>
         </div>
         <div className="rk-toolbar">
@@ -369,42 +520,91 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
         </div>
       </header>
 
-      {/* board */}
-      <section className="rk-board" style={{ ["--rk-zoom" as string]: String(zoom) }}>
+      {/* board (the "field"), with the staging tools floating over its lower edge */}
+      <section className="rk-field">
+      <div className="rk-board" style={{ ["--rk-zoom" as string]: String(zoom) }}>
         <div className="rk-board__inner">
-          {stage.board.map((m) => (
-            <div
-              key={m.id}
-              data-drop="meld"
-              data-meld-id={m.id}
+          {stage.board.map((m) => {
+            const jokers = jokerInfo(m.tiles);
+            return (
+              <div
+                key={m.id}
+                data-drop="meld"
+                data-meld-id={m.id}
+                className={[
+                  "rk-meld",
+                  invalidIds.has(m.id) ? "is-invalid" : "",
+                  glowMelds.includes(m.id) ? "is-glow" : "",
+                  hover?.key === `meld:${m.id}` ? (hover.ok ? "is-dropover" : "is-dropdeny") : "",
+                  denyMeld === m.id ? "is-deny" : "",
+                  // With tiles picked up, every set is a tap target.
+                  sel.length > 0 && dragIds.length === 0 && canManip ? "is-droppable" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                {m.tiles.map((tile) => (
+                  <button
+                    key={tile.id}
+                    type="button"
+                    className="rk-tilebtn"
+                    onPointerDown={(e) => onTilePointerDown(e, tile.id, "board")}
+                    onPointerMove={onTilePointerMove}
+                    onPointerUp={(e) => onTilePointerUp(e, tile.id, "board")}
+                  >
+                    <TileFace
+                      tile={tile}
+                      joker={jokers[tile.id]}
+                      cls={[sel.includes(tile.id) ? "is-sel" : "", dragIds.includes(tile.id) ? "is-dragging" : ""]
+                        .filter(Boolean)
+                        .join(" ")}
+                    />
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+          {isMyTurn ? (
+            // Drop target for dragging, and also tappable: with tiles picked it
+            // lays them down as a new set, so a touch-only player is never stuck.
+            <button
+              type="button"
+              data-drop="new"
+              aria-label={t("rummikub.dropHere")}
               className={[
-                "rk-meld",
-                invalidIds.has(m.id) ? "is-invalid" : "",
-                glowMelds.includes(m.id) ? "is-glow" : "",
+                "rk-meld rk-meld--new",
+                hover?.key === "new" ? (hover.ok ? "is-dropover" : "is-dropdeny") : "",
+                sel.length > 0 ? "is-droppable" : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
+              onClick={() => {
+                if (sel.length > 0) applyPlace(sel, { zone: "new" });
+              }}
             >
-              {m.tiles.map((tile) => (
-                <button
-                  key={tile.id}
-                  type="button"
-                  className="rk-tilebtn"
-                  onPointerDown={(e) => onTilePointerDown(e, tile.id, "board")}
-                  onPointerMove={onTilePointerMove}
-                  onPointerUp={(e) => onTilePointerUp(e, tile.id, "board")}
-                >
-                  <TileFace tile={tile} cls={sel.includes(tile.id) ? "is-sel" : ""} />
-                </button>
-              ))}
-            </div>
-          ))}
-          {isMyTurn ? (
-            <div data-drop="new" className="rk-meld rk-meld--new">
               <span className="rk-meld--new__hint">＋</span>
+              <span className="rk-meld--new__label">{t("rummikub.dropHere")}</span>
+            </button>
+          ) : null}
+          {stage.board.length === 0 ? (
+            <div className="rk-board__empty">
+              {isMyTurn ? t("rummikub.emptyBoardMine") : t("rummikub.emptyBoard")}
             </div>
           ) : null}
-          {stage.board.length === 0 && !isMyTurn ? <div className="rk-board__empty">{t("rummikub.emptyBoard")}</div> : null}
+        </div>
+      </div>
+
+        <div className="rk-fieldtools">
+          <button
+            type="button"
+            className="btn btn--sm rk-fieldtools__reset"
+            aria-label={t("rummikub.reset")}
+            title={t("rummikub.reset")}
+            disabled={!isMyTurn || played.length === 0}
+            onClick={resetAll}
+          >
+            <span aria-hidden>↺</span>
+          </button>
         </div>
       </section>
 
@@ -412,28 +612,37 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
       <section className="rk-me">
         <div className="rk-me__bar">
           <span className="rk-me__who">
-            <span className="rk-me__tag">{t("rummikub.you")}</span>
             {didInitial ? null : <span className="rk-me__need">{t("rummikub.needInitial")}</span>}
           </span>
           <div className="rk-sorts">
             <button
               type="button"
+              aria-pressed={sortMode === "777"}
               className={`btn btn--sm ${sortMode === "777" ? "btn--primary" : ""}`}
-              onClick={() => setSortMode("777")}
+              onClick={() => setSortMode((m) => (m === "777" ? "none" : "777"))}
             >
               <span>777</span>
             </button>
             <button
               type="button"
+              aria-pressed={sortMode === "789"}
               className={`btn btn--sm ${sortMode === "789" ? "btn--primary" : ""}`}
-              onClick={() => setSortMode("789")}
+              onClick={() => setSortMode((m) => (m === "789" ? "none" : "789"))}
             >
               <span>789</span>
             </button>
           </div>
         </div>
 
-        <div data-drop="hand" className="rk-rack">
+        <div
+          data-drop="hand"
+          className={[
+            "rk-rack",
+            hover?.key === "hand" ? (hover.ok ? "is-dropover" : "is-dropdeny") : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {sortedHand.map((tile) => (
             <button
               key={tile.id}
@@ -443,40 +652,58 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
               onPointerMove={onTilePointerMove}
               onPointerUp={(e) => onTilePointerUp(e, tile.id, "hand")}
             >
-              <TileFace tile={tile} cls={sel.includes(tile.id) ? "is-sel" : ""} />
+              <TileFace
+                tile={tile}
+                cls={[sel.includes(tile.id) ? "is-sel" : "", dragIds.includes(tile.id) ? "is-dragging" : ""]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
             </button>
           ))}
           {sortedHand.length === 0 ? <span className="rk-rack__empty">—</span> : null}
         </div>
 
+        {/* why you can (or can't) end the turn — the old UI just greyed the
+            button out, which reads as "broken" to anyone new */}
+        <p className={`rk-coach ${lockHint ? "is-warn" : ""}`} role="status">
+          {lockHint
+            ? t("rummikub.lockedBoard")
+            : !isMyTurn
+              ? t("rummikub.waitTurn")
+              : commit.ok
+                ? t("rummikub.readyEnd")
+                : commit.reason === "invalidMeld"
+                  ? t("rummikub.whyInvalid")
+                  : commit.reason === "initialLow"
+                    ? fill(t("rummikub.whyInitialLow"), { n: commit.points ?? 0 })
+                    : t("rummikub.whyEmpty")}
+        </p>
+
         {/* action bar */}
         <div className="rk-actions">
+          {/* draw = take one from the deck; drawn as a card stack with a +, so it
+              reads as an action on the pile rather than a word to parse */}
           <button
             type="button"
-            className="btn btn--sm"
-            disabled={!isMyTurn || sel.length === 0}
-            onClick={() => applyPlace(sel, { zone: "new" })}
-          >
-            <span>{t("rummikub.placeNew")}</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn--sm"
-            disabled={!isMyTurn || played.length === 0}
+            className="rk-draw"
+            aria-label={`${t("rummikub.draw")} — ${t("rummikub.drawSub")}`}
+            title={t("rummikub.drawSub")}
+            disabled={!isMyTurn}
             onClick={() => {
-              setStage(stageFromServer(pub.board, me?.hand ?? []));
-              setSel([]);
+              // Drawing means "I'm playing nothing this turn": throw away whatever
+              // was staged, take one tile, turn over.
+              resetAll();
+              sendAction(RUMMIKUB_ACTIONS.draw);
             }}
           >
-            <span>{t("rummikub.reset")}</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn--sm"
-            disabled={!isMyTurn || played.length > 0}
-            onClick={() => sendAction(RUMMIKUB_ACTIONS.draw)}
-          >
-            <span>{t("rummikub.draw")}</span>
+            <span className="rk-deck" aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="rk-draw__plus" aria-hidden>
+              ＋
+            </span>
           </button>
           <button
             type="button"
@@ -495,17 +722,23 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
       </section>
 
       {ghost ? (
-        <div className="rk-ghost" style={{ left: ghost.x, top: ghost.y }}>
+        <div
+          className={`rk-ghost ${ghost.snapping ? "is-snap" : ""} ${hover && !hover.ok ? "is-deny" : ""}`}
+          style={{ left: ghost.x, top: ghost.y }}
+        >
           {ghost.tiles.slice(0, 6).map((tile, i) => (
             <TileFace key={tile.id + i} tile={tile} />
           ))}
         </div>
       ) : null}
 
-      {portrait ? (
+      {needsRotate && !rotateDismissed ? (
         <div className="rk-rotate" role="alert">
           <span className="rk-rotate__icon">⟳</span>
           <p>{t("rummikub.rotate")}</p>
+          <button type="button" className="btn btn--sm" onClick={() => setRotateDismissed(true)}>
+            <span>{t("rummikub.rotateContinue")}</span>
+          </button>
         </div>
       ) : null}
 
@@ -530,6 +763,26 @@ const computeInsertIndex = (meldEl: HTMLElement, clientX: number): number => {
   return tiles.length;
 };
 
+// Rules examples drawn with the real tile faces — "same number, different
+// colours" is far easier to see than to read, especially for a first-timer.
+const ex = (color: TileColor, num: number, i: number): Tile => ({
+  id: `ex-${color}-${num}-${i}`,
+  kind: "num",
+  color,
+  num,
+});
+
+const RulesExample = ({ label, tiles }: { label: string; tiles: Tile[] }) => (
+  <div className="rk-ex">
+    <span className="rk-ex__label">{label}</span>
+    <span className="rk-ex__tiles">
+      {tiles.map((tile) => (
+        <TileFace key={tile.id} tile={tile} />
+      ))}
+    </span>
+  </div>
+);
+
 const RummikubModals = ({
   rulesOpen,
   settingsOpen,
@@ -552,10 +805,21 @@ const RummikubModals = ({
       paragraphs={[
         t("rummikub.rules.p1"),
         t("rummikub.rules.p2"),
+        <RulesExample
+          key="ex-group"
+          label={t("rummikub.rules.exGroup")}
+          tiles={[ex("red", 7, 0), ex("blue", 7, 1), ex("black", 7, 2)]}
+        />,
+        <RulesExample
+          key="ex-run"
+          label={t("rummikub.rules.exRun")}
+          tiles={[ex("orange", 5, 0), ex("orange", 6, 1), ex("orange", 7, 2)]}
+        />,
         t("rummikub.rules.p3"),
         t("rummikub.rules.p4"),
         t("rummikub.rules.p5"),
         t("rummikub.rules.p6"),
+        t("rummikub.rules.p7"),
       ]}
     />
   </>

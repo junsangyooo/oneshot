@@ -5,9 +5,11 @@
 // server's rules so the UI can gate the "End turn" button and never send a
 // commit the server would reject.
 
-import type { BoardMeld, Meld, Tile } from "@oneshot/shared";
+import type { BoardMeld, Meld, Tile, TileColor } from "@oneshot/shared";
 import {
+  RUMMIKUB_COLORS,
   RUMMIKUB_INITIAL_MELD_MIN,
+  classifyMeld,
   isValidMeld,
   meldValue,
 } from "@oneshot/shared";
@@ -33,6 +35,60 @@ export const stageFromServer = (board: BoardMeld[], hand: Tile[]): Stage => ({
   hand: [...hand],
   locked: new Set(board.flatMap((m) => m.tiles.map((t) => t.id))),
 });
+
+// ---------------------------------------------------------------------------
+// Convenience: normalize + auto-split
+// ---------------------------------------------------------------------------
+
+// Reorder a VALID meld into the way a human would lay it out: a run ascending
+// by the value each tile represents (jokers sit in the gap they fill), a group
+// in the canonical colour order with jokers last. Invalid melds are left alone
+// so the player can still see exactly what they built while fixing it.
+export const normalizeMeld = (tiles: Tile[]): Tile[] => {
+  const cls = classifyMeld(tiles);
+  if (!cls.valid) return tiles;
+  if (cls.kind === "run") {
+    const value = (t: Tile): number => (t.kind === "num" ? t.num : (cls.jokerValues[t.id] ?? 99));
+    return [...tiles].sort((a, b) => value(a) - value(b));
+  }
+  const colorIdx = (t: Tile): number =>
+    t.kind === "num" ? RUMMIKUB_COLORS.indexOf(t.color as TileColor) : RUMMIKUB_COLORS.length;
+  return [...tiles].sort((a, b) => colorIdx(a) - colorIdx(b));
+};
+
+// What each joker in a meld currently stands for, so the board can show it.
+// Runs also yield the colour the joker is standing in for; a group's joker fills
+// whichever colour is missing, which is ambiguous, so only the number is given.
+export type JokerInfo = { num: number; color?: TileColor };
+
+export const jokerInfo = (tiles: Tile[]): Record<string, JokerInfo> => {
+  const cls = classifyMeld(tiles);
+  if (!cls.valid) return {};
+  const runColor =
+    cls.kind === "run"
+      ? (tiles.find((t): t is Extract<Tile, { kind: "num" }> => t.kind === "num")?.color ?? undefined)
+      : undefined;
+  const out: Record<string, JokerInfo> = {};
+  for (const [id, num] of Object.entries(cls.jokerValues)) out[id] = { num, color: runColor };
+  return out;
+};
+
+// Split a meld that a drop just made invalid into two valid melds, e.g. dropping
+// a second red 7 into red 5-6-7-8-9 yields 5-6-7 + 7-8-9. Split points are tried
+// nearest-first to `preferAt` so the cut lands where the player dropped.
+// Returns null when no single cut makes both halves valid.
+export const autoSplit = (tiles: Tile[], preferAt: number): Tile[][] | null => {
+  if (isValidMeld(tiles)) return [tiles];
+  const cuts = [];
+  for (let k = 1; k < tiles.length; k += 1) cuts.push(k);
+  cuts.sort((a, b) => Math.abs(a - preferAt) - Math.abs(b - preferAt));
+  for (const k of cuts) {
+    const left = tiles.slice(0, k);
+    const right = tiles.slice(k);
+    if (isValidMeld(left) && isValidMeld(right)) return [left, right];
+  }
+  return null;
+};
 
 const findTile = (stage: Stage, id: string): Tile | null => {
   const inHand = stage.hand.find((t) => t.id === id);
@@ -82,19 +138,30 @@ export const place = (
     return {
       ...stage,
       hand: base.hand,
-      board: [...base.board, { id: newMeldId(), tiles }],
+      board: [...base.board, { id: newMeldId(), tiles: normalizeMeld(tiles) }],
     };
   }
-  // target.zone === "meld"
-  const board = base.board.map((m) => {
-    if (m.id !== target.meldId) return m;
+
+  // target.zone === "meld" — insert, then auto-split if the insert broke the set
+  // (5-6-7-8-9 + a second 7 becomes 5-6-7 and 7-8-9) and normalize the order.
+  const board: StageMeld[] = [];
+  let hitTarget = false;
+  for (const m of base.board) {
+    if (m.id !== target.meldId) {
+      board.push(m);
+      continue;
+    }
+    hitTarget = true;
     const at = target.index == null ? m.tiles.length : Math.max(0, Math.min(target.index, m.tiles.length));
-    const next = [...m.tiles.slice(0, at), ...tiles, ...m.tiles.slice(at)];
-    return { ...m, tiles: next };
-  });
+    const merged = [...m.tiles.slice(0, at), ...tiles, ...m.tiles.slice(at)];
+    const parts = autoSplit(merged, at + tiles.length) ?? [merged];
+    parts.forEach((part, i) => {
+      board.push(i === 0 ? { ...m, tiles: normalizeMeld(part) } : { id: newMeldId(), tiles: normalizeMeld(part) });
+    });
+  }
   // If the target meld vanished (was emptied by the move), fall back to a new meld.
-  if (!board.some((m) => m.id === target.meldId)) {
-    return { ...stage, hand: base.hand, board: [...base.board, { id: newMeldId(), tiles }] };
+  if (!hitTarget) {
+    return { ...stage, hand: base.hand, board: [...base.board, { id: newMeldId(), tiles: normalizeMeld(tiles) }] };
   }
   return { ...stage, hand: base.hand, board };
 };

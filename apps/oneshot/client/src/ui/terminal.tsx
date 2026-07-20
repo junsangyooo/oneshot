@@ -257,7 +257,9 @@ export const RulesModal = ({
   open: boolean;
   onClose: () => void;
   title: string;
-  paragraphs: string[];
+  // Plain strings render as paragraphs; a node renders as-is so a game can slot
+  // in visual examples (e.g. real tile faces) alongside the prose.
+  paragraphs: ReactNode[];
 }) => {
   const t = useT();
   if (!open) return null;
@@ -272,9 +274,9 @@ export const RulesModal = ({
         </div>
         <div className="modal-body">
           <div className="rules-body">
-            {paragraphs.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
+            {paragraphs.map((p, i) =>
+              typeof p === "string" ? <p key={i}>{p}</p> : <div key={i}>{p}</div>,
+            )}
           </div>
         </div>
         <div className="modal-foot modal-foot--single">
