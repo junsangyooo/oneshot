@@ -79,7 +79,7 @@ export const gameCatalog: GameCatalogItem[] = [
   },
   {
     id: "rummikub",
-    title: "루미큐브",
+    title: "타일",
     minPlayers: 2,
     maxPlayers: 8,
     complexity: 3,

@@ -60,15 +60,23 @@ export const AlloutRing = ({
   const maxLabel = dims.w ? labelMaxWidth(dims.w, dims.h, Math.max(n, 1), av) : 58;
   const sig = players.map((p) => `${p.id}:${p.nickname}:${p.count}`).join("|");
 
-  // track arena size
+  // track arena size — ResizeObserver for container changes, plus window resize/
+  // orientationchange as a belt-and-suspenders fallback so a phone rotation always
+  // re-lays-out the ring even if the RO is slow to fire.
   useEffect(() => {
     const el = arenaRef.current;
     if (!el) return;
-    const measure = () => setDims({ w: el.clientWidth, h: el.clientHeight });
+    const measure = () => setDims((prev) => (prev.w === el.clientWidth && prev.h === el.clientHeight ? prev : { w: el.clientWidth, h: el.clientHeight }));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
   }, []);
 
   // compute seat geometry + declutter labels (single pass: label sizes don't depend on position)
