@@ -57,8 +57,8 @@ const TileFace = ({ tile, cls, joker }: { tile: Tile; cls?: string; joker?: Joke
 // The grab is progressive: hold this long and the tile next to the pressed one
 // joins it, then one more every GRAB_STEP_MS. Start dragging and it stops
 // where it is — how long you hold is how much you pick up.
-const GRAB_FIRST_MS = 1000;
-const GRAB_STEP_MS = 500;
+const GRAB_FIRST_MS = 750;
+const GRAB_STEP_MS = 250;
 
 // ---------------------------- orientation ----------------------------
 
