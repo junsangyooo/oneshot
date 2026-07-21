@@ -1043,6 +1043,13 @@ button { font: inherit; }
   --rk-hud-w: 136px;
   --rk-top: 56px;
   --rk-edge: 12px;
+  /* viewport-fit=cover means a landscape iPhone draws under its notch and home
+     indicator. Every floating control keys off these per-side edges instead of
+     the raw --rk-edge; on notch-less screens env() is 0 and nothing changes. */
+  --rk-edge-l: max(var(--rk-edge), env(safe-area-inset-left));
+  --rk-edge-r: max(var(--rk-edge), env(safe-area-inset-right));
+  --rk-edge-t: max(var(--rk-edge), env(safe-area-inset-top));
+  --rk-edge-b: max(var(--rk-edge), env(safe-area-inset-bottom));
   /* the rack is exactly two rows tall, always — so the inset is constant */
   --rk-rack-h: calc(var(--rk-hand-h) * 2 + 26px);
   --rk-rack-inset: calc(var(--rk-rack-h) + 34px);
@@ -1054,11 +1061,11 @@ button { font: inherit; }
    resort at minimum scale, because clipping a seat would hide game state. */
 .scr--rummikub .rk-rail {
   position: absolute;
-  left: var(--rk-edge);
-  top: var(--rk-edge);
+  left: var(--rk-edge-l);
+  top: var(--rk-edge-t);
   z-index: 5;
   width: calc(var(--rk-rail-w) - var(--rk-edge) * 2);
-  max-height: calc(100svh - var(--rk-rack-inset) - var(--rk-edge));
+  max-height: calc(100svh - var(--rk-rack-inset) + var(--rk-edge) - var(--rk-edge-t) - var(--rk-edge-b));
   overflow: hidden;
   --rk-seat-scale: 1;
 }
@@ -1120,8 +1127,8 @@ button { font: inherit; }
 /* tools — floating top-right */
 .scr--rummikub .rk-toolbar {
   position: absolute;
-  right: var(--rk-edge);
-  top: var(--rk-edge);
+  right: var(--rk-edge-r);
+  top: var(--rk-edge-t);
   z-index: 6;
   display: flex;
   gap: 8px;
@@ -1131,8 +1138,8 @@ button { font: inherit; }
 /* early-end vote — a small chip, never a blocking modal */
 .scr--rummikub .rk-vote {
   position: absolute;
-  right: var(--rk-edge);
-  top: calc(var(--rk-top) + 8px);
+  right: var(--rk-edge-r);
+  top: calc(var(--rk-top) + 8px + var(--rk-edge-t) - var(--rk-edge));
   z-index: 6;
   display: grid;
   gap: 6px;
@@ -1156,8 +1163,8 @@ button { font: inherit; }
    actions ride above them */
 .scr--rummikub .rk-hud {
   position: absolute;
-  right: var(--rk-edge);
-  bottom: var(--rk-edge);
+  right: var(--rk-edge-r);
+  bottom: var(--rk-edge-b);
   z-index: 6;
   display: grid;
   gap: 8px;
@@ -1224,7 +1231,10 @@ button { font: inherit; }
   align-content: flex-start;
   gap: 10px;
   min-height: 100%;
-  padding: var(--rk-top) var(--rk-hud-w) var(--rk-rack-inset) var(--rk-rail-w);
+  padding: calc(var(--rk-top) + var(--rk-edge-t) - var(--rk-edge))
+    calc(var(--rk-hud-w) + var(--rk-edge-r) - var(--rk-edge))
+    calc(var(--rk-rack-inset) + var(--rk-edge-b) - var(--rk-edge))
+    calc(var(--rk-rail-w) + var(--rk-edge-l) - var(--rk-edge));
 }
 .scr--rummikub .rk-board__empty { margin: auto; color: var(--ink-dim); font-family: var(--font-mono); }
 
@@ -1338,9 +1348,9 @@ button { font: inherit; }
    leaving a silent grey button. Floats just above the rack. */
 .scr--rummikub .rk-coach {
   position: absolute;
-  left: var(--rk-edge);
-  right: var(--rk-hud-w);
-  bottom: calc(var(--rk-rack-h) + 18px);
+  left: var(--rk-edge-l);
+  right: calc(var(--rk-hud-w) + var(--rk-edge-r) - var(--rk-edge));
+  bottom: calc(var(--rk-rack-h) + 18px + var(--rk-edge-b) - var(--rk-edge));
   z-index: 6;
   margin: 0;
   min-height: 1.2em;
@@ -1362,9 +1372,9 @@ button { font: inherit; }
    phone; wrapping to two rows shows a full hand at a glance. */
 .scr--rummikub .rk-rack {
   position: absolute;
-  left: var(--rk-edge);
-  right: var(--rk-hud-w);
-  bottom: var(--rk-edge);
+  left: var(--rk-edge-l);
+  right: calc(var(--rk-hud-w) + var(--rk-edge-r) - var(--rk-edge));
+  bottom: var(--rk-edge-b);
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
@@ -1486,10 +1496,15 @@ button { font: inherit; }
   .scr--rummikub-setup .rk-topbar { flex-wrap: wrap; }
 }
 @media (max-height: 520px) {
-  /* phone held sideways: the field is short, so shrink the furniture, not the board */
+  /* phone held sideways: the field is short, so shrink the furniture, not the
+     board. Keep multiplying by --rk-seat-scale: a fixed px here would cancel
+     useFitRail's shrink and force the 8-seat rail into its scroll fallback. */
   .scr--rummikub { --rk-tile-w: 30px; --rk-hand-w: 40px; --rk-top: 48px; }
-  .scr--rummikub .rail-seat { padding: 4px 7px; }
-  .scr--rummikub .rail-seat .glyph--img { width: 26px; height: 26px; }
+  .scr--rummikub .rail-seat { padding: calc(4px * var(--rk-seat-scale)) 7px; }
+  .scr--rummikub .rail-seat .glyph--img {
+    width: calc(26px * var(--rk-seat-scale));
+    height: calc(26px * var(--rk-seat-scale));
+  }
 }
 @media (max-height: 380px) {
   /* smallest phones in landscape (568x320 and friends): every pixel the rack

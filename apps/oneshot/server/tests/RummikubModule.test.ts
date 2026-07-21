@@ -277,6 +277,16 @@ describe("Rummikub — commit conservation (anti-cheat)", () => {
     expect(r.ok).toBe(false);
   });
 
+  it("rejects an oversized board payload before doing any per-tile work", () => {
+    const { module } = setupPlayed();
+    // more melds than two full decks could ever form
+    const hugeMelds = Array.from({ length: 213 }, (_, i) => [`fake-${i}`]);
+    expect(commitBoard(module, "player-1", hugeMelds).ok).toBe(false);
+    // fewer melds, but more tile ids than exist in two decks
+    const hugeIds = [Array.from({ length: 213 }, (_, i) => `fake-${i}`)];
+    expect(commitBoard(module, "player-1", hugeIds).ok).toBe(false);
+  });
+
   it("rejects an invalid set", () => {
     const { module, core } = setupPlayed();
     const a = n("red", 4), b = n("blue", 5), c = n("red", 6);

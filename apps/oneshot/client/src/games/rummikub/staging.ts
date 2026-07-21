@@ -121,8 +121,16 @@ export const place = (
   const idSet = new Set(ids);
   const tiles = ids.map((id) => findTile(stage, id)!);
 
-  // Before the initial meld: cannot touch tiles that are already on the board.
-  if (!canManipulateBoard && ids.some((id) => stage.locked.has(id))) return null;
+  // Before the initial meld: cannot touch tiles that are already on the board —
+  // neither by MOVING a board tile nor by dropping a hand tile INTO a board set
+  // (the server rejects any pre-initial meld mixing locked and played tiles).
+  if (!canManipulateBoard) {
+    if (ids.some((id) => stage.locked.has(id))) return null;
+    if (target.zone === "meld") {
+      const targetMeld = stage.board.find((m) => m.id === target.meldId);
+      if (targetMeld?.tiles.some((t) => stage.locked.has(t.id))) return null;
+    }
+  }
 
   if (target.zone === "hand") {
     // Locked (server-board) tiles can never go back to hand.
@@ -172,7 +180,7 @@ export const playedTileIds = (stage: Stage): string[] =>
 
 export type CommitCheck =
   | { ok: true }
-  | { ok: false; reason: "empty" | "invalidMeld" | "initialLow"; points?: number };
+  | { ok: false; reason: "empty" | "invalidMeld" | "initialLow" | "lockedTouched"; points?: number };
 
 // Mirrors the server's commit validation so the UI can enable/disable End Turn.
 export const checkCommit = (stage: Stage, didInitial: boolean): CommitCheck => {
@@ -182,6 +190,15 @@ export const checkCommit = (stage: Stage, didInitial: boolean): CommitCheck => {
     if (!isValidMeld(m.tiles)) return { ok: false, reason: "invalidMeld" };
   }
   if (!didInitial) {
+    // Server rule: pre-initial, every meld is either all-new (from hand) or an
+    // untouched board set. A mixed meld would bounce off the server, so the
+    // green check must never light up for one.
+    for (const m of stage.board) {
+      const lockedCount = m.tiles.filter((t) => stage.locked.has(t.id)).length;
+      if (lockedCount > 0 && lockedCount < m.tiles.length) {
+        return { ok: false, reason: "lockedTouched" };
+      }
+    }
     const playedSet = new Set(played);
     const newMelds = stage.board.filter((m) => m.tiles.every((t) => playedSet.has(t.id)));
     const points = newMelds.reduce((s, m) => s + meldValue(m.tiles), 0);

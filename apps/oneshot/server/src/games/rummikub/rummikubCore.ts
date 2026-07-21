@@ -157,15 +157,22 @@ export class RummikubCore {
 
     const rawBoard = (payload as { board?: unknown }).board;
     if (!Array.isArray(rawBoard)) return fail("INVALID_ACTION", "보드가 올바르지 않습니다.");
+    // Hard size cap before any per-item work: two decks are 212 tiles, so no
+    // honest board has more melds or ids than that. Anything bigger is a
+    // hostile payload trying to burn server time.
+    if (rawBoard.length > 212) return fail("INVALID_ACTION", "보드가 올바르지 않습니다.");
 
     // Parse into id-lists; reject malformed shapes.
     const proposed: string[][] = [];
+    let idCount = 0;
     for (const m of rawBoard) {
       if (typeof m !== "object" || m === null) return fail("INVALID_ACTION", "보드가 올바르지 않습니다.");
       const tiles = (m as { tiles?: unknown }).tiles;
       if (!Array.isArray(tiles) || !tiles.every((t) => typeof t === "string")) {
         return fail("INVALID_ACTION", "보드가 올바르지 않습니다.");
       }
+      idCount += tiles.length;
+      if (idCount > 212) return fail("INVALID_ACTION", "보드가 올바르지 않습니다.");
       if (tiles.length > 0) proposed.push(tiles as string[]);
     }
 

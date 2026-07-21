@@ -204,6 +204,14 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverSig]);
 
+  // A rejected action leaves the server state untouched, so serverSig never
+  // moves and `busy` would stay latched for the whole turn (forever, with an
+  // unlimited clock). Any server error releases the button again.
+  const errorSeq = useRoomStore((s) => s.errorSeq);
+  useEffect(() => {
+    setBusy(false);
+  }, [errorSeq]);
+
   // Opponent commit glow.
   const eventSeq = pub?.lastEvent?.seq ?? 0;
   useEffect(() => {
@@ -417,6 +425,22 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     return null;
   };
 
+  // Keyboard path: Enter/Space on a focused tile arrives as a click with
+  // detail === 0 (no pointer events fire at all), so the tap gestures are
+  // mirrored here. Mouse/touch clicks (detail >= 1) are already fully handled
+  // by pointerup and must NOT run this too, or every tap would double-toggle.
+  const onTileKeyActivate = (id: string, from: "hand" | "board") => {
+    if (!isMyTurn) return;
+    if (from === "board" && sel.length > 0 && !sel.includes(id)) {
+      if (refuseBoard()) return;
+      const meld = stage.board.find((m) => m.tiles.some((x) => x.id === id));
+      if (meld && applyPlace(sel, { zone: "meld", meldId: meld.id })) return;
+      flashDeny(meld?.id);
+      return;
+    }
+    toggleSel(id, from);
+  };
+
   // ---- pointer handlers (tap-select + long-press + drag) ----
   const onTilePointerDown = (e: React.PointerEvent, id: string, from: "hand" | "board") => {
     if (!isMyTurn) return;
@@ -617,7 +641,11 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
           <span className="rk-vote__title">{t("rummikub.vote.title")}</span>
           <span className="rk-vote__tally">
             {fill(t("rummikub.vote.tally"), {
-              agree: Object.values(pub.endVote!.votes).filter(Boolean).length,
+              // Mirror the server's quorum: only CONNECTED players' votes count,
+              // so the tally never over-reports against the connected total.
+              agree: Object.entries(pub.endVote!.votes).filter(
+                ([id, v]) => v && pub.players.find((p) => p.playerId === id)?.connected,
+              ).length,
               total: pub.players.filter((p) => p.connected).length,
             })}
           </span>
@@ -675,6 +703,9 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
                     onPointerDown={(e) => onTilePointerDown(e, tile.id, "board")}
                     onPointerMove={onTilePointerMove}
                     onPointerUp={(e) => onTilePointerUp(e, tile.id, "board")}
+                    onClick={(e) => {
+                      if (e.detail === 0) onTileKeyActivate(tile.id, "board");
+                    }}
                   >
                     <TileFace
                       tile={tile}
@@ -744,8 +775,14 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
           <button
             type="button"
             className={`rk-main ${canCommit ? "is-commit" : ""}`}
-            aria-label={canCommit ? t("rummikub.endTurn") : `${t("rummikub.draw")} — ${t("rummikub.drawSub")}`}
-            title={canCommit ? t("rummikub.endTurn") : t("rummikub.drawSub")}
+            aria-label={
+              canCommit
+                ? t("rummikub.endTurn")
+                : pub.poolCount === 0
+                  ? `${t("rummikub.pass")} — ${t("rummikub.passSub")}`
+                  : `${t("rummikub.draw")} — ${t("rummikub.drawSub")}`
+            }
+            title={canCommit ? t("rummikub.endTurn") : pub.poolCount === 0 ? t("rummikub.passSub") : t("rummikub.drawSub")}
             disabled={mainDisabled}
             onClick={onMain}
           >
@@ -760,8 +797,10 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
                   <i />
                   <i />
                 </span>
+                {/* an empty pool turns the draw into a pass — say so instead of
+                    offering a "+0" that looks like a broken draw */}
                 <span className="rk-main__plus" aria-hidden>
-                  ＋
+                  {pub.poolCount === 0 ? "▶" : "＋"}
                 </span>
                 <span className="rk-main__pool">{pub.poolCount}</span>
               </>
@@ -799,9 +838,13 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
               ? t("rummikub.readyEnd")
               : commit.reason === "invalidMeld"
                 ? t("rummikub.whyInvalid")
-                : commit.reason === "initialLow"
-                  ? fill(t("rummikub.whyInitialLow"), { n: commit.points ?? 0 })
-                  : t("rummikub.whyEmpty")}
+                : commit.reason === "lockedTouched"
+                  ? t("rummikub.lockedBoard")
+                  : commit.reason === "initialLow"
+                    ? fill(t("rummikub.whyInitialLow"), { n: commit.points ?? 0 })
+                    : pub.poolCount === 0
+                      ? t("rummikub.whyEmptyNoPool")
+                      : t("rummikub.whyEmpty")}
       </p>
 
       {/* my hand — two rows pinned to the bottom, inset from both edges */}
@@ -823,6 +866,9 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
               onPointerDown={(e) => onTilePointerDown(e, tile.id, "hand")}
               onPointerMove={onTilePointerMove}
               onPointerUp={(e) => onTilePointerUp(e, tile.id, "hand")}
+              onClick={(e) => {
+                if (e.detail === 0) onTileKeyActivate(tile.id, "hand");
+              }}
             >
               <TileFace
                 tile={tile}

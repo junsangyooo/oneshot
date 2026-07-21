@@ -17,6 +17,10 @@ type RoomStore = {
   roomState: PartyRoomState | null;
   privateGameState: unknown;
   toast: string | null;
+  // Bumps on every server "error" event, even when the message text repeats.
+  // Screens that latch a local in-flight flag (e.g. Rummikub's `busy`) watch
+  // this to release it when an action is rejected without a state change.
+  errorSeq: number;
   screenError: { code?: string; message: string; retryable: boolean } | null;
   createRoom: (nickname: string, profile?: PlayerProfileInput) => Promise<void>;
   joinRoom: (roomCode: string, nickname: string, profile?: PlayerProfileInput) => Promise<void>;
@@ -29,6 +33,7 @@ type RoomStore = {
 
 let transport = new ColyseusRoomTransport();
 let unsubscribeTransport: (() => void) | null = null;
+let errorCounter = 0;
 
 const bindTransport = (emit: (event: ServerEvent) => void): void => {
   unsubscribeTransport?.();
@@ -41,6 +46,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   roomState: null,
   privateGameState: null,
   toast: null,
+  errorSeq: 0,
   screenError: null,
 
   async createRoom(nickname: string, profile?: PlayerProfileInput) {
@@ -153,7 +159,9 @@ const handleServerEvent = (
     if (terminal) {
       storage.clearReconnectToken();
     }
+    errorCounter += 1;
     set({
+      errorSeq: errorCounter,
       ...(terminal
         ? {
             connectionState: "failed" as const,

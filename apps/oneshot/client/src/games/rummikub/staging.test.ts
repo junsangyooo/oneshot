@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Tile } from "@oneshot/shared";
-import { autoSplit, jokerInfo, normalizeMeld, place, stageFromServer } from "./staging";
+import { autoSplit, checkCommit, jokerInfo, normalizeMeld, place, stageFromServer } from "./staging";
 
 const T = (color: "red" | "blue" | "orange" | "black", num: number, tag = ""): Tile => ({
   id: `${color}-${num}-${tag}`,
@@ -88,6 +88,41 @@ describe("place", () => {
   it("refuses to touch the board before the initial meld", () => {
     const stage = stageFromServer([{ id: "m1", tiles: [T("red", 5), T("red", 6), T("red", 7)] }], []);
     expect(place(stage, ["red-5-"], { zone: "new" }, false)).toBeNull();
+  });
+
+  // The server rejects any pre-initial meld that mixes board tiles with hand
+  // tiles ("첫 등록에서는 이미 놓인 세트를 건드릴 수 없습니다"), so the staging
+  // mirror must refuse the drop too — otherwise the green check lies and the
+  // commit bounces.
+  it("refuses to drop a hand tile INTO an existing set before the initial meld", () => {
+    const stage = stageFromServer(
+      [{ id: "m1", tiles: [T("red", 5), T("red", 6), T("red", 7)] }],
+      [T("red", 8)],
+    );
+    expect(place(stage, ["red-8-"], { zone: "meld", meldId: "m1" }, false)).toBeNull();
+  });
+});
+
+describe("checkCommit — initial meld mirrors the server", () => {
+  it("rejects a pre-initial board where a set mixes locked and played tiles", () => {
+    const stage = stageFromServer(
+      [{ id: "m1", tiles: [T("red", 5), T("red", 6), T("red", 7)] }],
+      [T("red", 8), T("red", 10), T("blue", 10), T("black", 10)],
+    );
+    // wedge r8 into the locked run, and stage a legal 30-point group besides
+    const wedged = place(stage, ["red-8-"], { zone: "meld", meldId: "m1" }, true)!;
+    const withGroup = place(wedged, ["red-10-", "blue-10-", "black-10-"], { zone: "new" }, true)!;
+    const check = checkCommit(withGroup, false);
+    expect(check.ok).toBe(false);
+  });
+
+  it("accepts a clean 30-point initial meld next to an untouched board", () => {
+    const stage = stageFromServer(
+      [{ id: "m1", tiles: [T("red", 5), T("red", 6), T("red", 7)] }],
+      [T("red", 10), T("blue", 10), T("black", 10)],
+    );
+    const staged = place(stage, ["red-10-", "blue-10-", "black-10-"], { zone: "new" }, true)!;
+    expect(checkCommit(staged, false)).toEqual({ ok: true });
   });
 });
 
