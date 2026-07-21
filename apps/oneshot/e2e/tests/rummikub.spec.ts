@@ -356,6 +356,145 @@ test.describe("TILE", () => {
     await hostContext.close();
   });
 
+  test("tiles are fully playable by keyboard alone", async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chrome", "keyboard is a desktop concern");
+    const { host, hostContext, guestContext } = await startTile(browser);
+
+    // Enter on a focused hand tile selects it (keyboard clicks arrive with
+    // detail 0 and no pointer events, so this is its own code path)
+    await host.locator(".rk-rack .rk-tilebtn").first().focus();
+    await host.keyboard.press("Enter");
+    await expect(host.locator(".rk-tile.is-sel")).toHaveCount(1);
+    // Enter again toggles it back off
+    await host.keyboard.press("Enter");
+    await expect(host.locator(".rk-tile.is-sel")).toHaveCount(0);
+
+    // select + activate the "new set" drop button = a full keyboard placement
+    await host.locator(".rk-rack .rk-tilebtn").first().focus();
+    await host.keyboard.press("Enter");
+    await host.locator('[data-drop="new"]').focus();
+    await host.keyboard.press("Enter");
+    await expect(host.locator(".rk-meld:not(.rk-meld--new)")).toHaveCount(1);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
+  test("a 15s clock auto-draws for an idle player and moves on", async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chrome", "one project is enough for a 17s wait");
+    const hostContext = await gameContext(browser);
+    const guestContext = await gameContext(browser);
+    const host = await hostContext.newPage();
+    const guest = await guestContext.newPage();
+
+    const code = await createRoom(host, "초보자");
+    await joinRoom(guest, code, "친구B");
+    await host.locator(".mod", { hasText: "타일" }).click();
+    await host.getByRole("button", { name: /게임 시작/ }).click();
+    await expect(host.getByRole("heading", { name: "타일 설정" })).toBeVisible({ timeout: 10_000 });
+    // step the clock DOWN to the 15s minimum (60 -> 30 -> 15)
+    const down = host.locator(".rk-stepper__arrow").last();
+    for (let i = 0; i < 2; i += 1) await down.click();
+    await expect(host.locator(".rk-stepper__value")).toHaveText("15초");
+    await host.getByRole("button", { name: "게임 시작" }).click();
+    await expect(host.locator(".rk-rack .rk-tile")).toHaveCount(14, { timeout: 10_000 });
+    await dismissRotate(host);
+    await dismissRotate(guest);
+
+    // nobody acts: the deadline passes, the idle host is dealt one tile and
+    // the turn moves to the guest without any click anywhere
+    await expect(guest.locator(".rail-seat.is-turn.is-me")).toBeVisible({ timeout: 20_000 });
+    await expect(host.locator(".rk-rack .rk-tile")).toHaveCount(15);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
+  test("an 8-player rail fits a 568x320 phone without scrolling or clipping", async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chrome", "viewport is set explicitly");
+    const hostContext = await gameContext(browser);
+    const host = await hostContext.newPage();
+    const code = await createRoom(host, "호스트");
+    const guestContexts = [];
+    for (let i = 0; i < 7; i += 1) {
+      const ctx = await gameContext(browser);
+      guestContexts.push(ctx);
+      const g = await ctx.newPage();
+      await joinRoom(g, code, `손님${i + 2}`);
+    }
+    await host.locator(".mod", { hasText: "타일" }).click();
+    await host.getByRole("button", { name: /게임 시작/ }).click();
+    await expect(host.getByRole("heading", { name: "타일 설정" })).toBeVisible({ timeout: 10_000 });
+    const up = host.locator(".rk-stepper__arrow").first();
+    for (let i = 0; i < 3; i += 1) await up.click();
+    await host.getByRole("button", { name: "게임 시작" }).click();
+    await expect(host.locator(".rk-rack .rk-tile").first()).toBeVisible({ timeout: 10_000 });
+
+    await host.setViewportSize({ width: 568, height: 320 });
+    await host.waitForTimeout(800);
+    await dismissRotate(host);
+
+    const state = await host.evaluate(() => {
+      const rail = document.querySelector(".rk-rail")!;
+      const rr = rail.getBoundingClientRect();
+      const seats = [...document.querySelectorAll(".rail-seat")];
+      const main = document.querySelector(".rk-main")!;
+      const mr = main.getBoundingClientRect();
+      const hit = document.elementFromPoint(mr.left + mr.width / 2, mr.top + mr.height / 2);
+      return {
+        seats: seats.length,
+        railScroll: rail.classList.contains("is-scroll"),
+        clippedSeats: seats.filter((s) => {
+          const r = s.getBoundingClientRect();
+          return r.bottom > rr.bottom + 2 || r.top < rr.top - 2;
+        }).length,
+        hOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        mainReachable: main.contains(hit),
+      };
+    });
+    expect(state.seats, "all 8 seats exist").toBe(8);
+    // seats shrink to fit (scroll stays a last resort that must not trigger here)
+    expect(state.railScroll, "the rail does not need its scroll fallback").toBe(false);
+    expect(state.clippedSeats, "no seat is clipped out of view").toBe(0);
+    expect(state.hOverflow, "no horizontal overflow").toBeLessThanOrEqual(1);
+    expect(state.mainReachable, "the primary button is hittable").toBe(true);
+
+    for (const ctx of guestContexts) await ctx.close();
+    await hostContext.close();
+  });
+
+  test("the ? help opens the rules, and 777/789 really reorder the rack", async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chrome", "one project is enough");
+    const { host, hostContext, guestContext } = await startTile(browser);
+
+    // ? -> rules modal with the visual set examples
+    await host.locator(".rk-toolbar .btn").first().click();
+    await expect(host.locator(".modal")).toBeVisible();
+    await expect(host.locator(".modal .rk-ex")).toHaveCount(2);
+    await host.locator(".modal .x").first().click();
+    await expect(host.locator(".modal")).toHaveCount(0);
+
+    const rackOrder = () =>
+      host.$$eval(".rk-rack .rk-tile", (els) =>
+        els.map((el) => el.className.match(/rk-tile--(\w+)/)?.[1] ?? "joker").join(","),
+      );
+    const before = await rackOrder();
+    await host.getByRole("button", { name: "789" }).click();
+    await expect(host.getByRole("button", { name: "789" })).toHaveAttribute("aria-pressed", "true");
+    const sorted = await rackOrder();
+    // 789 groups by colour: the colour sequence must be non-interleaved
+    const runs = sorted.split(",").filter((c, i, a) => i === 0 || c !== a[i - 1]).length;
+    const distinct = new Set(sorted.split(",")).size;
+    expect(runs, "789 groups the rack by colour").toBe(distinct);
+    // toggling off restores the raw order
+    await host.getByRole("button", { name: "789" }).click();
+    await expect(host.getByRole("button", { name: "789" })).toHaveAttribute("aria-pressed", "false");
+    expect(await rackOrder()).toBe(before);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
   test("anyone can open an end-game vote from settings, and a majority ends it", async ({ browser }) => {
     const { host, guest, hostContext, guestContext } = await startTile(browser);
 
