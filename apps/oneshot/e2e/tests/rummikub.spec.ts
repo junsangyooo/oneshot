@@ -9,6 +9,14 @@ import type { Browser, Page } from "@playwright/test";
 
 const nicknameInput = (page: Page) => page.getByPlaceholder("이름을 입력하세요...");
 
+// Games auto-fullscreen on touch devices; a fullscreen window can't be resized,
+// which would break the viewport assertions below. Opt every test context out.
+const gameContext = async (browser: Browser) => {
+  const ctx = await browser.newContext();
+  await ctx.addInitScript(() => localStorage.setItem("oneshot.fullscreen", "off"));
+  return ctx;
+};
+
 const createRoom = async (page: Page, nickname: string): Promise<string> => {
   await page.goto("/");
   await nicknameInput(page).fill(nickname);
@@ -38,8 +46,8 @@ const dismissRotate = async (page: Page): Promise<void> => {
 
 // Seat two players, pick TILE, and deal with an unlimited turn clock.
 const startTile = async (browser: Browser) => {
-  const hostContext = await browser.newContext();
-  const guestContext = await browser.newContext();
+  const hostContext = await gameContext(browser);
+  const guestContext = await gameContext(browser);
   const host = await hostContext.newPage();
   const guest = await guestContext.newPage();
 
@@ -58,6 +66,7 @@ const startTile = async (browser: Browser) => {
   await host.getByRole("button", { name: "게임 시작" }).click();
   await expect(host.locator(".rk-rack .rk-tile").first()).toBeVisible({ timeout: 10_000 });
   await dismissRotate(host);
+  await dismissRotate(guest);
 
   return { host, guest, hostContext, guestContext };
 };
@@ -140,22 +149,24 @@ test.describe("TILE", () => {
     await host.mouse.up();
     await expect(host.locator(".rk-meld:not(.rk-meld--new)")).toHaveCount(1);
 
-    const draw = host.locator(".rk-draw");
-    await expect(draw).toBeEnabled(); // stays live even mid-staging
-    await draw.click();
+    // one staged tile is never a legal turn, so the primary button is still DRAW
+    const main = host.locator(".rk-main");
+    await expect(main).toBeEnabled(); // stays live even mid-staging
+    await expect(host.locator(".rk-main.is-commit")).toHaveCount(0);
+    await main.click(); // ONE click — no confirm step
 
     // staging is discarded, a tile is taken, and the turn moves on
     await expect(host.locator(".rk-meld:not(.rk-meld--new)")).toHaveCount(0);
     await expect(host.locator(".rk-rack .rk-tile")).toHaveCount(15);
-    await expect(guest.locator(".rk-turn.is-mine")).toBeVisible({ timeout: 10_000 });
+    await expect(guest.locator(".rail-seat.is-turn.is-me")).toBeVisible({ timeout: 10_000 });
 
     await guestContext.close();
     await hostContext.close();
   });
 
   test("the turn clock ticks down for the player who is not acting", async ({ browser }) => {
-    const hostContext = await browser.newContext();
-    const guestContext = await browser.newContext();
+    const hostContext = await gameContext(browser);
+    const guestContext = await gameContext(browser);
     const host = await hostContext.newPage();
     const guest = await guestContext.newPage();
 
@@ -167,8 +178,8 @@ test.describe("TILE", () => {
     await host.getByRole("button", { name: "게임 시작" }).click(); // keep the default 60s clock
     await dismissRotate(guest);
 
-    // the waiting player sees the same clock draining
-    const timer = guest.locator(".rk-turn__timer");
+    // the waiting player sees the same clock draining, on the active portrait
+    const timer = guest.locator(".rail-seat.is-turn .rail-seat__timer");
     await expect(timer).toBeVisible({ timeout: 10_000 });
     const first = Number(await timer.innerText());
     await guest.waitForTimeout(2500);
@@ -204,7 +215,9 @@ test.describe("TILE", () => {
     const { host, hostContext, guestContext } = await startTile(browser);
 
     await expect(host.locator(".rk-coach")).toHaveText(/타일을 필드로 끌어다 놓으세요/);
-    await expect(host.getByRole("button", { name: "턴 종료" })).toBeDisabled();
+    // nothing legal staged -> the primary button is the deck, not the green check
+    await expect(host.locator(".rk-main")).toBeVisible();
+    await expect(host.locator(".rk-main.is-commit")).toHaveCount(0);
 
     await guestContext.close();
     await hostContext.close();
@@ -218,7 +231,155 @@ test.describe("TILE", () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow, "no horizontal overflow").toBeLessThanOrEqual(1);
-    await expect(host.getByRole("button", { name: "턴 종료" })).toBeVisible();
+    // the primary button must be inside the viewport AND actually hittable —
+    // the control stack once overflowed the right edge and swallowed it
+    const main = host.locator(".rk-main");
+    await expect(main).toBeVisible();
+    const reachable = await host.evaluate(() => {
+      const el = document.querySelector(".rk-main")!;
+      const r = el.getBoundingClientRect();
+      return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+    });
+    expect(reachable, ".rk-main is not covered by another element").toBe(true);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
+  test("undo only exists once the turn has changed something, and it rewinds", async ({ browser }) => {
+    const { host, hostContext, guestContext } = await startTile(browser);
+
+    // a permanently greyed button reads as broken, so it isn't rendered at all
+    await expect(host.locator(".rk-iconbtn--undo")).toHaveCount(0);
+
+    const handCount = await host.locator(".rk-rack .rk-tile").count();
+    await host.locator(".rk-rack .rk-tilebtn").first().click();
+    await host.locator('[data-drop="new"]').click();
+    await expect(host.locator(".rk-meld:not(.rk-meld--new)")).toHaveCount(1);
+    await expect(host.locator(".rk-iconbtn--undo")).toHaveCount(1);
+
+    await host.locator(".rk-iconbtn--undo").click();
+    await expect(host.locator(".rk-meld:not(.rk-meld--new)")).toHaveCount(0);
+    await expect(host.locator(".rk-rack .rk-tile")).toHaveCount(handCount);
+    await expect(host.locator(".rk-iconbtn--undo")).toHaveCount(0);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
+  test("the rail shows exactly one active seat and marks which one is me", async ({ browser }) => {
+    const { host, guest, hostContext, guestContext } = await startTile(browser);
+
+    for (const page of [host, guest]) {
+      await expect(page.locator(".rail-seat")).toHaveCount(2);
+      await expect(page.locator(".rail-seat.is-turn")).toHaveCount(1);
+      await expect(page.locator(".rail-seat.is-me")).toHaveCount(1);
+      await expect(page.locator(".rail-seat__count")).toHaveCount(2);
+    }
+    // the host acts first, so the host's own seat is the lit one
+    await expect(host.locator(".rail-seat.is-turn.is-me")).toHaveCount(1);
+    await expect(guest.locator(".rail-seat.is-turn.is-me")).toHaveCount(0);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
+  test("nothing scrolls: a growing hand shrinks its tiles and stays two rows", async ({ browser }) => {
+    const { host, guest, hostContext, guestContext } = await startTile(browser);
+
+    const rackState = (page: Page) =>
+      page.evaluate(() => {
+        const rack = document.querySelector(".rk-rack")!;
+        const tiles = [...document.querySelectorAll<HTMLElement>(".rk-rack .rk-tilebtn")];
+        return {
+          count: tiles.length,
+          rows: new Set(tiles.map((t) => t.offsetTop)).size,
+          tileWidth: Math.round(tiles[0]?.getBoundingClientRect().width ?? 0),
+          rackOverflow: rack.scrollHeight - rack.clientHeight,
+        };
+      });
+
+    const before = await rackState(host);
+    expect(before.count).toBe(14);
+
+    // draw a dozen times each so the hand outgrows a single comfortable row
+    for (let round = 0; round < 12; round += 1) {
+      for (const page of [host, guest]) {
+        if (await page.evaluate(() => !document.querySelector<HTMLButtonElement>(".rk-main")?.disabled)) {
+          await page.locator(".rk-main").click();
+          await page.waitForTimeout(150);
+        }
+      }
+    }
+
+    const after = await rackState(host);
+    expect(after.count, "hand grew from drawing").toBeGreaterThan(before.count + 6);
+    expect(after.rows, "the hand stays two rows").toBeLessThanOrEqual(2);
+    expect(after.rackOverflow, "the rack never scrolls").toBeLessThanOrEqual(1);
+    // Tiles shrink only as far as they must: on a wide window a grown hand
+    // still fits at full size, so "never got bigger" is the invariant here.
+    expect(after.tileWidth).toBeLessThanOrEqual(before.tileWidth);
+
+    // Compare a wide window against a narrow one (explicit sizes, so this holds
+    // whichever project runs it): the same hand must survive the squeeze by
+    // shrinking its tiles — never by scrolling and never by wrapping a 3rd row.
+    const measureAt = async (width: number, height: number) => {
+      await host.setViewportSize({ width, height });
+      await host.waitForTimeout(400);
+      return rackState(host);
+    };
+    const wide = await measureAt(1000, 620);
+    const narrow = await measureAt(520, 400);
+
+    expect(narrow.count, "no tile was dropped").toBe(after.count);
+    expect(narrow.tileWidth, "tiles shrank to make room").toBeLessThan(wide.tileWidth);
+    for (const [label, state] of [["wide", wide] as const, ["narrow", narrow] as const]) {
+      expect(state.rows, `${label}: still two rows`).toBeLessThanOrEqual(2);
+      expect(state.rackOverflow, `${label}: still no scrolling`).toBeLessThanOrEqual(1);
+    }
+
+    // and nothing anywhere on the play screen has become scrollable-with-content
+    const scrollers = await host.evaluate(() =>
+      [...document.querySelectorAll(".scr--rummikub, .scr--rummikub *")]
+        .filter((el) => {
+          const cs = getComputedStyle(el);
+          return (
+            /(auto|scroll)/.test(`${cs.overflowX} ${cs.overflowY}`) &&
+            (el.scrollHeight - el.clientHeight > 1 || el.scrollWidth - el.clientWidth > 1)
+          );
+        })
+        .map((el) => el.className.toString()),
+    );
+    expect(scrollers, "no region of the game scrolls").toEqual([]);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
+  test("anyone can open an end-game vote from settings, and a majority ends it", async ({ browser }) => {
+    const { host, guest, hostContext, guestContext } = await startTile(browser);
+
+    await expect(host.locator(".rk-vote")).toHaveCount(0);
+    await host.locator(".rk-toolbar .btn").last().click(); // gear
+    const propose = host.locator(".settings-extra .btn");
+    await expect(propose).toBeEnabled();
+    await propose.click();
+
+    // a small chip, not a modal — the board stays usable while the vote is open
+    await expect(host.locator(".rk-vote")).toHaveCount(1);
+    await expect(guest.locator(".rk-vote")).toHaveCount(1, { timeout: 10_000 });
+    await expect(host.locator(".rk-vote__row .btn")).toHaveCount(0); // proposer already voted
+    await expect(guest.locator(".rk-vote__row .btn")).toHaveCount(2);
+
+    // a second proposal must not stack a rival vote
+    await host.locator(".rk-toolbar .btn").last().click();
+    await expect(host.locator(".settings-extra .btn")).toBeDisabled();
+    await host.locator(".modal .x").first().click();
+
+    await guest.getByRole("button", { name: "찬성" }).click();
+    // canceled games skip the results screen and land straight back in the lobby
+    await expect(host.locator(".scr--lobby")).toBeVisible({ timeout: 10_000 });
+    await expect(guest.locator(".scr--lobby")).toBeVisible({ timeout: 10_000 });
 
     await guestContext.close();
     await hostContext.close();

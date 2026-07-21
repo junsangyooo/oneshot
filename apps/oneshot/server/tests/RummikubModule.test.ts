@@ -457,6 +457,45 @@ describe("Rummikub — kick / disconnect robustness", () => {
     expect(over).not.toBeNull();
     expect(over!.canceled).toBe(true);
   });
+
+  // The in-game settings menu exposes "end vote" to everyone, so a second tap
+  // (or a second player tapping at the same moment) must not open a rival vote.
+  it("refuses a second proposal while a vote is already open", () => {
+    const { module } = start(3);
+    act(module, "player-1", RUMMIKUB_ACTIONS.configure, { turnSeconds: 0 }, true);
+    expect(act(module, "player-1", RUMMIKUB_ACTIONS.proposeEnd).ok).toBe(true);
+    expect(act(module, "player-1", RUMMIKUB_ACTIONS.proposeEnd).ok).toBe(false);
+    expect(act(module, "player-2", RUMMIKUB_ACTIONS.proposeEnd).ok).toBe(false);
+    expect(pubOf(module).endVote?.proposedBy).toBe("player-1");
+  });
+
+  it("blocks re-proposing for a cooldown once a vote is rejected", () => {
+    const { module } = start(3);
+    act(module, "player-1", RUMMIKUB_ACTIONS.configure, { turnSeconds: 0 }, true);
+    act(module, "player-1", RUMMIKUB_ACTIONS.proposeEnd);
+    act(module, "player-2", RUMMIKUB_ACTIONS.voteEnd, { agree: false });
+    act(module, "player-3", RUMMIKUB_ACTIONS.voteEnd, { agree: false });
+    expect(pubOf(module).endVote).toBeNull();
+    expect(module.isOver()).toBeNull(); // rejected -> the game goes on
+    expect(pubOf(module).endVoteCooldownUntil).not.toBeNull();
+    expect(act(module, "player-2", RUMMIKUB_ACTIONS.proposeEnd).ok).toBe(false);
+  });
+
+  // Kicking the proposer drops their own YES, so the vote must keep running on
+  // the survivors instead of stalling with a ghost ballot nobody can clear.
+  it("keeps a vote resolvable after the proposer is kicked", () => {
+    const { module } = start(4);
+    act(module, "player-1", RUMMIKUB_ACTIONS.configure, { turnSeconds: 0 }, true);
+    act(module, "player-1", RUMMIKUB_ACTIONS.proposeEnd);
+    module.onPlayerRemoved("player-1"); // proposer leaves for good
+    expect(pubOf(module).endVote?.votes["player-1"]).toBeUndefined();
+    act(module, "player-2", RUMMIKUB_ACTIONS.voteEnd, { agree: true });
+    expect(module.isOver()).toBeNull(); // 1 of 3 is not a majority yet
+    act(module, "player-3", RUMMIKUB_ACTIONS.voteEnd, { agree: true });
+    const over = module.isOver();
+    expect(over).not.toBeNull();
+    expect(over!.canceled).toBe(true);
+  });
 });
 
 describe("Rummikub — stalemate ends the game", () => {

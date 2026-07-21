@@ -19,6 +19,7 @@
   --teal: #3ad6c0;
   --warn: #f5b542;
   --gold: #f4b942;
+  --ok: #3ddb8f;   /* "this is valid / go ahead" green — semantic, themed */
 
   /* ALL OUT card colors (cyber: neon on dark) */
   --card-red: #ff4d57;
@@ -41,12 +42,28 @@
 *::after { box-sizing: border-box; }
 
 .settings-note { margin: 0; font-size: 12px; color: var(--ink-dim); line-height: 1.5; }
+/* screen-specific actions at the top of the settings modal (e.g. "end game
+   vote") — separated from the preference fields below it */
+.settings-extra { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.settings-extra .btn { min-height: 44px; }
 
 /* ---- shared in-game player rail (GameRail) ----
    Left vertical column on landscape/wide; horizontal scroll strip on portrait. */
 .game-rail { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overflow-x: hidden; min-height: 0; align-content: start; padding-right: 2px; }
 .rail-seat { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--line); position: relative; flex: 0 0 auto; }
 .rail-seat .glyph--img { width: 34px; height: 34px; flex: 0 0 auto; }
+/* Avatar slot. When a clock is running for this seat the portrait dims and the
+   seconds sit ON it in white — one glance answers "whose turn" and "how long". */
+.rail-seat__face { position: relative; display: block; flex: 0 0 auto; }
+.rail-seat__face.is-ticking .glyph--img img { filter: brightness(0.34) saturate(0.5); }
+.rail-seat__timer {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 0.8); pointer-events: none;
+}
+/* "this is me" — a coloured ring on the portrait, in BOTH themes (cozy overrides
+   the colour below). Distinct from is-turn, which lights the whole row. */
+.rail-seat.is-me .glyph--img { box-shadow: 0 0 0 2px var(--accent); }
 .rail-seat__body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .rail-seat__name { font-size: 12px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-seat__badge { font-size: 10px; color: var(--warn); letter-spacing: var(--track-mid); text-transform: uppercase; }
@@ -349,6 +366,7 @@ body {
   --teal: #8ed18e;
   --warn: #f7d154;
   --gold: #f5c344;
+  --ok: #35a173;
   /* ALL OUT card colors (cozy: warm but saturated enough to tell apart on cream) */
   --card-red: #e05656;
   --card-yellow: #cf9418;
@@ -799,14 +817,13 @@ body {
 [data-theme="cozy"] .rail-seat.is-attacker { box-shadow: 0 3px 0 rgb(255 139 139 / 0.55); }
 [data-theme="cozy"] .rail-seat.is-lead { box-shadow: 0 3px 0 rgb(245 195 68 / 0.55); }
 
-/* Rummikub — cozy chrome overrides (tile faces stay theme-independent) */
-[data-theme="cozy"] .scr--rummikub .rk-board { border-radius: 18px; box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.05); }
+/* Rummikub — cozy chrome overrides (tile faces stay theme-independent).
+   Same layout, same controls, same information — only the skin differs (§3-11). */
+[data-theme="cozy"] .scr--rummikub .rk-board { background: var(--bg-0); }
 [data-theme="cozy"] .scr--rummikub .rk-meld { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.05); border-color: var(--line); }
 [data-theme="cozy"] .scr--rummikub .rk-rack { border-radius: 18px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
-[data-theme="cozy"] .scr--rummikub .rk-turn { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.04); }
 [data-theme="cozy"] .scr--rummikub .rk-stepper__value { border-radius: 16px; }
 [data-theme="cozy"] .scr--rummikub .rk-stepper__arrow { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.05); }
-[data-theme="cozy"] .scr--rummikub .rk-me__tag { border-radius: 12px; }
 [data-theme="cozy"] .scr--rummikub .rk-meld--new { border-radius: 16px; }
 /* cozy drag affordances: soft rings instead of the cyber HUD inset glow */
 [data-theme="cozy"] .scr--rummikub .rk-meld.is-dropover {
@@ -815,20 +832,27 @@ body {
 [data-theme="cozy"] .scr--rummikub .rk-meld.is-invalid { box-shadow: 0 0 0 2px var(--warn), 0 3px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--rummikub .rk-coach { font-family: var(--font-ko, var(--font-mono)); }
 [data-theme="cozy"] .scr--rummikub .rk-ex__tiles .rk-tile { border-radius: 8px; }
-/* cozy: rounded, soft-shadowed versions of the new turn banner + deck button */
-[data-theme="cozy"] .scr--rummikub .rk-turn.is-mine {
-  box-shadow: 0 0 0 2px var(--accent), 0 4px 0 rgb(0 0 0 / 0.05);
-}
-[data-theme="cozy"] .scr--rummikub .rk-turn__bar { height: 4px; border-radius: 3px; }
-[data-theme="cozy"] .scr--rummikub .rk-draw {
-  border-radius: 16px;
-  box-shadow: 0 4px 0 rgb(0 0 0 / 0.06);
-}
-[data-theme="cozy"] .scr--rummikub .rk-draw:active:not(:disabled) { box-shadow: 0 1px 0 rgb(0 0 0 / 0.06); }
 /* cream-on-cream needs a firmer rim than the dark theme does */
 [data-theme="cozy"] .scr--rummikub .rk-deck i {
   border-radius: 5px;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.22);
 }
-[data-theme="cozy"] .scr--rummikub .rk-draw { background: var(--bg-0); }
-[data-theme="cozy"] .scr--rummikub .rk-fieldtools .btn { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.06); }
+/* floating furniture: rounded + soft 3D lift instead of angular HUD plates */
+[data-theme="cozy"] .scr--rummikub .rail-seat { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.05); }
+[data-theme="cozy"] .scr--rummikub .rail-seat.is-turn {
+  background: color-mix(in srgb, var(--cyan) 26%, var(--bg-1));
+  box-shadow: 0 3px 0 rgb(130 196 232 / 0.55);
+}
+[data-theme="cozy"] .scr--rummikub .rk-toolbar .btn,
+[data-theme="cozy"] .scr--rummikub .rk-sorts .btn { border-radius: 14px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--rummikub .rk-iconbtn,
+[data-theme="cozy"] .scr--rummikub .rk-main {
+  border-radius: 16px;
+  background: var(--bg-0);
+  box-shadow: 0 4px 0 rgb(0 0 0 / 0.06);
+}
+[data-theme="cozy"] .scr--rummikub .rk-iconbtn:active,
+[data-theme="cozy"] .scr--rummikub .rk-main:active:not(:disabled) { box-shadow: 0 1px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--rummikub .rk-main.is-commit { box-shadow: 0 4px 0 rgb(53 161 115 / 0.35); }
+[data-theme="cozy"] .scr--rummikub .rk-vote { border-radius: 16px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--rummikub .rk-coach { text-shadow: 0 1px 3px var(--bg-0), 0 0 6px var(--bg-0); }

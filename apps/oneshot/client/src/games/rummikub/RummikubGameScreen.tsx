@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import type { PartyRoomState, RummikubPrivateState, RummikubPublicState, Tile, TileColor } from "@oneshot/shared";
 import {
   RUMMIKUB_ACTIONS,
@@ -10,6 +11,7 @@ import { useT } from "../../i18n";
 import { Backdrop, AvatarImg, GameRail, RulesModal, SettingsModal } from "../../ui/terminal";
 import type { RailSeat } from "../../ui/terminal";
 import { useCountdown } from "../../ui/useCountdown";
+import { useAutoFullscreen, useFullscreenPref } from "../../ui/useFullscreen";
 import {
   checkCommit,
   invalidMeldIds,
@@ -23,6 +25,7 @@ import {
   type Stage,
 } from "./staging";
 import { grabChain, sort777, sort789 } from "./tileSort";
+import { useFitBoard, useFitHand, useFitRail, useFitTarget } from "./fit";
 
 type Props = { roomState: PartyRoomState; privateState: unknown; currentPlayerId: string | null };
 
@@ -161,6 +164,15 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   const [denyMeld, setDenyMeld] = useState<string | null>(null);
   // Why the player can't touch the board yet (shown once they try).
   const [lockHint, setLockHint] = useState(false);
+  // The main button fires exactly once per turn: a second tap before the server
+  // answers would draw twice / commit twice. Cleared when the server state moves.
+  const [busy, setBusy] = useState(false);
+
+  // Games are played sideways on a phone; browser chrome eats a third of the
+  // board. Ask for fullscreen as soon as the game screen is up (the hook retries
+  // on the next tap when the browser wants a gesture first).
+  const autoFullscreen = useFullscreenPref((s) => s.auto);
+  useAutoFullscreen(autoFullscreen && pub != null);
 
   const sendAction = (type: string, payload?: unknown) =>
     send({ type: "game:action", action: { type, payload, clientActionId: crypto.randomUUID() } });
@@ -188,6 +200,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     setDragIds([]);
     setHover(null);
     setLockHint(false);
+    setBusy(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverSig]);
 
@@ -206,6 +219,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   // Ticks for every seat, not just the active one — spectators need to feel the
   // clock too, and it makes a stalled turn obvious.
   const timeLeft = useCountdown(pub?.turnDeadline);
+  const voteCooldown = useCountdown(pub?.endVoteCooldownUntil);
   // Fire a validated timeout when the deadline passes. ANY seated client arms it
   // (not just the current player) so a backgrounded/closed active tab can't stall
   // the game — the server re-checks the clock and dedupes by turnNumber, so
@@ -237,6 +251,15 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     autoSelected: boolean; // the long-press already picked a set — don't toggle on release
   } | null>(null);
   const [ghost, setGhost] = useState<{ x: number; y: number; tiles: Tile[]; snapping?: boolean } | null>(null);
+
+  // Nothing in this game scrolls: each region shrinks its contents to fit
+  // instead. Declared here (before any early return) so hook order is stable.
+  const [railEl, railRef] = useFitTarget<HTMLDivElement>();
+  const [boardEl, boardRef] = useFitTarget<HTMLDivElement>();
+  const [rackEl, rackRef] = useFitTarget<HTMLDivElement>();
+  useFitRail(railEl, pub?.order.length ?? 0);
+  useFitBoard(boardEl, stage.board.map((m) => m.tiles.map((x) => x.id).join("-")).join("_"));
+  useFitHand(rackEl, stage.hand.length);
 
   // Escape (or the browser stealing the pointer, e.g. the rack scrolling under a
   // swipe) cancels the drag and flies the tiles home. Refs, so no stale closure.
@@ -480,76 +503,150 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   };
 
   // ---- rail ----
+  // Turn is shown by lighting the WHOLE seat row; "me" by a coloured ring on my
+  // portrait; the clock by dimming the active portrait and counting down on it.
   const railSeats: RailSeat[] = pub.order.map((id) => {
     const p = pub.players.find((x) => x.playerId === id);
+    const isTurn = pub.currentTurnPlayerId === id;
     return {
       id,
       countLabel: String(p?.handCount ?? 0),
-      turn: pub.currentTurnPlayerId === id,
+      turn: isTurn,
+      me: id === currentPlayerId,
+      timer: isTurn && pub.turnDeadline != null ? timeLeft : null,
       accent: p?.hasDoneInitialMeld ? "lead" : null,
       badge: !p?.connected ? t("rummikub.offline") : p && p.handCount === 1 ? t("rummikub.lastTile") : null,
       dim: !p?.connected,
     };
   });
 
-  const currentName = pub.currentTurnPlayerId ? nameOf(pub.currentTurnPlayerId) : "—";
-  const currentPlayer = pub.currentTurnPlayerId ? roomState.players[pub.currentTurnPlayerId] : undefined;
-  // Fraction of the turn clock still left, for the draining bar.
-  const turnFraction = pub.turnSeconds > 0 ? Math.min(1, timeLeft / pub.turnSeconds) : 1;
-  const timePressure = pub.turnDeadline != null && timeLeft <= 10;
-  const boardTileCount = stage.board.reduce((s, m) => s + m.tiles.length, 0);
-  const zoom = boardTileCount > 66 ? 0.6 : boardTileCount > 46 ? 0.72 : boardTileCount > 28 ? 0.85 : 1;
   const currentDisconnected =
     pub.currentTurnPlayerId != null && !pub.players.find((p) => p.playerId === pub.currentTurnPlayerId)?.connected;
 
+  // "Has this turn touched anything?" — compares the working board to the
+  // server's. Covers both tiles played from hand and pure board rearrangement,
+  // which is exactly what Undo has to be able to throw away.
+  const boardSig = (melds: { tiles: { id: string }[] }[]): string =>
+    melds.map((m) => m.tiles.map((x) => x.id).join("-")).join("_");
+  const dirty = boardSig(stage.board) !== boardSig(pub.board);
+
+  // The one primary button. It is DRAW until the staged play is legal, then it
+  // becomes a green check that ends the turn. Same spot, one tap, never both.
+  const canCommit = isMyTurn && commit.ok;
+  const mainDisabled = !isMyTurn || busy;
+  const onMain = () => {
+    if (mainDisabled) return;
+    setBusy(true);
+    if (canCommit) {
+      sendAction(RUMMIKUB_ACTIONS.commit, toCommitPayload(stage));
+      return;
+    }
+    // Drawing means "I'm playing nothing this turn": drop whatever was staged,
+    // take one tile, turn over.
+    resetAll();
+    sendAction(RUMMIKUB_ACTIONS.draw);
+  };
+
+  // ---- early-end vote ----
+  const amSeated = pub.players.some((p) => p.playerId === currentPlayerId);
+  const voteOpen = pub.endVote != null;
+  const iVoted = voteOpen && currentPlayerId != null && currentPlayerId in (pub.endVote?.votes ?? {});
+  const canPropose = amSeated && !voteOpen && pub.phase === "play" && voteCooldown <= 0;
+
+  const gameMenu = amSeated ? (
+    <button
+      type="button"
+      className="btn btn--sm btn--danger"
+      disabled={!canPropose}
+      onClick={() => {
+        setSettingsOpen(false);
+        sendAction(RUMMIKUB_ACTIONS.proposeEnd);
+      }}
+    >
+      <span>
+        ⏻{" "}
+        {voteOpen
+          ? t("rummikub.vote.inProgress")
+          : voteCooldown > 0
+            ? fill(t("vote.cooldown"), { s: voteCooldown })
+            : t("rummikub.proposeEnd")}
+      </span>
+    </button>
+  ) : null;
+
   return (
-    <main className={`scr scr--rummikub ${isMyTurn ? "is-myturn" : ""}`}>
+    <main
+      className={[
+        "scr",
+        "scr--rummikub",
+        isMyTurn ? "is-myturn" : "",
+        // A full table can't fit one column of seats on a phone in landscape;
+        // the rail folds to two columns rather than shrinking to illegibility.
+        pub.order.length >= 6 ? "has-crowd" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <Backdrop />
 
-      <header className="topbar rk-topbar">
+      {/* Players — a floating column down the LEFT edge. Each seat is
+          portrait + name + tile count; the active seat lights up whole. */}
+      <div className="rk-rail" ref={railRef}>
         <GameRail seats={railSeats} players={roomState.players} nameOf={nameOf} />
-        {/* whose turn it is, at a glance: their face, their name, and the clock
-            ticking down for EVERYONE (not just the active player) */}
-        <div className={`rk-turn ${isMyTurn ? "is-mine" : ""} ${timePressure ? "is-urgent" : ""}`} aria-live="polite">
-          <AvatarImg
-            avatarKey={currentPlayer?.avatarKey}
-            themeId={currentPlayer?.themeId}
-          />
-          <span className="rk-turn__who">
-            <span className="rk-turn__name">{isMyTurn ? t("rummikub.turnMine") : currentName}</span>
-            <span className="rk-turn__sub">
-              {isMyTurn ? t("rummikub.turnMineSub") : t("rummikub.turnTheirs")}
-            </span>
-          </span>
-          {pub.turnDeadline != null ? (
-            <span className="rk-turn__clock">
-              <b className="rk-turn__timer">{timeLeft}</b>
-              <i
-                className="rk-turn__bar"
-                style={{ ["--rk-left" as string]: `${turnFraction * 100}%` }}
-              />
-            </span>
-          ) : null}
-          <span className="rk-turn__pool">{fill(t("rummikub.poolLeft"), { n: pub.poolCount })}</span>
-        </div>
-        <div className="rk-toolbar">
-          {isHost && currentDisconnected ? (
-            <button type="button" className="btn btn--sm" onClick={() => sendAction(RUMMIKUB_ACTIONS.skipTurn)}>
-              <span>{t("rummikub.skip")}</span>
-            </button>
-          ) : null}
-          <button type="button" className="btn btn--sm" aria-label={t("rules.help")} onClick={() => setRulesOpen(true)}>
-            <span>?</span>
-          </button>
-          <button type="button" className="btn btn--sm" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
-            <span>⚙</span>
-          </button>
-        </div>
-      </header>
+      </div>
 
-      {/* board (the "field"), with the staging tools floating over its lower edge */}
+      {/* tools — floating top-right */}
+      <div className="rk-toolbar">
+        {isHost && currentDisconnected ? (
+          <button type="button" className="btn btn--sm" onClick={() => sendAction(RUMMIKUB_ACTIONS.skipTurn)}>
+            <span>{t("rummikub.skip")}</span>
+          </button>
+        ) : null}
+        <button type="button" className="btn btn--sm" aria-label={t("rules.help")} onClick={() => setRulesOpen(true)}>
+          <span>?</span>
+        </button>
+        <button type="button" className="btn btn--sm" aria-label={t("settings.title")} onClick={() => setSettingsOpen(true)}>
+          <span>⚙</span>
+        </button>
+      </div>
+
+      {/* early-end vote — a small chip under the tools, deliberately NOT a modal
+          so an open vote never blocks the board mid-turn */}
+      {voteOpen ? (
+        <div className="rk-vote" role="status">
+          <span className="rk-vote__title">{t("rummikub.vote.title")}</span>
+          <span className="rk-vote__tally">
+            {fill(t("rummikub.vote.tally"), {
+              agree: Object.values(pub.endVote!.votes).filter(Boolean).length,
+              total: pub.players.filter((p) => p.connected).length,
+            })}
+          </span>
+          {iVoted || !amSeated ? (
+            <span className="rk-vote__waiting">{t("rummikub.vote.waiting")}</span>
+          ) : (
+            <span className="rk-vote__row">
+              <button
+                type="button"
+                className="btn btn--sm btn--primary"
+                onClick={() => sendAction(RUMMIKUB_ACTIONS.voteEnd, { agree: true })}
+              >
+                <span>{t("rummikub.vote.agree")}</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn--sm"
+                onClick={() => sendAction(RUMMIKUB_ACTIONS.voteEnd, { agree: false })}
+              >
+                <span>{t("rummikub.vote.reject")}</span>
+              </button>
+            </span>
+          )}
+        </div>
+      ) : null}
+
+      {/* board — the field IS the screen; everything else floats over it */}
       <section className="rk-field">
-      <div className="rk-board" style={{ ["--rk-zoom" as string]: String(zoom) }}>
+      <div className="rk-board" ref={boardRef}>
         <div className="rk-board__inner">
           {stage.board.map((m) => {
             const jokers = jokerInfo(m.tiles);
@@ -625,47 +722,91 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
         </div>
       </div>
 
-        <div className="rk-fieldtools">
-          <button
-            type="button"
-            className="btn btn--sm rk-fieldtools__reset"
-            aria-label={t("rummikub.reset")}
-            title={t("rummikub.reset")}
-            disabled={!isMyTurn || played.length === 0}
-            onClick={resetAll}
-          >
-            <span aria-hidden>↺</span>
-          </button>
-        </div>
       </section>
 
-      {/* my area */}
-      <section className="rk-me">
-        <div className="rk-me__bar">
-          <span className="rk-me__who">
-            {didInitial ? null : <span className="rk-me__need">{t("rummikub.needInitial")}</span>}
-          </span>
-          <div className="rk-sorts">
+      {/* Floating control stack, bottom-right. Bottom row = hand sorts (they sit
+          over the rack they act on); above it = undo + the one primary button. */}
+      <div className="rk-hud">
+        <div className="rk-hud__acts">
+          {/* Undo only EXISTS once this turn has changed something — a button
+              that is permanently greyed out reads as broken. */}
+          {isMyTurn && dirty ? (
             <button
               type="button"
-              aria-pressed={sortMode === "777"}
-              className={`btn btn--sm ${sortMode === "777" ? "btn--primary" : ""}`}
-              onClick={() => setSortMode((m) => (m === "777" ? "none" : "777"))}
+              className="rk-iconbtn rk-iconbtn--undo"
+              aria-label={t("rummikub.reset")}
+              title={t("rummikub.reset")}
+              onClick={resetAll}
             >
-              <span>777</span>
+              <span aria-hidden>↺</span>
             </button>
-            <button
-              type="button"
-              aria-pressed={sortMode === "789"}
-              className={`btn btn--sm ${sortMode === "789" ? "btn--primary" : ""}`}
-              onClick={() => setSortMode((m) => (m === "789" ? "none" : "789"))}
-            >
-              <span>789</span>
-            </button>
-          </div>
+          ) : null}
+          <button
+            type="button"
+            className={`rk-main ${canCommit ? "is-commit" : ""}`}
+            aria-label={canCommit ? t("rummikub.endTurn") : `${t("rummikub.draw")} — ${t("rummikub.drawSub")}`}
+            title={canCommit ? t("rummikub.endTurn") : t("rummikub.drawSub")}
+            disabled={mainDisabled}
+            onClick={onMain}
+          >
+            {canCommit ? (
+              <span className="rk-main__check" aria-hidden>
+                ✓
+              </span>
+            ) : (
+              <>
+                <span className="rk-deck" aria-hidden>
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <span className="rk-main__plus" aria-hidden>
+                  ＋
+                </span>
+                <span className="rk-main__pool">{pub.poolCount}</span>
+              </>
+            )}
+          </button>
         </div>
+        <div className="rk-sorts">
+          <button
+            type="button"
+            aria-pressed={sortMode === "777"}
+            className={`btn btn--sm ${sortMode === "777" ? "btn--primary" : ""}`}
+            onClick={() => setSortMode((m) => (m === "777" ? "none" : "777"))}
+          >
+            <span>777</span>
+          </button>
+          <button
+            type="button"
+            aria-pressed={sortMode === "789"}
+            className={`btn btn--sm ${sortMode === "789" ? "btn--primary" : ""}`}
+            onClick={() => setSortMode((m) => (m === "789" ? "none" : "789"))}
+          >
+            <span>789</span>
+          </button>
+        </div>
+      </div>
 
-        <div
+      {/* why you can (or can't) end the turn — the button alone never explains
+          itself, so the coach line is always on screen (CLAUDE.md §7-5) */}
+      <p className={`rk-coach ${lockHint ? "is-warn" : ""}`} role="status">
+        {lockHint
+          ? t("rummikub.lockedBoard")
+          : !isMyTurn
+            ? t("rummikub.waitTurn")
+            : commit.ok
+              ? t("rummikub.readyEnd")
+              : commit.reason === "invalidMeld"
+                ? t("rummikub.whyInvalid")
+                : commit.reason === "initialLow"
+                  ? fill(t("rummikub.whyInitialLow"), { n: commit.points ?? 0 })
+                  : t("rummikub.whyEmpty")}
+      </p>
+
+      {/* my hand — two rows pinned to the bottom, inset from both edges */}
+      <div
+          ref={rackRef}
           data-drop="hand"
           className={[
             "rk-rack",
@@ -698,64 +839,6 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
           {sortedHand.length === 0 ? <span className="rk-rack__empty">—</span> : null}
         </div>
 
-        {/* why you can (or can't) end the turn — the old UI just greyed the
-            button out, which reads as "broken" to anyone new */}
-        <p className={`rk-coach ${lockHint ? "is-warn" : ""}`} role="status">
-          {lockHint
-            ? t("rummikub.lockedBoard")
-            : !isMyTurn
-              ? t("rummikub.waitTurn")
-              : commit.ok
-                ? t("rummikub.readyEnd")
-                : commit.reason === "invalidMeld"
-                  ? t("rummikub.whyInvalid")
-                  : commit.reason === "initialLow"
-                    ? fill(t("rummikub.whyInitialLow"), { n: commit.points ?? 0 })
-                    : t("rummikub.whyEmpty")}
-        </p>
-
-        {/* action bar */}
-        <div className="rk-actions">
-          {/* draw = take one from the deck; drawn as a card stack with a +, so it
-              reads as an action on the pile rather than a word to parse */}
-          <button
-            type="button"
-            className="rk-draw"
-            aria-label={`${t("rummikub.draw")} — ${t("rummikub.drawSub")}`}
-            title={t("rummikub.drawSub")}
-            disabled={!isMyTurn}
-            onClick={() => {
-              // Drawing means "I'm playing nothing this turn": throw away whatever
-              // was staged, take one tile, turn over.
-              resetAll();
-              sendAction(RUMMIKUB_ACTIONS.draw);
-            }}
-          >
-            <span className="rk-deck" aria-hidden>
-              <i />
-              <i />
-              <i />
-            </span>
-            <span className="rk-draw__plus" aria-hidden>
-              ＋
-            </span>
-          </button>
-          <button
-            type="button"
-            className="btn btn--primary rk-actions__end"
-            disabled={!isMyTurn || !commit.ok}
-            onClick={() => sendAction(RUMMIKUB_ACTIONS.commit, toCommitPayload(stage))}
-          >
-            <span>
-              {t("rummikub.endTurn")}
-              {!didInitial && commit.ok === false && commit.reason === "initialLow"
-                ? ` (${commit.points ?? 0}/30)`
-                : ""}
-            </span>
-          </button>
-        </div>
-      </section>
-
       {ghost ? (
         <div
           className={`rk-ghost ${ghost.snapping ? "is-snap" : ""} ${hover && !hover.ok ? "is-deny" : ""}`}
@@ -782,6 +865,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
         settingsOpen={settingsOpen}
         onRules={() => setRulesOpen(false)}
         onSettings={() => setSettingsOpen(false)}
+        settingsExtra={gameMenu}
         t={t}
       />
     </main>
@@ -823,16 +907,18 @@ const RummikubModals = ({
   settingsOpen,
   onRules,
   onSettings,
+  settingsExtra,
   t,
 }: {
   rulesOpen: boolean;
   settingsOpen: boolean;
   onRules: () => void;
   onSettings: () => void;
+  settingsExtra?: ReactNode;
   t: ReturnType<typeof useT>;
 }) => (
   <>
-    <SettingsModal open={settingsOpen} onClose={onSettings} />
+    <SettingsModal open={settingsOpen} onClose={onSettings} extra={settingsExtra} />
     <RulesModal
       open={rulesOpen}
       onClose={onRules}

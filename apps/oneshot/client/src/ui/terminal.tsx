@@ -8,6 +8,7 @@ import { AVATARS, avatarSrc, resolveAvatar } from "../design/avatars";
 import { gameMeta, gameThumb } from "../design/games";
 import { useIdentity } from "../app/identity";
 import { useRoomStore } from "../app/useRoomStore";
+import { enterFullscreen, exitFullscreen, useFullscreen, useFullscreenPref } from "./useFullscreen";
 
 /* fx overlays + HUD corner brackets — on every screen */
 export const Backdrop = () => (
@@ -30,6 +31,10 @@ export type RailSeat = {
   accent?: "attacker" | "lead" | null; // extra emphasis (e.g. last attacker)
   badge?: string | null; // small status word ("패스", "한 장!")
   dim?: boolean; // finished / eliminated
+  me?: boolean; // this seat is the viewer — gets a coloured avatar ring
+  // Seconds left on this seat's clock. Rendered INSIDE the avatar (which dims
+  // behind it) so "whose turn" and "how long left" are one glance, not two.
+  timer?: number | null;
 };
 
 /* Shared player rail. A scrollable list of every player (icon + nickname +
@@ -56,11 +61,15 @@ export const GameRail = ({
           s.accent === "attacker" ? "is-attacker" : "",
           s.accent === "lead" ? "is-lead" : "",
           s.dim ? "is-out" : "",
+          s.me ? "is-me" : "",
         ]
           .filter(Boolean)
           .join(" ")}
       >
-        <AvatarImg avatarKey={players[s.id]?.avatarKey} themeId={players[s.id]?.themeId} />
+        <span className={`rail-seat__face ${s.timer != null ? "is-ticking" : ""}`}>
+          <AvatarImg avatarKey={players[s.id]?.avatarKey} themeId={players[s.id]?.themeId} />
+          {s.timer != null ? <b className="rail-seat__timer">{s.timer}</b> : null}
+        </span>
         <span className="rail-seat__body">
           <span className="rail-seat__name">{nameOf(s.id)}</span>
           {s.badge ? <span className="rail-seat__badge">{s.badge}</span> : null}
@@ -131,12 +140,20 @@ export const SettingsModal = ({
   open,
   onClose,
   onSaveNickname,
+  extra,
 }: {
   open: boolean;
   onClose: () => void;
   onSaveNickname?: (nickname: string) => void;
+  // Slot for screen-specific actions (e.g. a game's "end game vote"). Rendered
+  // at the top of the body so leaving a game is where players look for it,
+  // instead of every game inventing its own modal (CLAUDE.md §3-8).
+  extra?: ReactNode;
 }) => {
   const t = useT();
+  const fullscreen = useFullscreen();
+  const autoFullscreen = useFullscreenPref((s) => s.auto);
+  const setAutoFullscreen = useFullscreenPref((s) => s.setAuto);
   const identity = useIdentity();
   const lang = useLangStore((s) => s.lang);
   const setLang = useLangStore((s) => s.setLang);
@@ -178,6 +195,35 @@ export const SettingsModal = ({
           </button>
         </div>
         <div className="modal-body">
+          {extra ? <div className="settings-extra">{extra}</div> : null}
+          {/* Hidden entirely where the API doesn't exist (iPhone Safari) rather
+              than shown as a button that does nothing. */}
+          {fullscreen.supported ? (
+            <div>
+              <div className="field-head" style={{ marginBottom: 10 }}>
+                <span>{t("settings.fullscreen")}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className={`btn btn--sm ${autoFullscreen ? "btn--primary" : ""}`}
+                  aria-pressed={autoFullscreen}
+                  onClick={() => {
+                    setAutoFullscreen(!autoFullscreen);
+                    if (!autoFullscreen) void enterFullscreen();
+                  }}
+                >
+                  <span>{autoFullscreen ? t("settings.fullscreenOn") : t("settings.fullscreenOff")}</span>
+                </button>
+                {fullscreen.active ? (
+                  <button type="button" className="btn btn--sm" onClick={() => void exitFullscreen()}>
+                    <span>{t("settings.fullscreenExit")}</span>
+                  </button>
+                ) : null}
+              </div>
+              <p className="settings-note">{t("settings.fullscreenNote")}</p>
+            </div>
+          ) : null}
           <div>
             <div className="field-head" style={{ marginBottom: 10 }}>
               <span>{t("settings.language")}</span>
