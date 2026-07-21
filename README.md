@@ -28,7 +28,7 @@
 | ◆ | **All Out** | 2–16 | ★★★ | Color/number-matching shedding game. Stacking +2/+4/+7 attacks, Shield/Reflect defense, Exchange · Reverse · color-change cards. Bankruptcy option, double deck at 9+ players, multi-round rank-sum scoring |
 | ⚄ | **Dice Roll** | **1+** | ★ | Pure luck. Each round everyone throws two dice and ranks by the sum; total pips rolled break rank-sum ties. Solo luck-checking is a valid way to play |
 | ◉ | **Roulette** | **1–24** | ★ | The wheel is split evenly among the players and spins by itself — whoever owns the slice under the pin wins. No input at all: the server gates a minimum spin duration and the client plays the reveal |
-| ▤ | **Tile** | 2–8 | ★★★ | Tile-melding game. Build groups (same number, different colors) and runs (same color in sequence) from a 14-tile rack, rearrange the board, and empty your hand first. Press-and-hold drag with a staging copy of the rack |
+| ▤ | **Tile** | 2–8 | ★★★ | Tile-melding game. Build groups (same number, different colors) and runs (same color in sequence) from a 14-tile rack, rearrange the board, and empty your hand first. Drag from a staging copy of the rack; hold a tile and its neighbours join one at a time, so how long you hold is how much you pick up. Wedging a tile into a set splits it into two valid sets automatically |
 | ◎ | **Liar** | 3+ | ★★ | Everyone gets the same secret word — except one liar. Debate out loud and vote out the liar (the app only keeps the word secret) |
 | ✕ | **Fool Liar** | 3+ | ★ | A twist where the liar **doesn't even know they're the liar** — they receive a different word from the same category |
 | ⌗ | Arithmetic | 2+ | ★★ | Roadmap (`coming_soon` — already registered in the catalog; flipping the status ships it) |
@@ -39,7 +39,8 @@
 - **Rank-sum scoring** — multi-round games (Upstage, All Out, Dice) share one convention: the lowest sum of per-round ranks wins.
 - **Early-end vote** — anyone can propose ending the game early, decided by a vote counted against **connected players** (with a cooldown after a reject). Round progression isn't host-only either.
 - **Disconnect ≠ leave** — refreshes and network blips restore your seat via a reconnect token. No auto-skip, no auto-kick, no turn timers; only the host intervenes, manually.
-- **In-game `?` help** — every game ships a `RulesModal` with rules in both ko & en. Onboarding a first-time player is part of "done".
+- **In-game `?` help** — every game ships a `RulesModal` with rules in both ko & en, and it can render real game pieces inline, because "same number, different colors" is far easier to see than to read. Onboarding a first-time player is part of "done".
+- **Direct manipulation** — games that move pieces around share one interaction contract: a local staging copy the player edits freely, a drop that fails or is cancelled (Escape, or the browser stealing the pointer) flying the pieces back to where they were picked up, live valid/invalid drop-target feedback, a tap-only path for everything you can drag, and a coach line that says *why* the primary button is locked instead of just greying it out.
 - **Home library preview** — the home screen lists every `available` game; tapping one expands a description, player range, and difficulty in place. It reads straight from the catalog, so shipping a game surfaces it here automatically.
 
 > Per-game detailed rules live in code (`server/src/games/<id>/`) and the i18n help texts — those are the single source of truth.
@@ -143,14 +144,15 @@ corepack pnpm test:e2e                        # Playwright user journeys (option
 
 ---
 
-## ✅ QA Philosophy — Screens and Journeys
+## ✅ QA Philosophy — Screens, Journeys, Gestures
 
-The definition of done has two layers (full checklists: CLAUDE.md §5 · §6):
+The definition of done has three layers (full checklists: CLAUDE.md §5 · §6 · §7):
 
 1. **Per screen** — all **2 themes × 2 languages = 4 combinations** work, plus the `/_states` page and mobile widths (top bar collapses, 44px touch targets, no horizontal overflow). "Works" includes **feature parity**: both themes expose the same controls and information, and nothing that looks selectable is inert.
 2. **Per journey** — catching the bugs that hide *between* screens: the right first screen per entry path (direct URL / invite link `/r/CODE` / QR / bad code), Enter pressing the button the user *meant*, the address bar always matching the room you're actually seated in, copy buttons copying exactly what their label says, and refresh/back/kick landing on a sensible screen.
+3. **Per gesture** — anything with a time axis is invisible to screenshot QA, so it gets *measured* instead: hold a piece and assert the sequence of how many are picked up (`0 → 2 → 3 → 4`), that starting a drag freezes it there, and that releasing drops it all. The same pass catches decorative overlays that silently eat clicks — a HUD corner bracket missing `pointer-events: none` swallowed every click in all four screen corners — and device gates that lock people out (an orientation-only check walled off any desktop window taller than it is wide).
 
-Every fixed journey bug gets pinned as an e2e test — `e2e/tests/home-enter.spec.ts` (Enter intent), `lobby-copy.spec.ts` (clipboard), `dice.spec.ts` · `allout-auto.spec.ts` (full playthroughs) set the precedent.
+Every fixed journey bug gets pinned as an e2e test — `e2e/tests/home-enter.spec.ts` (Enter intent), `lobby-copy.spec.ts` (clipboard), `rummikub.spec.ts` (gestures, snap-back, device gate), `dice.spec.ts` · `allout-auto.spec.ts` (full playthroughs) set the precedent.
 
 ---
 
