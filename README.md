@@ -19,7 +19,7 @@
 
 ## 🎲 Game Library
 
-**6 games playable today**, driven by the catalog (`shared/src/games/catalog.ts`) — and growing.
+**8 games playable today**, driven by the catalog (`shared/src/games/catalog.ts`) — and growing.
 
 | | Game | Players | Complexity | One-line rules |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@
 | ⛁ | **Upstage** | 3+ | ★★★ | A shedding game where **lower numbers are stronger**. Beat the current set with an equal-sized, lower set and empty your hand first. Two ★ wilds, penalty mode (tax exchange + revolt declaration), multi-hand rank-sum scoring |
 | ◆ | **All Out** | 2–16 | ★★★ | Color/number-matching shedding game. Stacking +2/+4/+7 attacks, Shield/Reflect defense, Exchange · Reverse · color-change cards. Bankruptcy option, double deck at 9+ players, multi-round rank-sum scoring |
 | ⚄ | **Dice Roll** | **1+** | ★ | Pure luck. Each round everyone throws two dice and ranks by the sum; total pips rolled break rank-sum ties. Solo luck-checking is a valid way to play |
+| ◉ | **Roulette** | **1–24** | ★ | The wheel is split evenly among the players and spins by itself — whoever owns the slice under the pin wins. No input at all: the server gates a minimum spin duration and the client plays the reveal |
+| ▤ | **Tile** | 2–8 | ★★★ | Tile-melding game. Build groups (same number, different colors) and runs (same color in sequence) from a 14-tile rack, rearrange the board, and empty your hand first. Press-and-hold drag with a staging copy of the rack |
 | ◎ | **Liar** | 3+ | ★★ | Everyone gets the same secret word — except one liar. Debate out loud and vote out the liar (the app only keeps the word secret) |
 | ✕ | **Fool Liar** | 3+ | ★ | A twist where the liar **doesn't even know they're the liar** — they receive a different word from the same category |
 | ⌗ | Arithmetic | 2+ | ★★ | Roadmap (`coming_soon` — already registered in the catalog; flipping the status ships it) |
@@ -38,6 +40,7 @@
 - **Early-end vote** — anyone can propose ending the game early, decided by a vote counted against **connected players** (with a cooldown after a reject). Round progression isn't host-only either.
 - **Disconnect ≠ leave** — refreshes and network blips restore your seat via a reconnect token. No auto-skip, no auto-kick, no turn timers; only the host intervenes, manually.
 - **In-game `?` help** — every game ships a `RulesModal` with rules in both ko & en. Onboarding a first-time player is part of "done".
+- **Home library preview** — the home screen lists every `available` game; tapping one expands a description, player range, and difficulty in place. It reads straight from the catalog, so shipping a game surfaces it here automatically.
 
 > Per-game detailed rules live in code (`server/src/games/<id>/`) and the i18n help texts — those are the single source of truth.
 
@@ -87,6 +90,7 @@ Themes are a top-level concept. One line — `<html data-theme="...">` — resty
 
 - Every color, font, spacing, and radius is defined only as **design tokens** (`client/src/design/terminal.css`). `:root` = cyber; the `[data-theme="cozy"]` block = cozy overrides.
 - Which is why **games are never built twice per theme** — stick to tokens and both themes follow automatically.
+- **Themes change the look, never the feature set.** Design, layout, and effects may differ (cyber glitches in; cozy springs open); the features, information, and interactions must be identical. Hiding a functional block in one theme is treated as a bug, not a style choice — only pure decoration (scanlines, corner brackets, telemetry) may be themed away.
 - Player avatars are per-theme assets (`public/themes/<theme>/avatars/`), and **each player renders in their own theme** (a cozy user shows up with a cozy avatar on your cyber screen).
 - i18n (ko · en) is the same invariant: every user-facing string must exist in both dictionaries.
 - Every state/error page can be previewed in both themes at once via the `/_states` route.
@@ -143,7 +147,7 @@ corepack pnpm test:e2e                        # Playwright user journeys (option
 
 The definition of done has two layers (full checklists: CLAUDE.md §5 · §6):
 
-1. **Per screen** — all **2 themes × 2 languages = 4 combinations** work, plus the `/_states` page and mobile widths (top bar collapses, 44px touch targets, no horizontal overflow).
+1. **Per screen** — all **2 themes × 2 languages = 4 combinations** work, plus the `/_states` page and mobile widths (top bar collapses, 44px touch targets, no horizontal overflow). "Works" includes **feature parity**: both themes expose the same controls and information, and nothing that looks selectable is inert.
 2. **Per journey** — catching the bugs that hide *between* screens: the right first screen per entry path (direct URL / invite link `/r/CODE` / QR / bad code), Enter pressing the button the user *meant*, the address bar always matching the room you're actually seated in, copy buttons copying exactly what their label says, and refresh/back/kick landing on a sensible screen.
 
 Every fixed journey bug gets pinned as an e2e test — `e2e/tests/home-enter.spec.ts` (Enter intent), `lobby-copy.spec.ts` (clipboard), `dice.spec.ts` · `allout-auto.spec.ts` (full playthroughs) set the precedent.

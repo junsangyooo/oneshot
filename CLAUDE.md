@@ -95,10 +95,56 @@ corepack pnpm --filter @oneshot/server test
    - **터치 타깃 ≥ 44px**(버튼·토글·`lang-dot`·스텝퍼 등). 9px 같은 초소형 글자 지양.
    - **스코프된 툴바 안에 `position:fixed` 요소를 넣지 않는다.** 부모 밖으로 튀어나가 다른 버튼과 겹친다(예전 `LangToggle` 오버랩). 언어 전환은 `SettingsModal`로 통일.
    - **길게 늘어나는 영역(손패 등)은 그 영역만 스크롤시키고 1차 액션 버튼은 고정**한다. 손패를 그냥 흘려보내면 Play/Pass가 화면 밖으로 밀린다(§4-D 패턴 참고).
+   - **보조 트리거(설정 등)는 긴 라벨 대신 통용 아이콘 하나**로 둔다(설정=톱니바퀴). 라벨은 `aria-label`/`title`로 남기고
+     버튼은 44px 이상. 라벨 텍스트에 의존하면 언어·테마마다 폭이 달라져 레이아웃이 흔들린다.
 
 10. **게임마다 인게임 `?` 도움말(`RulesModal`)을 단다.** 처음 보는 사람이 룰을 모른다 — 온보딩은 "완료"의 일부다. 상단바에 `?` 버튼 + `RulesModal`을 두고, 룰 문단을 `i18n`(ko·en)으로 채운다. 핵심 반(反)직관 규칙(예: "낮은 숫자가 강함")은 도움말뿐 아니라 플레이 화면 힌트에도 상시 노출한다.
 
-11. **완료 기준 = 2 테마 × 2 언어 = 4 조합 + `/_states` + 모바일 폭.** 설정에서 테마/언어를 바꿔가며 확인하고, 창을 좁혀(또는 실기기) 모바일도 확인한다.
+11. **⚠️ 테마는 "겉"만 바꾼다 — 기능은 두 테마가 항상 동일하다.** 디자인·이팩트·배치는 달라도 되지만
+    **기능·정보·인터랙션은 완전히 같아야 한다.** 실제로 cozy에서 홈 게임 라이브러리 전체가 `display:none`이라
+    "cozy 유저는 어떤 게임이 있는지 볼 수조차 없는" 상태로 배포된 적이 있다.
+    - ❌ **한 테마에서 기능 블록을 통째로 `display: none` 하지 않는다.** cozy 오버라이드에서 `display:none`은
+      **순수 장식**(스캔라인·코너·텔레메트리·글리치)에만 허용된다. 정보·버튼·목록에 쓰면 그건 기능 삭제다.
+    - 레이아웃이 안 맞으면 **숨기지 말고 옮긴다** — 위치·크기·스타일을 바꿔 그 테마에 맞게 다시 배치한다.
+    - 반대 방향도 같다: 한 테마에만 있는 버튼/정보를 새로 만들지 않는다. 새 기능은 **양쪽 테마에 동시에** 들어간다.
+    - 테마별로 달라도 되는 것: 색·폰트·라운드·그림자·애니메이션 종류(cyber=글리치/스캔라인, cozy=퐁 튀는 스프링)·아이콘 모양.
+    - 셀프 체크: `grep -n 'display: *none' client/src/design/terminal.css` → cozy 블록의 각 히트가
+      **장식인지 기능인지** 하나씩 확인한다.
+
+12. **"눌릴 것처럼 생긴 건 실제로 눌려야 한다"(죽은 UI 금지).** 목록·카드·토글이 선택 가능해 보이면 실제 상태를 가져야 한다.
+    - **기본 선택을 하드코딩하지 않는다.** `i === 0 ? "is-active" : ""` 같은 장식용 활성 표시는 금지 —
+      "하나가 켜져 있는데 나머지는 눌러도 반응 없음"이 가장 나쁜 경험이다. 상태가 없으면 **아무것도 선택하지 않은 상태**로 시작한다.
+    - 선택 가능한 행은 `<div>`가 아니라 `<button>`으로 만들고 `aria-expanded`/`aria-pressed`를 준다.
+    - 펼침 패널은 오버레이가 아니라 **흐름(in-flow)** 에 넣어 아래 항목이 밀리게 한다(모바일에서 잘리지 않는다).
+
+13. **완료 기준 = 2 테마 × 2 언어 = 4 조합 + `/_states` + 모바일 폭.** 설정에서 테마/언어를 바꿔가며 확인하고, 창을 좁혀(또는 실기기) 모바일도 확인한다.
+
+**4조합 스크린샷 QA 레시피(검증된 방법).** Chrome 자동화는 localhost에 못 닿고 창 리사이즈도 먹지 않는다 →
+`apps/oneshot/e2e/`(Playwright가 설치된 곳)에서 임시 스크립트로 돌린다. 테마/언어는 **평문 localStorage 키**다:
+
+```js
+// apps/oneshot/e2e/_shot.mjs  — 확인 후 반드시 삭제한다(리포에 남기지 않음)
+import { chromium } from "@playwright/test";
+const b = await chromium.launch();
+for (const theme of ["cyber", "cozy"]) for (const lang of ["ko", "en"]) {
+  const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(([t, l]) => {
+    localStorage.setItem("oneshot.theme", t);   // 평문: "cyber" | "cozy"
+    localStorage.setItem("oneshot.lang", l);    // 평문: "ko" | "en"
+  }, [theme, lang]);
+  const p = await ctx.newPage();
+  await p.goto("http://127.0.0.1:5173/");
+  // 렌더만 보지 말고 기능 동등성을 수치로 뽑는다: 두 테마의 숫자가 같아야 한다
+  console.log(theme, lang, await p.locator(".scr--home .game-row").count(),
+    await p.evaluate(() => document.documentElement.scrollWidth > innerWidth));  // 가로 넘침
+  await p.screenshot({ path: `/tmp/home-${theme}-${lang}.png` });
+  await ctx.close();
+}
+await b.close();
+```
+
+> dev 서버가 5173을 못 잡고 5174/5175로 올라갈 수 있으니 **실제 출력된 포트**를 쓴다.
+> 스크린샷만 보지 말고 **요소 개수·`is-active` 개수·가로 넘침을 두 테마에서 비교**한다 — 그래야 "cozy에서 안 보임"류를 잡는다.
 
 ---
 
@@ -293,6 +339,8 @@ Bold simple high-contrast centered silhouette that stays recognizable at 32px. F
 - [ ] 색/폰트/간격을 토큰으로만 썼는가? (하드코딩 hex/px 없음)
 - [ ] 레이아웃을 `.scr--<name>`로 스코프했는가?
 - [ ] **cozy 오버라이드**를 넣고 cozy에서 직접 확인했는가?
+- [ ] **테마 기능 동등성**: 두 테마에 같은 기능·정보·인터랙션이 다 있는가? cozy에서 `display:none`으로 **기능 블록을 숨기지** 않았는가(장식만 허용)? (§3-11)
+- [ ] **죽은 UI 없음**: 선택 가능해 보이는 요소가 실제로 눌리는가? 기본 선택을 하드코딩(`i===0`)하지 않았는가? (§3-12)
 - [ ] 사용자 텍스트가 i18n(ko·en) 양쪽에 있는가?
 - [ ] 플레이어 아이콘에 `AvatarImg`(themeId 전달)를 썼는가?
 - [ ] 새 에러/상태가 필요하면 `states.tsx`에 kind로 추가했는가? 모달은 공용 `.modal`/`RulesModal`을 썼는가(직접 모달 X)?

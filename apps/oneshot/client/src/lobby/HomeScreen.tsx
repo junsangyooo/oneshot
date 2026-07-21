@@ -4,9 +4,11 @@ import { clientConfig } from "../config/env";
 import { useRoomStore } from "../app/useRoomStore";
 import { useIdentity } from "../app/identity";
 import { gameCatalog } from "@oneshot/shared";
-import { useT, useLangStore, gameTitle } from "../i18n";
+import type { GameId } from "@oneshot/shared";
+import { useT, useLangStore, gameTitle, gameDesc } from "../i18n";
 import { useTheme } from "../theme";
 import { GAME_ORDER, gameMeta } from "../design/games";
+import { Backdrop, SettingsModal, ConfigButton, GameIcon } from "../ui/terminal";
 
 /* The home library mirrors the catalog: only games marked "available" on the
    server are shown. Flipping a game's status to "available" surfaces it here
@@ -14,7 +16,12 @@ import { GAME_ORDER, gameMeta } from "../design/games";
 const AVAILABLE_GAMES = GAME_ORDER.filter(
   (id) => gameCatalog.find((game) => game.id === id)?.status === "available",
 );
-import { Backdrop, SettingsModal, GameIcon } from "../ui/terminal";
+
+/* complexity 1..3 rendered as stars, straight from the catalog */
+const difficultyStars = (id: GameId): string => {
+  const level = gameCatalog.find((game) => game.id === id)?.complexity ?? 1;
+  return "★".repeat(level) + "☆".repeat(3 - level);
+};
 
 type HomeScreenProps = {
   initialRoomCode: string;
@@ -31,6 +38,8 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
   const [nickname, setNickname] = useState(identity.nickname);
   const [roomCode, setRoomCode] = useState(initialRoomCode);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // nothing is pre-selected: the library opens only when a row is tapped
+  const [openGame, setOpenGame] = useState<GameId | null>(null);
   const connecting = connectionState === "connecting";
 
   const normalizedRoomCode = useMemo(
@@ -67,9 +76,7 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
   return (
     <main className="scr scr--home">
       <Backdrop />
-      <button type="button" className="config-pill" onClick={() => setSettingsOpen(true)}>
-        ⚙ <span>{t("home.config")}</span>
-      </button>
+      <ConfigButton onClick={() => setSettingsOpen(true)} />
 
       <aside className="rail">
         <div className="rail-head">
@@ -78,17 +85,41 @@ export const HomeScreen = ({ initialRoomCode }: HomeScreenProps) => {
             {String(AVAILABLE_GAMES.length).padStart(2, "0")} {t("home.modules")}
           </span>
         </div>
-        <div>
-          {AVAILABLE_GAMES.map((id, i) => {
+        <div className="rail-list">
+          {AVAILABLE_GAMES.map((id) => {
             const meta = gameMeta(id);
+            const open = openGame === id;
             return (
-              <div className={`game-row ${i === 0 ? "is-active" : ""}`} key={id}>
-                <GameIcon id={id} />
-                <span>
-	                  <div className="nm">{gameTitle(lang, id, id)}</div>
-	                  <div className="mt">{playerRange(meta.min, meta.max)}</div>
-	                </span>
-	                <span className="pl">{meta.max === null ? `${meta.min}+` : `${meta.min}-${meta.max}`}</span>
+              <div className="game-slot" key={id}>
+                <button
+                  type="button"
+                  className={`game-row ${open ? "is-active" : ""}`}
+                  aria-expanded={open}
+                  onClick={() => setOpenGame(open ? null : id)}
+                >
+                  <GameIcon id={id} />
+                  <span>
+                    <div className="nm">{gameTitle(lang, id, id)}</div>
+                    <div className="mt">{playerRange(meta.min, meta.max)}</div>
+                  </span>
+                  <span className="pl">{meta.max === null ? `${meta.min}+` : `${meta.min}-${meta.max}`}</span>
+                </button>
+                {/* the detail panel sits in flow right under its row, so opening
+                    one pushes the rest of the library down (no overlay) */}
+                {open ? (
+                  <div className="game-detail">
+                    <p className="game-detail__desc">{gameDesc(lang, id)}</p>
+                    <div className="game-detail__meta">
+                      <span>{playerRange(meta.min, meta.max)}</span>
+                      <span className="sep" aria-hidden="true">
+                        ·
+                      </span>
+                      <span>
+                        {t("home.difficulty")} <b>{difficultyStars(id)}</b>
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })}

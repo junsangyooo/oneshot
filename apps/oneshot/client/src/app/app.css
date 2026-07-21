@@ -65,7 +65,7 @@ button { font: inherit; }
 .scr--home .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
 .scr--home .actions .btn { justify-content: space-between; }
 
-.scr--home .rail { position: fixed; right: var(--frame-pad); top: 50%; transform: translateY(-50%); width: 270px; z-index: 4; display: grid; gap: 2px; }
+.scr--home .rail { position: fixed; right: var(--frame-pad); top: 50%; transform: translateY(-50%); width: 270px; z-index: 4; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 2px; max-height: calc(100svh - var(--frame-pad) * 2); }
 .scr--home .rail-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; letter-spacing: 0.18em; color: var(--ink-dim); text-transform: uppercase; margin-bottom: 12px; }
 .scr--home .rail-head .n { color: var(--ink-faint); }
 .scr--home .game-row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; padding: 11px 12px; border: 1px solid transparent; border-left: 1px solid var(--line); cursor: pointer; transition: opacity 0.18s, background 0.18s, border-color 0.18s; width: 100%; text-align: left; background: transparent; color: var(--ink); }
@@ -75,6 +75,40 @@ button { font: inherit; }
 .scr--home .game-row .nm { font-size: 12px; letter-spacing: 0.06em; color: var(--ink); }
 .scr--home .game-row .mt { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.05em; margin-top: 2px; }
 .scr--home .game-row .pl { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.05em; white-space: nowrap; }
+
+/* the library can outgrow the viewport once a row is open — scroll the list,
+   never the fixed rail head */
+.scr--home .rail-list { min-height: 0; overflow-y: auto; display: grid; gap: 2px; align-content: start; }
+.scr--home .game-slot { display: grid; }
+
+/* detail panel — sits in flow under its row, so opening pushes the rest down */
+.scr--home .game-detail {
+  border-left: 1px solid rgb(var(--glow-red) / 0.55);
+  background: rgb(var(--glow-red) / 0.05);
+  padding: 10px 12px 12px;
+  animation: game-detail-glitch 0.22s steps(2, end) both;
+  position: relative; overflow: hidden;
+}
+/* scanline wash, cyber-only flavor */
+.scr--home .game-detail::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px);
+}
+.scr--home .game-detail__desc { margin: 0; font-size: 11px; line-height: 1.65; color: var(--ink-dim); letter-spacing: 0.02em; }
+.scr--home .game-detail__meta { margin-top: 8px; display: flex; align-items: center; gap: 7px; font-size: 10px; letter-spacing: var(--track-mid); color: var(--ink-faint); text-transform: uppercase; }
+.scr--home .game-detail__meta b { color: var(--gold); font-weight: 400; letter-spacing: 0.1em; }
+.scr--home .game-detail__meta .sep { color: var(--line-bright); }
+
+@keyframes game-detail-glitch {
+  0% { opacity: 0; transform: translateX(-7px); clip-path: inset(0 0 100% 0); }
+  25% { opacity: 1; transform: translateX(4px); clip-path: inset(38% 0 22% 0); }
+  50% { transform: translateX(-3px); clip-path: inset(0 0 52% 0); }
+  75% { transform: translateX(2px); clip-path: inset(12% 0 0 0); }
+  100% { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scr--home .game-detail { animation: none; }
+}
 
 @media (max-width: 1080px) { .scr--home .rail { display: none; } }
 @media (max-width: 560px) { .scr--home .actions { grid-template-columns: 1fr; } }

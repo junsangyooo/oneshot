@@ -262,14 +262,23 @@ body {
 /* =========================================================
    SETTINGS — pill trigger + modal (shared component)
    ========================================================= */
+/* icon-only gear: the universal settings affordance, sized to a 44px touch
+   target so it works on phones without a text label */
 .config-pill {
   position: fixed; top: var(--frame-pad); left: 50%; transform: translateX(-50%);
-  z-index: 7; display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  z-index: 7; display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 0;
   color: var(--ink-dim); background: rgb(10 7 16 / 0.55); border: 1px solid var(--line);
-  padding: 8px 14px; cursor: pointer; transition: color 0.2s, border-color 0.2s;
+  cursor: pointer; transition: color 0.2s, border-color 0.2s, transform 0.2s;
 }
+.config-pill svg { width: 24px; height: 24px; display: block; }
 .config-pill:hover { color: var(--cyan); border-color: var(--line-bright); }
+.config-pill:hover svg { transform: rotate(45deg); }
+.config-pill svg { transition: transform 0.35s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .config-pill svg { transition: none; }
+  .config-pill:hover svg { transform: none; }
+}
 
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 30; display: none; place-items: start center;
@@ -423,9 +432,45 @@ body {
 
 /* =========== HOME (cozy) — single centered card =========== */
 [data-theme="cozy"] .scr--home > .topbar,
-[data-theme="cozy"] .scr--home > .botbar,
-[data-theme="cozy"] .scr--home .rail { display: none; }
+[data-theme="cozy"] .scr--home > .botbar { display: none; }
 [data-theme="cozy"] .scr--home { align-content: center; }
+
+/* cozy library rail — same right column as cyber, soft card styling */
+[data-theme="cozy"] .scr--home .rail-head { text-transform: none; letter-spacing: 0; font-weight: 700; color: var(--ink-dim); }
+/* the settings gear lives at the top-right in cozy — keep the centered rail
+   clear of it by reserving the same margin top and bottom */
+[data-theme="cozy"] .scr--home .rail { max-height: calc(100svh - var(--frame-pad) * 2 - 112px); }
+[data-theme="cozy"] .scr--home .rail-list { gap: 10px; padding: 4px 4px 8px; }
+[data-theme="cozy"] .scr--home .game-slot { gap: 8px; }
+[data-theme="cozy"] .scr--home .game-row {
+  border: 0; border-radius: 16px; background: #fff; padding: 10px 12px;
+  box-shadow: 0 3px 0 rgb(0 0 0 / 0.05);
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+}
+[data-theme="cozy"] .scr--home .game-row:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 5px 0 rgb(0 0 0 / 0.06); }
+[data-theme="cozy"] .scr--home .game-row.is-active {
+  background: rgb(255 139 139 / 0.14); box-shadow: 0 4px 0 rgb(233 111 111 / 0.4);
+}
+[data-theme="cozy"] .scr--home .game-row .nm { font-weight: 700; letter-spacing: 0; font-size: 13px; }
+[data-theme="cozy"] .scr--home .game-row .mt, [data-theme="cozy"] .scr--home .game-row .pl { letter-spacing: 0; }
+/* pop-in: soft rounded bubble that springs open instead of glitching */
+[data-theme="cozy"] .scr--home .game-detail {
+  border: 0; border-radius: 18px; background: #fff; padding: 14px 16px;
+  box-shadow: 0 5px 0 rgb(0 0 0 / 0.04), 0 18px 30px -18px rgb(120 90 60 / 0.35);
+  transform-origin: 50% 0;
+  animation: game-detail-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+[data-theme="cozy"] .scr--home .game-detail::after { content: none; }
+[data-theme="cozy"] .scr--home .game-detail__desc { font-size: 12px; letter-spacing: 0; line-height: 1.7; }
+[data-theme="cozy"] .scr--home .game-detail__meta { text-transform: none; letter-spacing: 0; font-size: 11px; font-weight: 700; }
+[data-theme="cozy"] .scr--home .game-detail__meta b { color: #e0a82c; }
+@keyframes game-detail-pop {
+  0% { opacity: 0; transform: scale(0.9) translateY(-8px); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="cozy"] .scr--home .game-detail { animation: none; }
+}
 [data-theme="cozy"] .scr--home .center { width: min(460px, 92vw); gap: 26px; }
 [data-theme="cozy"] .scr--home .form {
   background: #fff; border-radius: 28px; padding: 30px 26px; gap: 16px;
@@ -505,9 +550,10 @@ body {
   text-shadow: 0 4px 0 rgb(255 139 139 / 0.28);
 }
 [data-theme="cozy"] .config-pill {
-  left: auto; right: var(--frame-pad); transform: none; text-transform: none; letter-spacing: 0;
+  left: auto; right: var(--frame-pad); transform: none; border-radius: 50%;
   background: #fff; color: var(--ink-dim); border: 1px solid var(--line); box-shadow: 0 3px 0 rgb(0 0 0 / 0.05);
 }
+[data-theme="cozy"] .config-pill:hover { color: var(--accent); }
 
 /* cozy: colorful game icon tiles (rounded squares) */
 [data-theme="cozy"] .scr--lobby .mod .glyph,
@@ -548,10 +594,6 @@ body {
 [data-theme="cozy"] .lang-dot.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 @media (max-width: 620px) {
-  [data-theme="cozy"] .config-pill {
-    width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 50%;
-  }
-  [data-theme="cozy"] .config-pill span { display: none; }
   [data-theme="cozy"] .scr--home .brand { font-size: clamp(48px, 17vw, 72px); }
   [data-theme="cozy"] .scr--home .center { padding-top: 26px; }
 }

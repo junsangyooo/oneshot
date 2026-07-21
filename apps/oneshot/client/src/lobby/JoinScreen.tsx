@@ -4,7 +4,7 @@ import { useRoomStore } from "../app/useRoomStore";
 import { useIdentity } from "../app/identity";
 import { useT } from "../i18n";
 import { useTheme } from "../theme";
-import { Backdrop, SettingsModal } from "../ui/terminal";
+import { Backdrop, SettingsModal, ConfigButton } from "../ui/terminal";
 
 /* Landing page for invite links / QR scans (/r/CODE): the room already exists,
    so the visitor only needs a nickname and a join button — no create flow, no
@@ -37,9 +37,7 @@ export const JoinScreen = ({ roomCode }: JoinScreenProps) => {
   return (
     <main className="scr scr--join">
       <Backdrop />
-      <button type="button" className="config-pill" onClick={() => setSettingsOpen(true)}>
-        ⚙ <span>{t("home.config")}</span>
-      </button>
+      <ConfigButton onClick={() => setSettingsOpen(true)} />
 
       <div className="join-card">
         <span className="brand" data-text="OneShot">

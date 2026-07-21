@@ -229,6 +229,17 @@ const ko: Dict = {
   "game.rummikub": "타일",
   "gametag.rummikub": "타일을 세트로 엮어 먼저 손을 비워라",
 
+  /* one-tap library detail on the home screen: what the game is + how you win */
+  "home.difficulty": "난이도",
+  "gamedesc.kinggame": "왕을 뽑은 한 명이 이름 대신 번호로 지목해 명령을 내려요. 누가 몇 번인지 아무도 모른 채 미션이 떨어집니다.",
+  "gamedesc.upstage": "손에 든 카드를 먼저 다 털어내면 승리. 숫자가 낮을수록 강하고 ★는 와일드라, 강한 패를 언제 쓸지가 승부처예요.",
+  "gamedesc.allout": "바닥 카드와 색이나 숫자를 맞춰 내며 손패를 비우는 카드 게임. 같은 숫자는 한 번에 여러 장 낼 수 있어요.",
+  "gamedesc.rummikub": "14장의 타일을 그룹(같은 숫자·다른 색)이나 런(같은 색 연속 숫자)으로 엮어 내려놓아요. 손패를 먼저 비우면 승리.",
+  "gamedesc.dice": "전원이 주사위 두 개를 굴려 합이 높은 순으로 순위를 매겨요. 규칙도 실력도 없는 순수한 운, 벌칙 정하기에 딱이에요.",
+  "gamedesc.roulette": "인원수만큼 똑같이 나뉜 원판이 자동으로 돌아가고, 핀이 멈춘 조각의 주인이 당첨. 누를 버튼조차 없는 100% 운 게임이에요.",
+  "gamedesc.liar": "한 명만 제시어를 모르는 라이어예요. 서로 설명을 주고받으며 라이어를 찾고, 라이어는 들키지 않은 채 단어를 맞혀야 해요.",
+  "gamedesc.fool-liar": "라이어도 단어를 받아요. 단, 같은 카테고리의 다른 단어죠. 자기가 라이어인 줄도 모른 채 설명하다 어긋나는 게 웃음 포인트예요.",
+
   "rummikub.title": "타일",
   "rummikub.loading": "게임 상태를 불러오는 중...",
   "rummikub.you": "나",
@@ -693,6 +704,16 @@ const en: Dict = {
   "game.rummikub": "TILE",
   "gametag.rummikub": "Meld tiles into sets and empty your hand first",
 
+  "home.difficulty": "DIFFICULTY",
+  "gamedesc.kinggame": "One player draws the King and gives orders by number, never by name. Nobody knows who holds which number until the mission lands.",
+  "gamedesc.upstage": "Shed your whole hand first to win. Lower numbers are stronger and ★ is wild, so timing your strong cards is everything.",
+  "gamedesc.allout": "Match the pile by color or number to empty your hand. Same-number cards can be dumped several at a time.",
+  "gamedesc.rummikub": "Meld your 14 tiles into groups (same number, different colors) or runs (same color in sequence). Empty your hand first to win.",
+  "gamedesc.dice": "Everyone throws two dice and ranks by the total. No skill involved — perfect for deciding who takes the penalty.",
+  "gamedesc.roulette": "The wheel is split evenly among the players and spins on its own; whoever owns the slice under the pin wins. No buttons, pure luck.",
+  "gamedesc.liar": "Everyone shares a secret word except the Liar. Trade descriptions to sniff them out — the Liar has to blend in and guess the word.",
+  "gamedesc.fool-liar": "The Liar gets a word too — just a different one from the same category. They don't even know they're the Liar, and the mismatch is the fun.",
+
   "rummikub.title": "TILE",
   "rummikub.loading": "Loading game state...",
   "rummikub.you": "YOU",
@@ -980,3 +1001,7 @@ export const gameTitle = (lang: Lang, id: GameId, serverTitle: string): string =
 
 /** short flavor tagline for a game */
 export const gameTagline = (lang: Lang, id: GameId): string => DICTS[lang][`gametag.${id}`] ?? "";
+
+/** longer "what is this game" blurb shown when a home library row is opened */
+export const gameDesc = (lang: Lang, id: GameId): string =>
+  DICTS[lang][`gamedesc.${id}`] ?? gameTagline(lang, id);
