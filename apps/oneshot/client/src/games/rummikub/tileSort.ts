@@ -1,7 +1,7 @@
 // Hand sorting (777 / 789) and long-press auto-select for Rummikub.
 
 import type { Tile, TileColor } from "@oneshot/shared";
-import { RUMMIKUB_COLORS, isValidMeld } from "@oneshot/shared";
+import { RUMMIKUB_COLORS } from "@oneshot/shared";
 
 const colorIdx = (c: TileColor): number => RUMMIKUB_COLORS.indexOf(c);
 
@@ -31,9 +31,13 @@ export const sort789 = (hand: Tile[]): Tile[] =>
     return a.id.localeCompare(b.id);
   });
 
-// Long-press: auto-select the largest valid set in `hand` that contains `tileId`.
-// Prefers the longer of {run continuation, group}. Returns the tile ids to select
-// (at least the pressed tile). Jokers are not auto-pulled (kept for manual use).
+// Long-press: grab the run or group in `hand` that contains `tileId`.
+//
+// Deliberately NOT gated on the result being a legal meld: grabbing a partial
+// run (a 7-8 to drop onto an existing 6, say) is normal play, so anything
+// contiguous from 2 tiles up comes along. Prefers the longer of
+// {run continuation, group}. Returns at least the pressed tile.
+// Jokers are not auto-pulled (kept for manual use).
 export const autoExtend = (hand: Tile[], tileId: string): string[] => {
   const pressed = hand.find((t) => t.id === tileId);
   if (!pressed || pressed.kind !== "num") return [tileId];
@@ -45,8 +49,7 @@ export const autoExtend = (hand: Tile[], tileId: string): string[] => {
   const runIds: string[] = [pressed.id];
   for (let v = pressed.num - 1; byNum.has(v); v -= 1) runIds.unshift(byNum.get(v)!.id);
   for (let v = pressed.num + 1; byNum.has(v); v += 1) runIds.push(byNum.get(v)!.id);
-  const runTiles = runIds.map((id) => hand.find((t) => t.id === id)!);
-  const runOk = runIds.length >= 3 && isValidMeld(runTiles);
+  const runOk = runIds.length >= 2;
 
   // --- group: same number, distinct colors ---
   const sameNum = hand.filter((t): t is Extract<Tile, { kind: "num" }> => isNum(t) && t.num === pressed.num);
@@ -59,7 +62,7 @@ export const autoExtend = (hand: Tile[], tileId: string): string[] => {
     }
   }
   const groupIds = groupTiles.map((t) => t.id);
-  const groupOk = groupIds.length >= 3 && isValidMeld(groupTiles);
+  const groupOk = groupIds.length >= 2;
 
   if (runOk && (!groupOk || runIds.length >= groupIds.length)) return runIds;
   if (groupOk) return groupIds;

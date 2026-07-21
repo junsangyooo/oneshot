@@ -54,6 +54,10 @@ const TileFace = ({ tile, cls, joker }: { tile: Tile; cls?: string; joker?: Joke
   );
 };
 
+// How long a press must last before it grabs the whole run/group. Short enough
+// that holding feels immediate, long enough to stay clear of a deliberate tap.
+const GRAB_MS = 250;
+
 // ---------------------------- orientation ----------------------------
 
 // The rotate prompt is for phones held upright — never for a desktop window that
@@ -148,6 +152,9 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   const [dragIds, setDragIds] = useState<string[]>([]);
   // The drop zone under the pointer, and whether dropping there is legal.
   const [hover, setHover] = useState<{ key: string; ok: boolean } | null>(null);
+  // The tile under the finger right now. Purely visual, and set on pointerdown
+  // so a press reacts instantly instead of looking dead until the grab fires.
+  const [pressedId, setPressedId] = useState<string | null>(null);
   // Transient "that move isn't allowed" flash on a meld.
   const [denyMeld, setDenyMeld] = useState<string | null>(null);
   // Why the player can't touch the board yet (shown once they try).
@@ -239,6 +246,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
       pressRef.current = null;
       setDragIds([]);
       setHover(null);
+      setPressedId(null);
       setGhost((g) => (g ? { ...g, x: drag.origin.x, y: drag.origin.y, snapping: true } : null));
       window.setTimeout(() => setGhost(null), 220);
     };
@@ -360,6 +368,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     dragRef.current = null;
     setDragIds([]);
     setHover(null);
+    setPressedId(null);
   };
 
   // Resolve the drop zone under a point into a target + a stable hover key.
@@ -381,6 +390,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   const onTilePointerDown = (e: React.PointerEvent, id: string, from: "hand" | "board") => {
     if (!isMyTurn) return;
     if (from === "board" && refuseBoard()) return;
+    setPressedId(id); // instant feedback, before the grab timer even starts
     const timer = window.setTimeout(() => {
       if (from === "hand") {
         setSel(autoExtend(stage.hand, id));
@@ -388,7 +398,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
         // long-press already ran, or it would toggle this very tile back off.
         if (pressRef.current) pressRef.current.autoSelected = true;
       }
-    }, 430);
+    }, GRAB_MS);
     pressRef.current = { id, x: e.clientX, y: e.clientY, timer, from, autoSelected: false };
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
@@ -417,6 +427,7 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     const press = pressRef.current;
     if (press?.timer) window.clearTimeout(press.timer);
     pressRef.current = null;
+    setPressedId(null);
     const drag = dragRef.current;
     endDrag();
 
@@ -555,7 +566,11 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
                     <TileFace
                       tile={tile}
                       joker={jokers[tile.id]}
-                      cls={[sel.includes(tile.id) ? "is-sel" : "", dragIds.includes(tile.id) ? "is-dragging" : ""]
+                      cls={[
+                        sel.includes(tile.id) ? "is-sel" : "",
+                        dragIds.includes(tile.id) ? "is-dragging" : "",
+                        pressedId === tile.id ? "is-press" : "",
+                      ]
                         .filter(Boolean)
                         .join(" ")}
                     />
@@ -654,7 +669,11 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
             >
               <TileFace
                 tile={tile}
-                cls={[sel.includes(tile.id) ? "is-sel" : "", dragIds.includes(tile.id) ? "is-dragging" : ""]
+                cls={[
+                  sel.includes(tile.id) ? "is-sel" : "",
+                  dragIds.includes(tile.id) ? "is-dragging" : "",
+                  pressedId === tile.id ? "is-press" : "",
+                ]
                   .filter(Boolean)
                   .join(" ")}
               />

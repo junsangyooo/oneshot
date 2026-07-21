@@ -83,7 +83,9 @@ test.describe("TILE", () => {
     const box = (await first.boundingBox())!;
     await host.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await host.mouse.down();
-    await host.waitForTimeout(700); // past the 430ms long-press threshold
+    // the press must read immediately, well before the grab fires
+    await expect(host.locator(".rk-rack .rk-tile.is-press")).toHaveCount(1, { timeout: 200 });
+    await host.waitForTimeout(500); // past the 250ms grab threshold
     await expect(host.locator(".rk-rack .rk-tile.is-sel")).not.toHaveCount(0);
     await host.mouse.up();
 

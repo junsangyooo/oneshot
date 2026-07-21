@@ -1214,7 +1214,12 @@ button { font: inherit; }
   color: var(--tile-black);
   opacity: 0.85;
 }
+/* the instant a finger lands: a small lift, so the wait for the grab (250ms)
+   never reads as "my press did nothing" */
+.scr--rummikub .rk-tile.is-press { transform: translateY(-4px) scale(1.04); box-shadow: 0 4px 6px rgb(0 0 0 / 0.3); }
 .scr--rummikub .rk-tile.is-sel { transform: translateY(-10px); box-shadow: 0 6px 8px rgb(0 0 0 / 0.35), 0 0 0 2px var(--accent); }
+/* selection wins over the plain press lift */
+.scr--rummikub .rk-tile.is-sel.is-press { transform: translateY(-10px); box-shadow: 0 6px 8px rgb(0 0 0 / 0.35), 0 0 0 2px var(--accent); }
 /* the slot a dragged tile came from stays visible so the move reads as a move */
 .scr--rummikub .rk-tile.is-dragging { opacity: 0.25; filter: grayscale(0.5); transform: none; box-shadow: none; }
 
