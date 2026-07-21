@@ -76,22 +76,52 @@ test.describe("TILE", () => {
     await hostContext.close();
   });
 
-  test("long-press grabs a set; releasing without dragging drops all of it", async ({ browser }) => {
+  test("holding picks tiles up one at a time; releasing drops all of it", async ({ browser }) => {
     const { host, hostContext, guestContext } = await startTile(browser);
 
     const first = host.locator(".rk-rack .rk-tilebtn").first();
     const box = (await first.boundingBox())!;
     await host.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await host.mouse.down();
-    // the press must read immediately, well before the grab fires
-    await expect(host.locator(".rk-rack .rk-tile.is-press")).toHaveCount(1, { timeout: 200 });
-    await host.waitForTimeout(500); // past the 250ms grab threshold
-    await expect(host.locator(".rk-rack .rk-tile.is-sel")).not.toHaveCount(0);
-    await host.mouse.up();
 
-    // letting go of a grab leaves you holding nothing — never a stray tile or
-    // a half-selection (the pressed tile used to be the only one dropped)
+    // the press reads immediately, but nothing is grabbed for the first second
+    await expect(host.locator(".rk-rack .rk-tile.is-press")).toHaveCount(1, { timeout: 300 });
+    await host.waitForTimeout(500);
     await expect(host.locator(".rk-tile.is-sel")).toHaveCount(0);
+
+    // first step at ~1s picks up the pressed tile (plus its neighbour when the
+    // chain continues), and it never shrinks while the hold lasts
+    await host.waitForTimeout(700);
+    const afterFirst = await host.locator(".rk-tile.is-sel").count();
+    expect(afterFirst).toBeGreaterThan(0);
+    await host.waitForTimeout(600);
+    expect(await host.locator(".rk-tile.is-sel").count()).toBeGreaterThanOrEqual(afterFirst);
+
+    await host.mouse.up();
+    // letting go of a grab leaves you holding nothing
+    await expect(host.locator(".rk-tile.is-sel")).toHaveCount(0);
+
+    await guestContext.close();
+    await hostContext.close();
+  });
+
+  test("starting a drag freezes how much the hold picked up", async ({ browser }) => {
+    const { host, hostContext, guestContext } = await startTile(browser);
+
+    const first = host.locator(".rk-rack .rk-tilebtn").first();
+    const box = (await first.boundingBox())!;
+    await host.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await host.mouse.down();
+    await host.waitForTimeout(1150); // one step in
+    const held = await host.locator(".rk-tile.is-sel").count();
+    expect(held).toBeGreaterThan(0);
+
+    await host.mouse.move(box.x + box.width / 2, box.y - 80, { steps: 6 });
+    await host.waitForTimeout(1600); // three more steps would have fired by now
+
+    // the ghost still carries exactly what was held when the drag began
+    await expect(host.locator(".rk-ghost .rk-tile")).toHaveCount(held);
+    await host.mouse.up();
 
     await guestContext.close();
     await hostContext.close();

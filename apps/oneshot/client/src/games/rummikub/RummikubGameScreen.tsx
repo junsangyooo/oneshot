@@ -22,7 +22,7 @@ import {
   type JokerInfo,
   type Stage,
 } from "./staging";
-import { autoExtend, sort777, sort789 } from "./tileSort";
+import { grabChain, sort777, sort789 } from "./tileSort";
 
 type Props = { roomState: PartyRoomState; privateState: unknown; currentPlayerId: string | null };
 
@@ -54,9 +54,11 @@ const TileFace = ({ tile, cls, joker }: { tile: Tile; cls?: string; joker?: Joke
   );
 };
 
-// How long a press must last before it grabs the whole run/group. Short enough
-// that holding feels immediate, long enough to stay clear of a deliberate tap.
-const GRAB_MS = 250;
+// The grab is progressive: hold this long and the tile next to the pressed one
+// joins it, then one more every GRAB_STEP_MS. Start dragging and it stops
+// where it is — how long you hold is how much you pick up.
+const GRAB_FIRST_MS = 1000;
+const GRAB_STEP_MS = 500;
 
 // ---------------------------- orientation ----------------------------
 
@@ -240,8 +242,14 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
   // swipe) cancels the drag and flies the tiles home. Refs, so no stale closure.
   useEffect(() => {
     const cancel = () => {
+      // Always kill a pending grab step, or it fires after the gesture is gone.
+      if (pressRef.current?.timer) window.clearTimeout(pressRef.current.timer);
       const drag = dragRef.current;
-      if (!drag) return;
+      if (!drag) {
+        pressRef.current = null;
+        setPressedId(null);
+        return;
+      }
       dragRef.current = null;
       pressRef.current = null;
       setDragIds([]);
@@ -391,14 +399,22 @@ export const RummikubGameScreen = ({ roomState, privateState, currentPlayerId }:
     if (!isMyTurn) return;
     if (from === "board" && refuseBoard()) return;
     setPressedId(id); // instant feedback, before the grab timer even starts
-    const timer = window.setTimeout(() => {
-      if (from === "hand") {
-        setSel(autoExtend(stage.hand, id));
-        // Mark it instead of dropping the press: pointerup must know the
-        // long-press already ran, or it would toggle this very tile back off.
-        if (pressRef.current) pressRef.current.autoSelected = true;
+    // Walk the chain rightwards from the pressed tile, one tile per step, until
+    // the player drags (which freezes it) or lets go (which drops it all).
+    const chain = from === "hand" ? grabChain(sortedHand, id) : [id];
+    let take = Math.min(2, chain.length); // first step picks up the neighbour
+    const step = () => {
+      setSel(chain.slice(0, take));
+      // Mark it instead of dropping the press: pointerup must know the grab
+      // already ran, or it would toggle this very tile back off.
+      if (pressRef.current) {
+        pressRef.current.autoSelected = true;
+        pressRef.current.timer =
+          take < chain.length ? window.setTimeout(step, GRAB_STEP_MS) : null;
       }
-    }, GRAB_MS);
+      take += 1;
+    };
+    const timer = from === "hand" ? window.setTimeout(step, GRAB_FIRST_MS) : null;
     pressRef.current = { id, x: e.clientX, y: e.clientY, timer, from, autoSelected: false };
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
