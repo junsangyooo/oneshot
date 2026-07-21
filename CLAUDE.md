@@ -54,7 +54,9 @@ cd apps/oneshot/e2e && npx playwright test rummikub
 | 아바타 | `client/src/design/avatars.ts` + `public/themes/<theme>/avatars/` |
 | 게임 표시 메타 | `client/src/design/games.ts` (`GAME_META`, `GAME_ORDER`, `gameThumb`) |
 | **게임 화면 레지스트리** | `client/src/games/registry.tsx` (`GAME_SCREENS`, `GameScreenProps`) — 새 게임 화면은 여기 한 줄만 추가 |
-| 공용 React 컴포넌트 | `client/src/ui/terminal.tsx` (`Backdrop`, `AvatarImg`, `SettingsModal`, `RulesModal`, `LangToggle`) |
+| 공용 React 컴포넌트 | `client/src/ui/terminal.tsx` (`Backdrop`, `AvatarImg`, `GameRail`, `SettingsModal`, `RulesModal`) |
+| 전체화면 | `client/src/ui/useFullscreen.ts` (`useAutoFullscreen`, `useFullscreenPref`) — 터치 기기에서만 자동 진입 |
+| 스크롤 없는 레이아웃 fit | `client/src/games/rummikub/fit.ts` (`useFitTarget`, `useFitHand/Board/Rail`) — §8 |
 | 상태/에러 페이지 | `client/src/ui/states.tsx` (`StateScreen`, `StateKind`) |
 | 화면 라우팅 | `client/src/app/App.tsx` (게임 phase면 `GAME_SCREENS`에서 조회해 자동 렌더) |
 | 서버 게임 규칙 | `server/src/games/<id>/`, 계약은 `server/src/games/GameModule.ts`, 등록은 `server/src/games/registry.ts` |
@@ -371,6 +373,7 @@ Bold simple high-contrast centered silhouette that stays recognizable at 32px. F
 - [ ] **모바일 확인**: 상단바 `≤560px` 1열 접힘 · 가로 넘침 없음 · 터치 타깃 44px · 긴 영역만 스크롤하고 액션 버튼 고정?
 - [ ] **장식이 클릭을 안 먹는가**: 새로 덮은 오버레이에 `pointer-events: none`? 화면 모서리·가장자리의 1차 액션이 실제로 눌리는가? (§3-13)
 - [ ] **기기 게이트에 탈출구**: 화면을 덮는 안내(회전 등)가 터치+폭 조건까지 보고, "계속하기"가 있는가? (§3-14)
+- [ ] **게임 화면이면 §8**: 어느 영역도 스크롤하지 않는가(`overflow` 전수 확인) · 늦게 마운트되는 노드에 `useRef`+`useLayoutEffect` 조합을 쓰지 않았는가 · 플로팅 스택이 인셋 폭 안에 들어가고 1차 버튼이 `elementFromPoint`로 도달 가능한가 · **8인 × 568×320**에서 확인했는가?
 - [ ] **드래그·홀드가 있으면 §7**: 드롭 실패 시 원위치 · `pointercancel`/Esc 취소 · 탭 대체 경로 · 비활성 버튼이 이유를 말하는가? 제스처를 **시간 수열로 계측**해 e2e에 박았는가?
 - [ ] 게임 규칙/검증/비밀정보가 서버에만 있는가? (§4-F 보안 체크리스트 통과?)
 - [ ] **추방/끊김 견고성**: 액션 대기 phase에서 주체 추방 시 정지 안 함 · 유령 참조 없음 · 투표는 접속 인원 기준? 회귀 테스트 추가했는가? (§4-B)
@@ -432,9 +435,12 @@ Bold simple high-contrast centered silhouette that stays recognizable at 32px. F
 ### 7-3. 드래그 없이도 되는 길을 반드시 남긴다
 
 - **모든 드래그 동작에 탭 대체 경로**를 둔다(골라서 목표를 탭). 드래그가 어려운 환경·보조기술 유저가 막힌다.
-- **스크롤되는 행(손패 등)의 아이템에 `touch-action: none` 금지.** 아이템이 제스처를 다 삼켜
-  **손패를 스크롤할 수 없게 된다.** 가로 스크롤 행이면 `pan-x`를 줘서 가로 스와이프는 스크롤,
-  세로 이동은 드래그로 갈라준다.
+- **`touch-action`은 "그 영역이 스크롤되는가"를 그대로 따라간다.** 둘 다 틀리면 조용히 망가진다.
+  - 스크롤되는 행이면 `touch-action: none` **금지** — 아이템이 제스처를 다 삼켜 **손패를 스크롤할 수 없게 된다.**
+    가로 스크롤 행이면 `pan-x`로 가로 스와이프는 스크롤, 세로 이동은 드래그로 갈라준다.
+  - 스크롤되지 **않는** 영역이면 반대로 `pan-x`/`pan-y`가 **금지**다. 브라우저가 그 축의 제스처를 가져가
+    **타일을 집어 올리는 드래그 자체를 뺏는다.** 여기선 `touch-action: none`이 정답이다.
+  - 즉 스크롤 여부를 바꾸면 `touch-action`도 **반드시 같이** 바꾼다. (타일에서 실제로 이 짝이 어긋났다.)
 - 드롭 타깃(`＋` 자리 등)은 **탭도 받는 버튼**으로 만든다.
 
 ### 7-4. 클라이언트 스테이징에는 "편의"까지 얹는다
@@ -477,3 +483,106 @@ console.log("ghost:", await page.$$eval(".rk-ghost .rk-tile", (e) => e.length));
 - **숫자로 확인한다.** "되는 것 같다"가 아니라 `0 → 2 → 3 → 4`, 릴리즈 후 `0`, 드래그 후 동결 같은 수열로.
 - 고친 제스처는 **e2e로 박제**한다(`e2e/tests/rummikub.spec.ts`가 선례 — 누적·드래그 동결·스냅백·회전 게이트).
 - **테마별로도 돌린다.** 제스처는 CSS 히트 영역에 걸리므로 cozy/cyber 양쪽에서 같은 수열이 나와야 한다.
+
+---
+
+## 8. 스크롤 없는 게임 레이아웃 (fit-to-fit)
+
+> 타일(Rummikub)이 이 방식의 기준 구현이다. `client/src/games/rummikub/fit.ts` 참고.
+> **게임 화면은 스크롤하지 않는다.** 스크롤해야 보이는 타일은 없는 타일이고, 스크롤 제스처는
+> 그 타일을 내는 드래그 제스처와 정면으로 싸운다.
+
+### 8-1. 넘치면 스크롤이 아니라 "줄인다"
+
+- 보드·손패·플레이어 레일은 `overflow: hidden` + **내용 축소**로 맞춘다.
+  축소는 **필요한 만큼만** — 넓은 화면에서 억지로 줄이지 않는다.
+- 축소로도 안 되면 **마지막 수단으로만** 스크롤을 되살린다(`is-scroll` 클래스).
+  **잘라내기(clip)는 절대 금지** — 좌석·타일이 사라지는 건 정보 삭제다(§3-11).
+- 플로팅 UI는 화면을 덮되, 보드는 같은 크기의 **padding 인셋**을 예약해 드롭 영역이 겹치지 않게 한다.
+  "겹쳐 보이지만 안 겹친다"가 아니라 **실제로 안 겹쳐야** 한다.
+
+### 8-2. 늦게 마운트되는 노드에 `useRef` + `useLayoutEffect`를 쓰지 마라
+
+**이번에 실제로 터진 버그다.** 보드/레일은 `phase === "play"`가 되어야 마운트되는데,
+인원수·보드 시그니처 같은 deps는 **setup 단계에서 이미 확정**돼 있다. 그래서
+
+```tsx
+const ref = useRef(null);
+useLayoutEffect(() => { if (!ref.current) return; fit(ref.current); }, [seatCount]);
+```
+
+는 **ref가 null인 채로 한 번 돌고 다시는 실행되지 않는다.** 8인 방에서 레일이 180px 넘쳐
+좌석이 잘려 사라졌는데도 조용했다. 노드를 **state에 담는 콜백 ref**를 쓰고 deps에 노드를 넣는다.
+
+```tsx
+const [el, setEl] = useState(null);      // useFitTarget()
+useLayoutEffect(() => { ... }, [el, seatCount]);
+<div ref={setEl} />
+```
+
+### 8-3. ResizeObserver는 "넘치는 쪽"을 관찰해야 한다
+
+컨테이너가 `position: absolute` / 고정 높이면 **컨테이너 크기는 영원히 안 변한다.**
+변하는 건 안쪽 내용(좌석 합류, 아바타 이미지 로드, 세트 착지)이다.
+→ `ro.observe(el)` 뿐 아니라 **`ro.observe(el.firstElementChild)`** 도 해야 한다.
+자기 자신이 유발한 변경으로 무한 루프가 돌지 않게 `requestAnimationFrame` 한 프레임으로 묶는다.
+
+### 8-4. 계산하지 말고 **재라**
+
+타일 폭을 산술로 구하면 테두리·서브픽셀·폰트 메트릭 때문에 **1px씩 어긋나고, 그 1px이 3번째 줄을 만든다.**
+산술은 초기 추정으로만 쓰고, 그 뒤 **실제 렌더된 박스**(`offsetTop`으로 센 줄 수, `scrollHeight`)로 보정한다.
+
+### 8-5. 플로팅 컨트롤 스택에는 폭 계약이 있다
+
+`--rk-hud-w` 같은 인셋 변수는 **그 안에 들어가는 가장 넓은 행보다 커야 한다.**
+안 그러면 스택이 화면 오른쪽 밖으로 밀리고, **1차 버튼이 뷰포트 밖이라 클릭이 아예 안 된다.**
+눈으로는 멀쩡해 보인다 — 반드시 아래처럼 **좌표로** 검증한다.
+
+```js
+// 버튼이 진짜 눌리는가: 화면 안에 있고, 무엇에도 안 가려졌는가
+const r = el.getBoundingClientRect();
+const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+// hit === null  → 뷰포트 밖으로 밀려남 (가장 잘 놓치는 케이스)
+// !el.contains(hit) → 다른 요소가 덮고 있음
+```
+
+### 8-6. 레이아웃 QA는 스크린샷이 아니라 **숫자**로 한다
+
+`apps/oneshot/e2e/`에서 임시 스크립트로 돌리고(확인 후 삭제), **테마 2종 × 여러 뷰포트**에서
+같은 수치가 나오는지 본다. 최소 뷰포트는 **568×320(iPhone SE 가로)** 까지 본다.
+
+```js
+// 넘치는 요소를 전수 열거 — 클래스명을 미리 알 필요가 없다
+[...document.querySelectorAll(".scr--foo, .scr--foo *")]
+  .filter((el) => el.scrollHeight - el.clientHeight > 1 || el.scrollWidth - el.clientWidth > 1)
+  .map((el) => [el.className, getComputedStyle(el).overflowY]);
+```
+
+- 함께 뽑을 수치: 좌석 수 · `is-turn` 개수(정확히 1) · `is-me` 개수(정확히 1) ·
+  손패 줄 수 · 타일 폭 · 가로 넘침 · 1차 버튼 도달 가능 여부.
+- **말줄임(`…`)은 넘침이 아니다.** `scrollable: false`면 스크롤바가 생길 수 없으니 오탐으로 걸러낸다.
+- 극단값을 반드시 넣는다: **최대 인원(8인) × 최소 화면**, **손패를 계속 뽑아 키운 상태**.
+
+### 8-7. 미디어쿼리에서 `display: none`으로 도망가지 마라
+
+좁은 화면에서 안 들어간다고 코치 라인·정보 블록을 숨기는 건 §3-11 위반이다(기능 삭제).
+줄이거나 옮긴다. 특히 **floating 요소는 숨겨도 공간이 안 생긴다** — 숨길 이유조차 없다.
+
+### 8-8. 전체화면
+
+- `useAutoFullscreen`은 **터치 기기(`pointer: coarse`)에서만** 발동한다. 데스크톱에서 게임 진입만으로
+  화면을 삼키면 빠져나갈 길을 못 찾는다. 데스크톱은 설정 모달의 수동 토글만.
+- `requestFullscreen()`은 **유저 제스처 안에서만** 성공한다. 마운트 시 한 번 시도하고, 거부되면
+  다음 `pointerdown` 한 번에 재시도한다.
+- **아이폰 사파리는 이 API가 아예 없다.** `fullscreenSupported()`가 false면 토글을 **숨긴다**(죽은 버튼 금지).
+- ⚠️ **전체화면이면 Playwright의 `setViewportSize`가 실패한다.** e2e 컨텍스트는
+  `localStorage.setItem("oneshot.fullscreen", "off")`로 **반드시 옵트아웃**한다(`e2e/tests/rummikub.spec.ts`의 `gameContext`).
+
+### 8-9. 디자인을 바꾸면 e2e 스펙도 그 변경의 일부다
+
+UI를 갈아엎으면 옛 셀렉터·옛 라벨을 검증하던 스펙이 무더기로 깨진다. 이건 회귀가 아니라 **계약 갱신**이다.
+다만 **깨진 스펙을 지우지 말고 새 계약으로 다시 쓴다** — 그 스펙이 지키던 불변식은 여전히 유효하다.
+
+**단언은 "우연"이 아니라 "불변식"에 건다.** 예: "타일이 줄어든다"는 넓은 화면에서 **줄일 필요가 없어서 틀린다.**
+올바른 불변식은 *"넓은 폭보다 좁은 폭에서 타일이 더 작다 + 항상 2줄 + 스크롤 0"* 이다.
+"필요한 만큼만"이 요구사항이면 테스트도 그렇게 써야 한다.
