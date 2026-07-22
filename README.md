@@ -38,9 +38,9 @@
 - **In-game setup phase** — game options (rounds, mode, penalty, …) are chosen by the host in a `setup` phase right after the game starts, not in the lobby.
 - **Rank-sum scoring** — multi-round games (Upstage, All Out, Dice) share one convention: the lowest sum of per-round ranks wins.
 - **Early-end vote** — anyone can propose ending the game early, decided by a vote counted against **connected players** (with a cooldown after a reject). Round progression isn't host-only either.
-- **Disconnect ≠ leave** — refreshes and network blips restore your seat via a reconnect token. No auto-skip, no auto-kick, no turn timers; only the host intervenes, manually.
+- **Disconnect ≠ leave** — refreshes and network blips restore your seat via a reconnect token. No auto-kick; the host manually skips a disconnected player's turn when needed. Turn clocks are **opt-in per game** (Tile's host picks 15s–unlimited in setup, and a timeout resolves softly by auto-drawing), never imposed by default.
 - **In-game `?` help** — every game ships a `RulesModal` with rules in both ko & en, and it can render real game pieces inline, because "same number, different colors" is far easier to see than to read. Onboarding a first-time player is part of "done".
-- **Direct manipulation** — games that move pieces around share one interaction contract: a local staging copy the player edits freely, a drop that fails or is cancelled (Escape, or the browser stealing the pointer) flying the pieces back to where they were picked up, live valid/invalid drop-target feedback, a tap-only path for everything you can drag, and a coach line that says *why* the primary button is locked instead of just greying it out.
+- **Direct manipulation** — games that move pieces around share one interaction contract: a local staging copy the player edits freely, a drop that fails or is cancelled (Escape, or the browser stealing the pointer) flying the pieces back to where they were picked up, live valid/invalid drop-target feedback, tap **and keyboard** paths for everything you can drag, and a coach line that says *why* the primary button is locked instead of just greying it out.
 - **Home library preview** — the home screen lists every `available` game; tapping one expands a description, player range, and difficulty in place. It reads straight from the catalog, so shipping a game surfaces it here automatically.
 
 > Per-game detailed rules live in code (`server/src/games/<id>/`) and the i18n help texts — those are the single source of truth.
@@ -113,7 +113,7 @@ A pnpm monorepo. The workspace root is **`apps/oneshot/`** (not the repo root).
 
 - **Authoritative server**: rules, validation, randomness (seeded `Randomizer`), and outcomes live only in server modules. Every client payload is parsed + validated server-side.
 - **Minimal secret transmission**: other players' hands/roles/answers never reach your client at all — private data flows only through `getStateFor(playerId)`; `getPublicState()` carries public facts like `handCount` only.
-- **Humans resolve the game**: no auto-skip, no auto-kick, no turn timers. The tempo of a party game belongs to the people, not the app.
+- **Humans set the tempo**: no auto-kick, no forced timers by default — a turn clock exists only where the host opts in at game setup (e.g. Tile), and a timeout resolves softly (auto-draw) instead of punishing. The tempo of a party game belongs to the people, not the app.
 - **Web fundamentals**: security headers (helmet) · gzip (compression) · rate limiting · CORS allowlist, favicon/OG/robots.txt, responsive design (mobile is part of the definition of done).
 
 ---

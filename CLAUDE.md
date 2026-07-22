@@ -122,6 +122,10 @@ cd apps/oneshot/e2e && npx playwright test rummikub
     - 테마별로 달라도 되는 것: 색·폰트·라운드·그림자·애니메이션 종류(cyber=글리치/스캔라인, cozy=퐁 튀는 스프링)·아이콘 모양.
     - 셀프 체크: `grep -n 'display: *none' client/src/design/terminal.css` → cozy 블록의 각 히트가
       **장식인지 기능인지** 하나씩 확인한다.
+    - **블록 단위로 숨기지 말고 행/라벨 단위로 갈라낸다.** 실제로 6개 게임이 cozy에서 상단 `.readout`을
+      통째로 숨겼는데, 그 안에 **방 코드와 게임 정보(라이어 수·덱 구성)** 가 같이 들어 있었다.
+      장식 플레이버 행만 숨기고 정보 행은 남긴다. HUD 라벨(`SECTOR_ID:` 등)은 `.readout__lbl`로
+      감싸져 있어 cozy가 라벨만 숨기고 값(`#CODE`)은 보여준다 — 새 readout도 이 구조를 따른다.
 
 12. **"눌릴 것처럼 생긴 건 실제로 눌려야 한다"(죽은 UI 금지).** 목록·카드·토글이 선택 가능해 보이면 실제 상태를 가져야 한다.
     - **기본 선택을 하드코딩하지 않는다.** `i === 0 ? "is-active" : ""` 같은 장식용 활성 표시는 금지 —
@@ -435,6 +439,11 @@ Bold simple high-contrast centered silhouette that stays recognizable at 32px. F
 ### 7-3. 드래그 없이도 되는 길을 반드시 남긴다
 
 - **모든 드래그 동작에 탭 대체 경로**를 둔다(골라서 목표를 탭). 드래그가 어려운 환경·보조기술 유저가 막힌다.
+- **키보드 경로도 함께 둔다.** 포인터 핸들러만 단 `<button>`은 키보드로 아무것도 못 한다 —
+  Enter/Space는 pointer 이벤트 없이 **`detail === 0`인 click**으로만 도착하므로, `onClick`에서
+  `e.detail === 0`일 때 탭 제스처를 미러한다(마우스 클릭은 detail ≥ 1이라 이중 발화 없음).
+  `<span role="button">`은 Enter로 click이 **아예 안 생기니** `onKeyDown`을 직접 달거나 진짜 버튼으로 만든다.
+  (타일 손패/보드, 왕게임 숫자 카드·슬롯이 선례.)
 - **`touch-action`은 "그 영역이 스크롤되는가"를 그대로 따라간다.** 둘 다 틀리면 조용히 망가진다.
   - 스크롤되는 행이면 `touch-action: none` **금지** — 아이템이 제스처를 다 삼켜 **손패를 스크롤할 수 없게 된다.**
     가로 스크롤 행이면 `pan-x`로 가로 스와이프는 스크롤, 세로 이동은 드래그로 갈라준다.
@@ -462,6 +471,10 @@ Bold simple high-contrast centered silhouette that stays recognizable at 32px. F
   (예: "첫 등록 전에는 보드를 건드릴 수 없어요").
 - **되돌릴 수 없는 동작은 라벨/보조문구로 미리 알린다.** 타일의 `＋`(뽑기)는 그 자리에서 턴이 끝나므로
   코치 라인이 그 사실을 상시 노출한다.
+- **전송 중 잠금(busy/pending)은 서버 거절로도 풀려야 한다.** 서버 상태 변화(serverSig·phase·round)로만
+  해제하면, 액션이 **거절될 때는 상태가 안 변해** 버튼이 턴/라운드 내내 죽는다(무제한 모드면 영구).
+  `useRoomStore`의 `errorSeq`(모든 서버 error 이벤트마다 증가)를 해제 조건에 반드시 포함한다 —
+  타일 `busy`, 주사위 `rollPending`이 선례.
 
 ### 7-6. 검증 방법 — 렌더 스크린샷으로는 못 잡는다
 
@@ -500,6 +513,12 @@ console.log("ghost:", await page.$$eval(".rk-ghost .rk-tile", (e) => e.length));
   **잘라내기(clip)는 절대 금지** — 좌석·타일이 사라지는 건 정보 삭제다(§3-11).
 - 플로팅 UI는 화면을 덮되, 보드는 같은 크기의 **padding 인셋**을 예약해 드롭 영역이 겹치지 않게 한다.
   "겹쳐 보이지만 안 겹친다"가 아니라 **실제로 안 겹쳐야** 한다.
+- **미디어쿼리가 fit의 스케일 변수를 무력화하지 않게 한다.** 스케일 곱(`calc(26px * var(--rk-seat-scale))`)으로
+  줄어들던 속성을 브레이크포인트에서 고정 px로 덮으면 fit이 더 못 줄여 **조용히 스크롤 폴백으로 전락**한다
+  (8인 레일이 568×320에서 실제로 그랬다). 브레이크포인트에서도 스케일 곱을 유지한 채 기준값만 바꾼다.
+- **`viewport-fit=cover`라서 노치 밑까지 그려진다.** 플로팅 컨트롤의 엣지는 고정 px 대신
+  `max(var(--edge), env(safe-area-inset-*))`를 per-side 변수(`--rk-edge-l/r/t/b` 선례)로 두고,
+  보드 인셋도 같은 변수로 계산한다. 노치 없는 기기에서는 수치가 완전히 동일해야 한다(e2e로 확인).
 
 ### 8-2. 늦게 마운트되는 노드에 `useRef` + `useLayoutEffect`를 쓰지 마라
 
