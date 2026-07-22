@@ -112,3 +112,56 @@ test("allout auto-take resolves an unanswerable attack without a button", async 
   await ctxA.close();
   await ctxB.close();
 });
+
+test("allout end-game vote is a non-blocking chip and a majority ends to lobby", async ({ browser }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-chrome", "room budget: one project runs this journey");
+  test.setTimeout(120_000);
+  const ctxA = await browser.newContext();
+  const ctxB = await browser.newContext();
+  const host = await ctxA.newPage();
+  const guest = await ctxB.newPage();
+
+  const code = await createRoom(host, "민수");
+  await joinRoom(guest, code, "지영");
+  await host.locator(".mod", { hasText: "올아웃" }).click();
+  await host.getByRole("button", { name: /게임 시작/ }).click();
+  await expect(host.getByRole("heading", { name: "올아웃 설정" })).toBeVisible({ timeout: 10_000 });
+  await host.getByRole("button", { name: "게임 시작" }).click();
+  await expect(host.locator(".ao-hand .ao-card").first()).toBeVisible({ timeout: 10_000 });
+
+  await expect(host.locator(".ao-vote")).toHaveCount(0);
+  await host.getByRole("button", { name: /종료 투표/ }).click();
+
+  // a small chip in the toolbar, not a modal — the table stays usable while open
+  await expect(host.locator(".ao-vote")).toBeVisible();
+  await expect(guest.locator(".ao-vote")).toBeVisible({ timeout: 10_000 });
+  await expect(host.locator(".modal-backdrop")).toHaveCount(0);
+  await expect(guest.locator(".modal-backdrop")).toHaveCount(0);
+  await expect(host.locator(".ao-vote__row .btn")).toHaveCount(0); // proposer already voted
+  await expect(guest.locator(".ao-vote__row .btn")).toHaveCount(2);
+
+  // NON-BLOCKING: the turn holder can still draw while the vote is open — the
+  // drawn card lands in their hand, a real server round-trip past the chip
+  const pages = [host, guest];
+  let turnIdx = -1;
+  for (let tries = 0; tries < 40 && turnIdx < 0; tries += 1) {
+    for (let i = 0; i < pages.length; i += 1) {
+      if (await pages[i]!.locator(".ao-status__turn").isVisible().catch(() => false)) turnIdx = i;
+    }
+    if (turnIdx < 0) await host.waitForTimeout(250);
+  }
+  expect(turnIdx, "one seat must hold the turn").toBeGreaterThanOrEqual(0);
+  const actor = pages[turnIdx]!;
+  const handBefore = await actor.locator(".ao-hand .ao-card").count();
+  await actor.getByRole("button", { name: /뽑기/ }).click({ timeout: 5_000 });
+  await expect(actor.locator(".ao-hand .ao-card")).toHaveCount(handBefore + 1, { timeout: 10_000 });
+  await expect(actor.locator(".ao-vote")).toBeVisible(); // the vote survived the draw
+
+  // majority (2/2) ends the game straight back to the lobby
+  await guest.locator(".ao-vote__row .btn").first().click();
+  await expect(host.locator(".scr--lobby")).toBeVisible({ timeout: 10_000 });
+  await expect(guest.locator(".scr--lobby")).toBeVisible({ timeout: 10_000 });
+
+  await ctxA.close();
+  await ctxB.close();
+});
