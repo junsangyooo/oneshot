@@ -76,7 +76,8 @@ export const RoomScreen = ({ roomState, currentPlayerId }: RoomScreenProps) => {
         <div className="readout">
           <div>BR-K/S/61X-081</div>
           <div>
-            SECTOR_ID: <span className="hot">#{roomState.roomCode}</span>
+            <span className="readout__lbl">SECTOR_ID: </span>
+            <span className="hot">#{roomState.roomCode}</span>
           </div>
           <div>
             <span className="dot" />

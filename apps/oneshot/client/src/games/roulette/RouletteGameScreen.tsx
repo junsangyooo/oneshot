@@ -140,7 +140,8 @@ export const RouletteGameScreen = ({ roomState, privateState, currentPlayerId }:
         <div className="readout">
           <div>RNG/WHEEL-360</div>
           <div>
-            SECTOR_ID: <span className="hot">#{roomState.roomCode}</span>
+            <span className="readout__lbl">SECTOR_ID: </span>
+            <span className="hot">#{roomState.roomCode}</span>
           </div>
           <div>MODE: PURE_LUCK</div>
         </div>

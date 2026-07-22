@@ -32,7 +32,8 @@ export const ResultsScreen = ({ roomState, currentPlayerId }: ResultsScreenProps
         <div className="readout">
           <div>BR-K/S/61X-081</div>
           <div>
-            SECTOR_ID: <span className="hot">#{roomState.roomCode}</span>
+            <span className="readout__lbl">SECTOR_ID: </span>
+            <span className="hot">#{roomState.roomCode}</span>
           </div>
           <div>
             STATUS: <span className="cool">CYCLE_COMPLETE</span>

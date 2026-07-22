@@ -180,7 +180,8 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
         <div className="readout">
           <div>ALL/OUT/80X-440</div>
           <div>
-            SECTOR_ID: <span className="hot">#{roomState.roomCode}</span>
+            <span className="readout__lbl">SECTOR_ID: </span>
+            <span className="hot">#{roomState.roomCode}</span>
           </div>
           <div>DECK: {pub.doubleDeck ? "×2 (160)" : "×1 (80)"}</div>
         </div>
@@ -208,6 +209,43 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
                 ⏻ {voteCooldown > 0 ? fill(t("vote.cooldown"), { s: voteCooldown }) : t("allout.proposeEnd")}
               </span>
             </button>
+          ) : null}
+          {/* early-end vote — a small chip in the toolbar (where the propose button
+              was), deliberately NOT a modal so an open vote never blocks the table */}
+          {voteOpen ? (
+            <div className="ao-vote" role="status">
+              <span className="ao-vote__title">{t("allout.vote.title")}</span>
+              <span className="ao-vote__tally">
+                {fill(t("allout.vote.tally"), {
+                  // mirror the server's quorum: only CONNECTED seats count
+                  agree: Object.entries(pub.endVote!.votes).filter(
+                    ([id, v]) => v && roomState.players[id]?.connectionStatus === "online",
+                  ).length,
+                  total: pub.players.filter((p) => roomState.players[p.playerId]?.connectionStatus === "online")
+                    .length,
+                })}
+              </span>
+              {iVoted || !amSeated ? (
+                <span className="ao-vote__waiting">{t("allout.vote.waiting")}</span>
+              ) : (
+                <span className="ao-vote__row">
+                  <button
+                    type="button"
+                    className="btn btn--sm btn--primary"
+                    onClick={() => sendAction(ALLOUT_ACTIONS.voteEnd, { agree: true })}
+                  >
+                    <span>{t("allout.vote.agree")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--sm"
+                    onClick={() => sendAction(ALLOUT_ACTIONS.voteEnd, { agree: false })}
+                  >
+                    <span>{t("allout.vote.reject")}</span>
+                  </button>
+                </span>
+              )}
+            </div>
           ) : null}
         </div>
       </header>
@@ -306,41 +344,6 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
               <button type="button" className="btn" onClick={() => setTargetOpen(false)}>
                 {t("allout.target.cancel")}
               </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {voteOpen ? (
-        <div className="modal-backdrop open" role="presentation">
-          <div className="modal ao-vote" role="dialog" aria-modal="true">
-            <div className="modal-head">
-              <h3>{t("allout.vote.title")}</h3>
-            </div>
-            <div className="modal-body">
-              <p className="ao-hint">{t("allout.vote.desc")}</p>
-              <p className="ao-vote__tally">
-                {fill(t("allout.vote.tally"), {
-                  // mirror the server's quorum: only CONNECTED seats count
-                  agree: Object.entries(pub.endVote!.votes).filter(
-                    ([id, v]) => v && roomState.players[id]?.connectionStatus === "online",
-                  ).length,
-                  total: pub.players.filter((p) => roomState.players[p.playerId]?.connectionStatus === "online")
-                    .length,
-                })}
-              </p>
-              {iVoted ? (
-                <p className="ao-wait">{t("allout.vote.waiting")}</p>
-              ) : (
-                <div className="ao-row">
-                  <button type="button" className="btn btn--primary" onClick={() => sendAction(ALLOUT_ACTIONS.voteEnd, { agree: true })}>
-                    {t("allout.vote.agree")}
-                  </button>
-                  <button type="button" className="btn" onClick={() => sendAction(ALLOUT_ACTIONS.voteEnd, { agree: false })}>
-                    {t("allout.vote.reject")}
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>

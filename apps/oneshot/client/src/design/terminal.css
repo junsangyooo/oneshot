@@ -134,6 +134,9 @@ body {
   color: var(--ink-faint); text-transform: uppercase;
 }
 .readout b { color: var(--ink-dim); font-weight: 500; }
+/* cozy drops the HUD-flavor label and keeps just the value (e.g. "#8G4BM") —
+   the label itself stays English-only by design (§3-4), it simply hides here */
+[data-theme="cozy"] .readout .readout__lbl { display: none; }
 .readout .hot { color: var(--accent); font-weight: 700; }
 .readout .cool { color: var(--cyan); font-weight: 700; }
 

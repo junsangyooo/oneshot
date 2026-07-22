@@ -296,7 +296,8 @@ export const DiceGameScreen = ({ roomState, privateState, currentPlayerId }: Pro
         <div className="readout">
           <div>DICE/2D6/RNG-077</div>
           <div>
-            SECTOR_ID: <span className="hot">#{roomState.roomCode}</span>
+            <span className="readout__lbl">SECTOR_ID: </span>
+            <span className="hot">#{roomState.roomCode}</span>
           </div>
           <div>MODE: PURE_LUCK</div>
         </div>

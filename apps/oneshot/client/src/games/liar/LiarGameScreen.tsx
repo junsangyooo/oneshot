@@ -49,7 +49,8 @@ export const LiarGameScreen = ({ roomState, privateState, currentPlayerId }: Gam
         <div className="readout">
           <div>LIAR_PROTOCOL</div>
           <div>
-            SECTOR_ID: <span className="hot">#{roomState.roomCode}</span>
+            <span className="readout__lbl">SECTOR_ID: </span>
+            <span className="hot">#{roomState.roomCode}</span>
           </div>
           <div>LIARS: {pub.liarCount > 0 ? String(pub.liarCount).padStart(2, "0") : "--"}</div>
         </div>

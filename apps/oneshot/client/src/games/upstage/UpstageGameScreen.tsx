@@ -135,7 +135,8 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
         <div className="readout">
           <div>UP/STG/04X-220</div>
           <div>
-            SECTOR_ID: <span className="hot">#{roomState.roomCode}</span>
+            <span className="readout__lbl">SECTOR_ID: </span>
+            <span className="hot">#{roomState.roomCode}</span>
           </div>
           <div>DECK: 1–{pub.maxRank} · ★×2</div>
         </div>
@@ -163,6 +164,43 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
                 ⏻ {voteCooldown > 0 ? fill(t("vote.cooldown"), { s: voteCooldown }) : t("upstage.proposeEnd")}
               </span>
             </button>
+          ) : null}
+          {/* early-end vote — a small chip in the toolbar (where the propose button
+              was), deliberately NOT a modal so an open vote never blocks the table */}
+          {voteOpen ? (
+            <div className="up-vote" role="status">
+              <span className="up-vote__title">{t("upstage.vote.title")}</span>
+              <span className="up-vote__tally">
+                {fill(t("upstage.vote.tally"), {
+                  // mirror the server's quorum: only CONNECTED seats count
+                  agree: Object.entries(pub.endVote!.votes).filter(
+                    ([id, v]) => v && roomState.players[id]?.connectionStatus === "online",
+                  ).length,
+                  total: pub.players.filter((p) => roomState.players[p.playerId]?.connectionStatus === "online")
+                    .length,
+                })}
+              </span>
+              {iVoted || !amSeated ? (
+                <span className="up-vote__waiting">{t("upstage.vote.waiting")}</span>
+              ) : (
+                <span className="up-vote__row">
+                  <button
+                    type="button"
+                    className="btn btn--sm btn--primary"
+                    onClick={() => sendAction(UPSTAGE_ACTIONS.voteEnd, { agree: true })}
+                  >
+                    <span>{t("upstage.vote.agree")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--sm"
+                    onClick={() => sendAction(UPSTAGE_ACTIONS.voteEnd, { agree: false })}
+                  >
+                    <span>{t("upstage.vote.reject")}</span>
+                  </button>
+                </span>
+              )}
+            </div>
           ) : null}
         </div>
       </header>
