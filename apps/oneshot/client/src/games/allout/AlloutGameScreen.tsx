@@ -321,8 +321,12 @@ export const AlloutGameScreen = ({ roomState, privateState, currentPlayerId }: P
               <p className="ao-hint">{t("allout.vote.desc")}</p>
               <p className="ao-vote__tally">
                 {fill(t("allout.vote.tally"), {
-                  agree: Object.values(pub.endVote!.votes).filter(Boolean).length,
-                  total: pub.players.length,
+                  // mirror the server's quorum: only CONNECTED seats count
+                  agree: Object.entries(pub.endVote!.votes).filter(
+                    ([id, v]) => v && roomState.players[id]?.connectionStatus === "online",
+                  ).length,
+                  total: pub.players.filter((p) => roomState.players[p.playerId]?.connectionStatus === "online")
+                    .length,
                 })}
               </p>
               {iVoted ? (

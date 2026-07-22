@@ -246,9 +246,12 @@ export const DiceGameScreen = ({ roomState, privateState, currentPlayerId }: Pro
   }, [settleAt]);
   const boardSettled = Date.now() >= settleAt;
 
+  // Also release on a server rejection: an error leaves phase/round/iRolled
+  // untouched, and without this the roll button would stay dead all round.
+  const errorSeq = useRoomStore((s) => s.errorSeq);
   useEffect(() => {
     setRollPending(false);
-  }, [pub?.phase, pub?.roundNumber, iRolled]);
+  }, [pub?.phase, pub?.roundNumber, iRolled, errorSeq]);
 
   if (!pub) {
     return (

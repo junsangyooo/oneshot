@@ -442,6 +442,24 @@ const KingComposer = ({
     setActiveSlot(null);
   }, [pending?.missionId, pending?.missionRaw, slots]);
 
+  // If the browser steals the gesture (pointercancel) or the player hits
+  // Escape, the drag ghost must not stay stranded on screen (§7-1).
+  useEffect(() => {
+    const cancel = () => {
+      setDrag(null);
+      setHoverSlot(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancel();
+    };
+    window.addEventListener("pointercancel", cancel);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointercancel", cancel);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
   if (!pending) {
     return <div className="king-wait"><p>{t("king.loading")}</p></div>;
   }
@@ -505,6 +523,13 @@ const KingComposer = ({
         role="button"
         tabIndex={0}
         onClick={() => onSlotClick(slotIndex)}
+        // a span[role=button] gets no synthetic click from Enter/Space — wire it
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSlotClick(slotIndex);
+          }
+        }}
       >
         {value != null ? numLabel(value, lang) : "____"}
       </span>
@@ -550,6 +575,12 @@ const KingComposer = ({
             onPointerDown={(e) => onCardDown(e, n)}
             onPointerMove={onCardMove}
             onPointerUp={(e) => onCardUp(e, n)}
+            // keyboard path: Enter/Space arrives as a detail-0 click with no
+            // pointer events, so mirror the tap-assign here (mouse taps are
+            // already handled by pointerup and must not double-assign)
+            onClick={(e) => {
+              if (e.detail === 0 && !usedNumbers.has(n)) assignToSlot(activeSlot ?? firstEmpty(), n);
+            }}
           >
             {numLabel(n, lang)}
           </button>

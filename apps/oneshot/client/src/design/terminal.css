@@ -620,8 +620,8 @@ body {
    KING GAME — COZY overrides (soft pastel, rounded, 3D).
    Cyber base lives in app/app.css under .scr--king.
    ========================================================= */
-[data-theme="cozy"] .scr--king .topbar .readout,
 [data-theme="cozy"] .scr--king .botbar { display: none; }
+[data-theme="cozy"] .scr--king .topbar .readout > div:first-child { display: none; }
 [data-theme="cozy"] .scr--king .king-card,
 [data-theme="cozy"] .scr--king .king-mode,
 [data-theme="cozy"] .scr--king .king-pool__item,
@@ -654,7 +654,7 @@ body {
    LIAR GAMES — COZY overrides. Cyber base lives in
    app/app.css under .scr--liar.
    ========================================================= */
-[data-theme="cozy"] .scr--liar .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--liar .topbar .readout > div:first-child { display: none; }
 [data-theme="cozy"] .scr--liar .liar-cat,
 [data-theme="cozy"] .scr--liar .liar-count-seg,
 [data-theme="cozy"] .scr--liar .liar-card { border-radius: 16px; }
@@ -684,7 +684,7 @@ body {
 /* ============================ UPSTAGE (cozy overrides) ============================
    Cyber base lives in app/app.css under .scr--upstage. Cozy = rounded corners,
    soft 3D shadows, no telemetry/scanlines, warm card faces. */
-[data-theme="cozy"] .scr--upstage .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--upstage .topbar .readout > div:first-child { display: none; }
 [data-theme="cozy"] .scr--upstage .up-panel { border: 0; background: var(--bg-1); border-radius: 22px; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--upstage .up-card { border: 0; background: var(--bg-1); border-radius: 12px; box-shadow: 0 4px 0 rgb(0 0 0 / 0.08); }
 [data-theme="cozy"] .scr--upstage .up-card--star { background: color-mix(in srgb, var(--gold) 14%, var(--bg-1)); box-shadow: 0 4px 0 rgb(245 195 68 / 0.4); }
@@ -702,7 +702,7 @@ body {
 [data-theme="cozy"] .scr--upstage .up-h { text-shadow: none; }
 
 /* ---- ALL OUT cozy overrides: rounded, soft 3D, white cards ---- */
-[data-theme="cozy"] .scr--allout .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--allout .topbar .readout > div:first-child { display: none; }
 [data-theme="cozy"] .scr--allout .ao-panel { border: 0; background: var(--bg-1); border-radius: 22px; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--allout .ao-seg { border: 0; border-radius: 14px; overflow: hidden; background: var(--bg-1); box-shadow: 0 4px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--allout .ao-seg__btn.is-on { background: var(--accent); color: #fff; }
@@ -742,7 +742,7 @@ body {
 /* ---- DICE cozy overrides: chocolate dice on cream, soft 3D ----
    Cyber base lives in app/app.css under .scr--dice. */
 [data-theme="cozy"] .scr--dice { --dice-burst: 245 195 68; }
-[data-theme="cozy"] .scr--dice .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--dice .topbar .readout > div:first-child { display: none; }
 [data-theme="cozy"] .scr--dice .dice-panel { border: 0; background: var(--bg-1); border-radius: 22px; box-shadow: 0 8px 0 rgb(0 0 0 / 0.05); }
 [data-theme="cozy"] .scr--dice .dice-pod { border: 0; background: #fff; border-radius: 18px; box-shadow: 0 6px 0 rgb(0 0 0 / 0.05); }
 /* the cyber .is-me tint must not wash out the white card (cascade order) */
@@ -768,7 +768,7 @@ body {
 /* ---- ROULETTE cozy overrides: warm wooden prize wheel, paper confetti ----
    Cyber base lives in app/app.css under .scr--roulette. */
 [data-theme="cozy"] .scr--roulette { --rl-burst: 245 195 68; }
-[data-theme="cozy"] .scr--roulette .topbar .readout { display: none; }
+[data-theme="cozy"] .scr--roulette .topbar .readout > div:first-child { display: none; }
 [data-theme="cozy"] .scr--roulette .rl-title .lbl { letter-spacing: 0; text-transform: none; font-weight: 700; }
 
 [data-theme="cozy"] .scr--roulette .rl-wheel {
