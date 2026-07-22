@@ -100,6 +100,10 @@ cd apps/oneshot/e2e && npx playwright test rummikub
    → **게임을 테마별로 두 번 만들지 않는다.** 한 번 만들고 토큰/오버라이드로 두 테마가 따라오게 한다.
 
 8. **모달은 공용 `.modal`만 쓴다(직접 만들지 않는다).** `terminal.css`의 `.modal`은 `max-height: 92svh` + 본문(`.modal-body`)만 스크롤 + 머리/꼬리(`.modal-head`/`.modal-foot`) 고정이 내장돼 있다. 직접 모달을 짜면 **모바일에서 내용이 길 때 저장/확인 버튼이 화면 밖으로 나간다**(실제로 설정 모달에서 터졌던 버그). 게임 도움말은 `RulesModal`, 그 외엔 `.modal-backdrop > .modal > (.modal-head/.modal-body/.modal-foot)` 구조를 그대로 쓴다.
+   - **그리고 "무엇을 모달로 만들지"가 더 중요하다: 여러 사람의 응답을 기다리는 상태(투표·대기)는 모달 금지.**
+     모달은 "지금 이 사람의 결정"에만 쓴다(색 고르기·추방 확인). 투표를 모달로 덮으면 **무응답자 한 명이
+     전원의 보드를 잠근다** — 실제로 올아웃·업스테이지 종료투표가 그랬고, 논블로킹 칩(타일 `.rk-vote` 선례)으로
+     전환했다. 열려 있는 동안 보드가 조작 가능한지 `elementFromPoint`로 확인한다.
 
 9. **모바일/태블릿도 완료 기준이다.** 데스크톱만 보고 끝내지 않는다.
    - 화면 루트는 `100svh`(주소창 대응). 게임 화면은 `≤720px`에서 `height:auto; overflow:visible`로 풀어 페이지 스크롤을 허용한다.
@@ -354,6 +358,9 @@ Bold simple high-contrast centered silhouette that stays recognizable at 32px. F
 ### (E) 검증
 12. `corepack pnpm -r typecheck` + 서버 테스트 (`apps/oneshot` 안에서). 클라이언트는 `pnpm --filter @oneshot/client build`로 빌드까지 통과시킨다.
 13. 실제로 한 판 돌려 **cyber·cozy × ko·en** 4조합 + `/_states` + **모바일 폭**(창 좁히기/실기기)을 확인한다. 깨지는 곳은 §3 규칙 위반이다.
+14. **여정 e2e 스펙(`e2e/tests/<id>.spec.ts`)을 함께 만든다 — 이제 모든 게임이 갖고 있고, 새 게임도 예외가 아니다.**
+    최소 세트: 시작→핵심 액션→진행이 서버에 반영되는가 + **비밀 정보 격리**(역할/패/제시어가 다른 플레이어
+    화면에 *없다*는 부정 단언까지) + 그 게임 고유 제스처/투표 여정. 선례: `kinggame`·`liar`·`upstage`·`dice`·`allout-auto`·`rummikub`.
 
 **로컬 멀티플레이(3인) 테스트 요령** — 한 브라우저 프로필에서도 3명을 앉힐 수 있다(이전 "불가" 추정은 틀렸다):
 - 식별은 `localStorage`의 `oneshot.reconnectToken` 하나로 결정된다. 앱은 부팅 시 그 토큰으로 자동 `reconnect()`하므로, 새 탭이 같은 토큰을 읽으면 **같은 플레이어로 합류**해버린다.
