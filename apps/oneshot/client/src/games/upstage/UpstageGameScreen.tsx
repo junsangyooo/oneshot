@@ -340,41 +340,6 @@ export const UpstageGameScreen = ({ roomState, privateState, currentPlayerId }: 
         )}
       </section>
 
-      {voteOpen ? (
-        <div className="modal-backdrop open" role="presentation">
-          <div className="modal up-vote" role="dialog" aria-modal="true">
-            <div className="modal-head">
-              <h3>{t("upstage.vote.title")}</h3>
-            </div>
-            <div className="modal-body">
-              <p className="up-hint">{t("upstage.vote.desc")}</p>
-              <p className="up-vote__tally">
-                {fill(t("upstage.vote.tally"), {
-                  // mirror the server's quorum: only CONNECTED seats count
-                  agree: Object.entries(pub.endVote!.votes).filter(
-                    ([id, v]) => v && roomState.players[id]?.connectionStatus === "online",
-                  ).length,
-                  total: pub.players.filter((p) => roomState.players[p.playerId]?.connectionStatus === "online")
-                    .length,
-                })}
-              </p>
-              {iVoted ? (
-                <p className="up-wait">{t("upstage.vote.waiting")}</p>
-              ) : (
-                <div className="up-declare__actions">
-                  <button type="button" className="btn btn--primary" onClick={() => sendAction(UPSTAGE_ACTIONS.voteEnd, { agree: true })}>
-                    {t("upstage.vote.agree")}
-                  </button>
-                  <button type="button" className="btn" onClick={() => sendAction(UPSTAGE_ACTIONS.voteEnd, { agree: false })}>
-                    {t("upstage.vote.reject")}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <RulesModal
         open={rulesOpen}

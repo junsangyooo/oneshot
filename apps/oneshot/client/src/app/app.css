@@ -592,7 +592,22 @@ button { font: inherit; }
 .scr--upstage .up-table__rank { font-family: var(--font-display); font-weight: 700; color: var(--gold); font-size: 18px; }
 .scr--upstage .up-table__name { color: var(--ink); }
 .scr--upstage .up-table__score { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
-.scr--upstage .up-vote__tally { text-align: center; color: var(--ink); font-family: var(--font-display); font-weight: 700; }
+/* early-end vote — a small chip in the toolbar, never a blocking modal */
+.scr--upstage .up-vote {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  padding: 10px 12px;
+  max-width: 260px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg-1);
+}
+.scr--upstage .up-vote__title { font-family: var(--font-display); letter-spacing: var(--track-mid); color: var(--ink); font-size: 13px; }
+.scr--upstage .up-vote__tally { font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); }
+.scr--upstage .up-vote__waiting { font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); }
+.scr--upstage .up-vote__row { display: flex; gap: 6px; }
+.scr--upstage .up-vote__row .btn { min-height: 40px; }
 
 @media (max-width: 720px) {
   .scr--upstage { height: auto; min-height: 100svh; overflow: visible; }
@@ -769,7 +784,22 @@ button { font: inherit; }
 .scr--allout .ao-targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; }
 .scr--allout .ao-target { display: grid; justify-items: center; gap: 4px; padding: 10px; border: 1px solid var(--line-bright); background: transparent; color: var(--ink); cursor: pointer; }
 .scr--allout .ao-target__count { font-family: var(--font-display); font-weight: 700; color: var(--ink-dim); }
-.scr--allout .ao-vote__tally { text-align: center; color: var(--ink); font-family: var(--font-display); font-weight: 700; }
+/* early-end vote — a small chip in the toolbar, never a blocking modal */
+.scr--allout .ao-vote {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  padding: 10px 12px;
+  max-width: 260px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg-1);
+}
+.scr--allout .ao-vote__title { font-family: var(--font-display); letter-spacing: var(--track-mid); color: var(--ink); font-size: 13px; }
+.scr--allout .ao-vote__tally { font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); }
+.scr--allout .ao-vote__waiting { font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim); }
+.scr--allout .ao-vote__row { display: flex; gap: 6px; }
+.scr--allout .ao-vote__row .btn { min-height: 40px; }
 
 /* round-end table */
 .scr--allout .ao-table { width: 100%; display: grid; gap: 4px; }
